@@ -16,4 +16,5 @@ pub mod nary;
 pub mod process;
 pub mod single;
 pub mod tagged;
+pub mod topology;
 pub mod wallet;

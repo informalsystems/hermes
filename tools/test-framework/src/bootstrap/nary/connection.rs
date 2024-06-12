@@ -3,8 +3,10 @@
 */
 
 use core::time::Duration;
+use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
+use std::collections::HashMap;
 
 use crate::bootstrap::binary::connection::{bootstrap_connection, BootstrapConnectionOptions};
 use crate::error::Error;
@@ -12,48 +14,61 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
 use crate::types::nary::foreign_client::ForeignClientPairs;
-use crate::util::array::assert_same_dimension;
 
 /**
    Bootstrap a dynamic number of connections based on the
-   given foreign client NxN matrix.
+   given foreign clients.
+   See [`crate::types::topology`] for more information.
 */
 pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
-    foreign_clients: &Vec<Vec<ForeignClient<Handle, Handle>>>,
+    foreign_clients: &HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>,
     connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
-    let size = foreign_clients.len();
+    let mut connections: HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>> =
+        HashMap::new();
 
-    assert_same_dimension(size, foreign_clients)?;
+    for foreign_client in foreign_clients.iter() {
+        let mut inner_connections: HashMap<usize, ConnectedConnection<Handle, Handle>> =
+            HashMap::new();
 
-    let mut connections: Vec<Vec<ConnectedConnection<Handle, Handle>>> = Vec::new();
-
-    for (i, foreign_clients_b) in foreign_clients.iter().enumerate() {
-        let mut connections_b: Vec<ConnectedConnection<Handle, Handle>> = Vec::new();
-
-        for (j, foreign_client) in foreign_clients_b.iter().enumerate() {
-            if i <= j {
-                let counter_foreign_client = &foreign_clients[j][i];
-                let foreign_clients =
-                    ForeignClientPair::new(foreign_client.clone(), counter_foreign_client.clone());
+        for client in foreign_client.1.iter() {
+            let connection = if let Some(counterparty_connections) = connections.get(client.0) {
+                let counterparty_connection = counterparty_connections
+                    .get(foreign_client.0)
+                    .ok_or_else(|| {
+                        Error::generic(eyre!(
+                            "No connection entry found from chain `{}` to `{}`",
+                            client.0,
+                            foreign_client.0
+                        ))
+                    })?;
+                counterparty_connection.clone().flip()
+            } else {
+                // No connection is found, will create one
+                let client_a_to_b = client.1.clone();
+                let client_b_to_a = foreign_clients
+                    .get(client.0)
+                    .and_then(|c| c.get(foreign_client.0))
+                    .ok_or_else(|| {
+                        Error::generic(eyre!(
+                            "No client entry found from chain `{}` to `{}`",
+                            client.0,
+                            foreign_client.0
+                        ))
+                    })?;
+                let foreign_clients = ForeignClientPair::new(client_a_to_b, client_b_to_a.clone());
 
                 let bootstrap_options = BootstrapConnectionOptions::default()
                     .connection_delay(connection_delay)
                     .bootstrap_with_random_ids(bootstrap_with_random_ids);
 
-                let connection = bootstrap_connection(&foreign_clients, bootstrap_options)?;
+                bootstrap_connection(&foreign_clients, bootstrap_options)?
+            };
 
-                connections_b.push(connection);
-            } else {
-                let counter_connection = &connections[j][i];
-                let connection = counter_connection.clone().flip();
-
-                connections_b.push(connection);
-            }
+            inner_connections.insert(*client.0, connection);
         }
-
-        connections.push(connections_b);
+        connections.insert(*foreign_client.0, inner_connections);
     }
 
     Ok(DynamicConnectedConnections::new(connections))

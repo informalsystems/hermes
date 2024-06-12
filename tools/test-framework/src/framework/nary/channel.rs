@@ -175,7 +175,6 @@ where
 
         let channels = bootstrap_channels_with_connections(
             connections,
-            chains.chain_handles().clone(),
             port_ids,
             order,
             config.bootstrap_with_random_ids,

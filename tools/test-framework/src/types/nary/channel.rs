@@ -2,6 +2,8 @@
    Constructs for N-ary connected channels.
 */
 
+use std::collections::HashMap;
+
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
@@ -12,7 +14,6 @@ use crate::error::Error;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
-use crate::util::array::try_into_nested_array;
 
 /**
    A fixed-size N-ary connected channels as specified by `SIZE`.
@@ -21,7 +22,7 @@ use crate::util::array::try_into_nested_array;
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
-    channels: [[ConnectedChannel<Handle, Handle>; SIZE]; SIZE],
+    pub channels: HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>>,
 }
 
 /**
@@ -31,7 +32,7 @@ pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
 */
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedChannels<Handle: ChainHandle> {
-    channels: Vec<Vec<ConnectedChannel<Handle, Handle>>>,
+    channels: HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>>,
 }
 
 /**
@@ -70,32 +71,33 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
     pub fn channel_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
     ) -> Result<NthConnectedChannel<CHAIN_A, CHAIN_B, Handle>, Error> {
-        if CHAIN_A >= SIZE || CHAIN_B >= SIZE {
-            Err(Error::generic(eyre!(
-                "cannot get channel beyond position {}/{}",
-                CHAIN_A,
-                CHAIN_B
-            )))
-        } else {
-            let raw_channel = self.channels[CHAIN_A][CHAIN_B].clone();
+        let inner_channels = self.channels.get(&CHAIN_A).ok_or_else(|| {
+            Error::generic(eyre!("No channel entries found for chain `{CHAIN_A}`"))
+        })?;
+        let raw_channel = inner_channels
+            .get(&CHAIN_B)
+            .ok_or_else(|| {
+                Error::generic(eyre!(
+                    "No channel entry found for chain `{CHAIN_A}` to `{CHAIN_B}`"
+                ))
+            })?
+            .clone();
+        let channel = raw_channel.map_chain(MonoTagged::new, MonoTagged::new);
 
-            let channel = raw_channel.map_chain(MonoTagged::new, MonoTagged::new);
-
-            Ok(channel)
-        }
+        Ok(channel)
     }
 
-    pub fn channels(&self) -> &[[ConnectedChannel<Handle, Handle>; SIZE]; SIZE] {
+    pub fn channels(&self) -> &HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>> {
         &self.channels
     }
 }
 
 impl<Handle: ChainHandle> DynamicConnectedChannels<Handle> {
-    pub fn new(channels: Vec<Vec<ConnectedChannel<Handle, Handle>>>) -> Self {
+    pub fn new(channels: HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>>) -> Self {
         Self { channels }
     }
 
-    pub fn channels(&self) -> &Vec<Vec<ConnectedChannel<Handle, Handle>>> {
+    pub fn channels(&self) -> &HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>> {
         &self.channels
     }
 }
@@ -107,7 +109,7 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedChannels<Ha
 
     fn try_from(channels: DynamicConnectedChannels<Handle>) -> Result<Self, Error> {
         Ok(ConnectedChannels {
-            channels: try_into_nested_array(channels.channels)?,
+            channels: channels.channels,
         })
     }
 }
@@ -120,36 +122,21 @@ impl<Handle: ChainHandle> From<ConnectedChannels<Handle, 2>> for NthConnectedCha
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedChannels<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for (i, inner_channels) in self.channels.iter().enumerate() {
-            for (j, channel_i_to_j) in inner_channels.iter().enumerate() {
+        for inner_channels in self.channels.iter() {
+            for channel in inner_channels.1.iter() {
                 writer.write_env(
-                    &format!("CONNECTION_ID_{j}_to_{i}"),
-                    &format!("{}", channel_i_to_j.connection.connection_id_a),
+                    &format!("CONNECTION_ID_{}_to_{}", inner_channels.0, channel.0),
+                    &format!("{}", channel.1.connection.connection_id_a),
                 );
 
                 writer.write_env(
-                    &format!("CONNECTION_ID_{i}_to_{j}"),
-                    &format!("{}", channel_i_to_j.connection.connection_id_b),
+                    &format!("CHANNEL_ID_{}_to_{}", inner_channels.0, channel.0),
+                    &format!("{}", channel.1.channel_id_a),
                 );
 
                 writer.write_env(
-                    &format!("CHANNEL_ID_{j}_to_{i}"),
-                    &format!("{}", channel_i_to_j.channel_id_a),
-                );
-
-                writer.write_env(
-                    &format!("PORT_{j}_to_{i}"),
-                    &format!("{}", channel_i_to_j.port_a),
-                );
-
-                writer.write_env(
-                    &format!("CHANNEL_ID_{i}_to_{j}"),
-                    &format!("{}", channel_i_to_j.channel_id_b),
-                );
-
-                writer.write_env(
-                    &format!("PORT_{i}_to_{j}"),
-                    &format!("{}", channel_i_to_j.port_b),
+                    &format!("PORT_{}_to_{}", inner_channels.0, channel.0),
+                    &format!("{}", channel.1.port_a),
                 );
             }
         }

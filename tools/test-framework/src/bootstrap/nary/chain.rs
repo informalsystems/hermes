@@ -4,18 +4,17 @@
 
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 
 use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
-    save_relayer_config,
+    add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
 };
 use crate::error::{handle_generic_error, Error};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
 use crate::types::single::node::FullNode;
+use crate::types::topology::get_topology;
 
 /**
   Bootstrap a fixed number of chains specified by `SIZE`.
@@ -50,6 +49,8 @@ pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
 /**
    Bootstrap a dynamic number of chains, according to the number of full nodes
    in the `Vec<FullNode>`.
+   The topology will be retrieved and set in this method,
+   see [`crate::types::topology`] for more information.
 */
 pub fn boostrap_chains_with_any_nodes(
     test_config: &TestConfig,
@@ -77,19 +78,11 @@ pub fn boostrap_chains_with_any_nodes(
         chain_handles.push(handle);
     }
 
-    let mut foreign_clients: Vec<Vec<ForeignClient<_, _>>> = Vec::new();
+    // Retrieve the topology or fallback to the Linear topology
+    let topology_str = std::env::var("TOPOLOGY").unwrap_or_else(|_| "linear".to_owned());
+    let topology = get_topology(&topology_str);
 
-    for handle_a in chain_handles.iter() {
-        let mut foreign_clients_b = Vec::new();
-
-        for handle_b in chain_handles.iter() {
-            let foreign_client = bootstrap_foreign_client(handle_a, handle_b, Default::default())?;
-
-            foreign_clients_b.push(foreign_client);
-        }
-
-        foreign_clients.push(foreign_clients_b);
-    }
+    let foreign_clients = topology.get_topology(&chain_handles)?;
 
     let relayer = RelayerDriver {
         config_path,
