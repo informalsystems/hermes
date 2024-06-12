@@ -46,7 +46,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
 use crate::error::Error;
 
-pub enum TopologyTypes {
+pub enum TopologyType {
     Linear,
     Full,
 }
@@ -64,7 +64,7 @@ impl FromStr for TopologyTypes {
 }
 
 pub trait Topology<Handle: ChainHandle> {
-    fn get_topology(
+    fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
     ) -> Result<HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>, Error>;
@@ -132,7 +132,7 @@ impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
     }
 }
 
-pub fn get_topology<Handle: ChainHandle>(value: &str) -> Box<dyn Topology<Handle>> {
+pub fn bootstrap_topology<Handle: ChainHandle>(topology: TopologyType) -> Box<dyn Topology<Handle>> {
     if let Ok(topology_type) = value.parse() {
         match topology_type {
             TopologyTypes::Full => Box::new(FullyConnectedTopology),
