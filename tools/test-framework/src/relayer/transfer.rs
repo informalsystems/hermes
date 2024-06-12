@@ -129,6 +129,39 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     Ok(())
 }
 
+pub fn local_namada_token_transfer(
+    home_path: &str,
+    sender: &str,
+    recipient: &str,
+    denom: &str,
+    amount: &str,
+    rpc_port: &str,
+) -> Result<(), Error> {
+    simple_exec(
+        "namada local transfer",
+        "namadac",
+        &[
+            "--base-dir",
+            home_path,
+            "transfer",
+            "--source",
+            sender,
+            "--target",
+            recipient,
+            "--token",
+            denom,
+            "--amount",
+            amount,
+            "--signing-keys",
+            &format!("{sender}-key"),
+            "--node",
+            &format!("http://127.0.0.1:{rpc_port}"),
+        ],
+    )?;
+
+    Ok(())
+}
+
 pub fn ibc_namada_token_transfer(
     home_path: &str,
     sender: &str,

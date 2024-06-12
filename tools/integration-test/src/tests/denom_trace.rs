@@ -84,7 +84,8 @@ impl BinaryChannelTest for IbcDenomTraceTest {
         assert_eq(
             "Denom returned by denom_trace query should be the same as denom_a",
             &denom_trace.base_denom,
-            &denom_a.value().as_str().to_string(),
+            // check the raw address
+            &denom_a.value().hash_only(),
         )?;
 
         Ok(())

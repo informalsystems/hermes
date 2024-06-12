@@ -3,6 +3,7 @@ use core::time::Duration;
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
 
+use crate::chain::chain_type::ChainType;
 use crate::chain::cli::transfer::{local_transfer_token, transfer_from_chain};
 use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
@@ -10,6 +11,7 @@ use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
 use crate::relayer::transfer::{
     batched_ibc_token_transfer, ibc_namada_token_transfer, ibc_token_transfer,
+    local_namada_token_transfer,
 };
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
@@ -157,17 +159,37 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         memo: Option<String>,
     ) -> Result<(), Error> {
         let rpc_client = self.rpc_client()?;
-        self.value().runtime.block_on(batched_ibc_token_transfer(
-            rpc_client.as_ref(),
-            &self.tx_config(),
-            port_id,
-            channel_id,
-            sender,
-            recipient,
-            token,
-            num_msgs,
-            memo,
-        ))
+        match self.value().chain_type {
+            ChainType::Namada => {
+                let denom = token.value().denom.to_string();
+                let amount = token.value().amount.to_string();
+                let rpc_port = self.value().rpc_port.to_string();
+                // Namada CLI doesn't support batching transactions
+                for _ in 0..num_msgs {
+                    ibc_namada_token_transfer(
+                        &self.value().home_path,
+                        &sender.value().id.to_string(),
+                        recipient.value().as_str(),
+                        &denom,
+                        &amount,
+                        &channel_id.to_string(),
+                        &rpc_port,
+                    )?;
+                }
+                Ok(())
+            }
+            _ => self.value().runtime.block_on(batched_ibc_token_transfer(
+                rpc_client.as_ref(),
+                &self.tx_config(),
+                port_id,
+                channel_id,
+                sender,
+                recipient,
+                token,
+                num_msgs,
+                memo,
+            )),
+        }
     }
 
     fn local_transfer_token(
@@ -177,15 +199,30 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         token: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
         let driver = *self.value();
-        local_transfer_token(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            sender.value().address.as_str(),
-            recipient.value().as_str(),
-            &token.value().to_string(),
-        )
+        match driver.chain_type {
+            ChainType::Namada => {
+                let denom = token.value().denom.to_string();
+                let amount = token.value().amount.to_string();
+                let rpc_port = self.value().rpc_port.to_string();
+                local_namada_token_transfer(
+                    &driver.home_path,
+                    &sender.value().id.to_string(),
+                    &recipient.value().as_str(),
+                    &denom,
+                    &amount,
+                    &rpc_port,
+                )
+            }
+            _ => local_transfer_token(
+                driver.chain_id.as_str(),
+                &driver.command_path,
+                &driver.home_path,
+                &driver.rpc_listen_address(),
+                sender.value().address.as_str(),
+                recipient.value().as_str(),
+                &token.value().to_string(),
+            ),
+        }
     }
 
     fn transfer_from_chain<Counterparty>(
@@ -199,19 +236,37 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         timeout_height: &Height,
     ) -> Result<(), Error> {
         let driver = *self.value();
-        let timeout_height_str = timeout_height.revision_height() + 100;
-        transfer_from_chain(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            sender.value().address.as_str(),
-            port.as_ref(),
-            channel.as_ref(),
-            recipient.value().as_str(),
-            &token.value().to_string(),
-            &fees.value().to_string(),
-            &timeout_height_str.to_string(),
-        )
+        match driver.chain_type {
+            ChainType::Namada => {
+                let denom = token.value().denom.to_string();
+                let amount = token.value().amount.to_string();
+                let rpc_port = self.value().rpc_port.to_string();
+                ibc_namada_token_transfer(
+                    &driver.home_path,
+                    &sender.value().id.to_string(),
+                    recipient.value().as_str(),
+                    &denom,
+                    &amount,
+                    channel.as_ref(),
+                    &rpc_port,
+                )
+            }
+            _ => {
+                let timeout_height_str = timeout_height.revision_height() + 100;
+                transfer_from_chain(
+                    driver.chain_id.as_str(),
+                    &driver.command_path,
+                    &driver.home_path,
+                    &driver.rpc_listen_address(),
+                    sender.value().address.as_str(),
+                    port.as_ref(),
+                    channel.as_ref(),
+                    recipient.value().as_str(),
+                    &token.value().to_string(),
+                    &fees.value().to_string(),
+                    &timeout_height_str.to_string(),
+                )
+            }
+        }
     }
 }

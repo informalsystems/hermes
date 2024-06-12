@@ -14,8 +14,9 @@ fn test_client_default_refresh() -> Result<(), Error> {
     run_binary_chain_test(&ClientDefaultsTest)
 }
 
-#[test]
+// TODO: it should work after surrpoting gas estimation
 #[cfg(not(feature = "namada"))]
+#[test]
 fn test_client_fail_refresh() -> Result<(), Error> {
     run_binary_chain_test(&ClientFailsTest)
 }

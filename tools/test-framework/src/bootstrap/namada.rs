@@ -326,7 +326,7 @@ fn add_namada_key(
         .find_address(address_name)
         .ok_or_else(|| eyre!("error loading the address from Namada wallet"))?;
     let namada_key = NamadaKeyPair {
-        alias: key_name.to_string(),
+        alias: address_name.to_string(),
         address: address.into_owned(),
         secret_key: secret_key.clone(),
     };

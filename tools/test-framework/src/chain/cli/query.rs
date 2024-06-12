@@ -129,18 +129,18 @@ pub fn query_namada_balance(
     )?;
 
     let words: Vec<&str> = output.stdout.split_whitespace().collect();
-    let denom_hash = &format!("{}:", denom.hash_only());
+    let raw_addr = &format!("{}:", denom.hash_only());
 
-    if let Some(derived_index) = words.iter().position(|&w| w.contains(denom_hash)) {
+    if let Some(derived_index) = words.iter().position(|&w| w.contains(raw_addr)) {
         if let Some(&amount_str) = words.get(derived_index + 1) {
             return Amount::from_str(amount_str).map_err(handle_generic_error);
         }
         Err(Error::generic(eyre!(
-            "chain id is not 1 words after `{denom_hash}`: raw output `{}` split output `{words:#?}`",
+            "chain id is not 1 words after `{raw_addr}`: raw output `{}` split output `{words:#?}`",
             output.stdout
         )))
     } else {
-        let denom_display_name = &format!("{}:", denom.display_name());
+        let denom_display_name = &format!("{}:", denom.namada_display_name());
         if let Some(derived_index) = words.iter().position(|&w| w.contains(denom_display_name)) {
             if let Some(&amount_str) = words.get(derived_index + 1) {
                 return Amount::from_str(amount_str).map_err(handle_generic_error);

@@ -23,7 +23,7 @@ pub enum Denom {
     },
     Ibc {
         path: String,
-        denom: String,
+        denom: Box<Denom>,
         hashed: String,
     },
 }
@@ -93,15 +93,12 @@ fn derive_cosmos_ibc_denom<ChainA, ChainB>(
     }
 
     match denom.value() {
-        Denom::Base {
-            display_name,
-            raw_address,
-        } => {
+        Denom::Base { raw_address, .. } => {
             let hashed = derive_denom(port_id.value(), channel_id.value(), raw_address)?;
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path: format!("{port_id}/{channel_id}"),
-                denom: display_name.clone(),
+                denom: Box::new((*denom.value()).clone()),
                 hashed,
             }))
         }
@@ -124,24 +121,24 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
     denom: &TaggedDenomRef<ChainA>,
 ) -> Result<TaggedDenom<ChainB>, Error> {
     match denom.value() {
-        Denom::Base {
-            display_name,
-            raw_address,
-        } => {
-            let ibc_display_name = format!("{port_id}/{channel_id}/{display_name}");
-            let ibc_raw_address = format!("{port_id}/{channel_id}/{raw_address}");
+        Denom::Base { raw_address, .. } => {
+            let path = format!("{port_id}/{channel_id}");
+            let ibc_token_addr = namada_ibc::storage::ibc_token(format!("{path}/{raw_address}"));
 
-            Ok(MonoTagged::new(Denom::Base {
-                display_name: ibc_display_name,
-                raw_address: ibc_raw_address,
+            Ok(MonoTagged::new(Denom::Ibc {
+                path,
+                denom: Box::new((*denom.value()).clone()),
+                hashed: ibc_token_addr.to_string(),
             }))
         }
-        Denom::Ibc { hashed, .. } => {
-            let ibc_denom = format!("{port_id}/{channel_id}/{hashed}");
+        Denom::Ibc { path, denom, .. } => {
+            let new_path = format!("{port_id}/{channel_id}/{path}");
+            let ibc_token_addr = namada_ibc::storage::ibc_token(format!("{new_path}/{denom}"));
 
-            Ok(MonoTagged::new(Denom::Base {
-                display_name: ibc_denom.clone(),
-                raw_address: ibc_denom,
+            Ok(MonoTagged::new(Denom::Ibc {
+                path: new_path,
+                denom: denom.clone(),
+                hashed: ibc_token_addr.to_string(),
             }))
         }
     }
@@ -169,6 +166,13 @@ impl Denom {
         match self {
             Denom::Base { display_name, .. } => display_name.to_string(),
             Denom::Ibc { hashed, .. } => hashed.to_string(),
+        }
+    }
+
+    pub fn namada_display_name(&self) -> String {
+        match self {
+            Denom::Base { display_name, .. } => display_name.to_string(),
+            Denom::Ibc { path, denom, .. } => format!("{path}/{}", denom.namada_display_name()),
         }
     }
 

@@ -3392,6 +3392,8 @@ dependencies = [
  "ibc-relayer-cli",
  "ibc-relayer-types",
  "itertools 0.12.1",
+ "namada_ibc",
+ "namada_sdk",
  "once_cell",
  "prost",
  "rand 0.8.5",
