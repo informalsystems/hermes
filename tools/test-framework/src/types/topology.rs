@@ -28,9 +28,21 @@
    * Chain A: Clients referencing chains B and C
    * Chain B: Clients referencing chains A and C
    * Chain C: Clients referencing chains A and B
+   * Each chain will also have a self referencing client
 
    This setup ensures that every chain is directly connected to every other chain, forming
    a complete graph.
+
+   Example: Cyclic Topology
+
+   The cylic topology is similar to the linear topology with the addition of the first and
+   last chain being connected as well.
+   For chains A, B, C and D, the clients are created as follows:
+
+   * Chain A: Clients referencing chains B and D
+   * Chain B: Clients referencing chains A and C
+   * Chain C: Clients referencing chains B and D
+   * Chain D: Clients referencing chains A and C
 
    By defining the appropriate set of clients, you can establish the desired topology for
    your tests, whether it be linear, fully connected, or any other configuration.
@@ -50,6 +62,7 @@ use crate::util::two_dim_hash_map::TwoDimHashMap;
 pub enum TopologyType {
     Linear,
     Full,
+    Cyclic,
 }
 
 impl FromStr for TopologyType {
@@ -59,6 +72,7 @@ impl FromStr for TopologyType {
         match s {
             "linear" => Ok(Self::Linear),
             "full" => Ok(Self::Full),
+            "cyclic" => Ok(Self::Cyclic),
             _ => Err(Error::generic(eyre!("The topology `{s}` does not exist"))),
         }
     }
@@ -133,11 +147,66 @@ impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
     }
 }
 
+pub struct CyclicTopology;
+
+impl<Handle: ChainHandle> Topology<Handle> for CyclicTopology {
+    fn create_topology(
+        &self,
+        chain_handles: &Vec<Handle>,
+    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error> {
+        let mut foreign_clients: HashMap<usize, HashMap<usize, ForeignClient<_, _>>> =
+            HashMap::new();
+
+        let last_index = chain_handles.len() - 1;
+        for (i, _) in chain_handles.iter().enumerate() {
+            let mut clients = HashMap::new();
+            // Create client from first chain to last
+            if i == 0 {
+                let client = bootstrap_foreign_client(
+                    &chain_handles[0],
+                    &chain_handles[last_index],
+                    Default::default(),
+                )?;
+                clients.insert(last_index, client);
+            }
+            // Create client from last chain to first
+            if i == last_index {
+                let client = bootstrap_foreign_client(
+                    &chain_handles[last_index],
+                    &chain_handles[0],
+                    Default::default(),
+                )?;
+                clients.insert(0, client);
+            }
+            if i < last_index {
+                let client = bootstrap_foreign_client(
+                    &chain_handles[i],
+                    &chain_handles[i + 1],
+                    Default::default(),
+                )?;
+                clients.insert(i + 1, client);
+            }
+            if i > 0 {
+                let client = bootstrap_foreign_client(
+                    &chain_handles[i],
+                    &chain_handles[i - 1],
+                    Default::default(),
+                )?;
+                clients.insert(i - 1, client);
+            }
+
+            foreign_clients.insert(i, clients);
+        }
+        Ok(foreign_clients.into())
+    }
+}
+
 pub fn bootstrap_topology<Handle: ChainHandle>(
     topology: TopologyType,
 ) -> Box<dyn Topology<Handle>> {
     match topology {
         TopologyType::Full => Box::new(FullyConnectedTopology),
         TopologyType::Linear => Box::new(LinearTopology),
+        TopologyType::Cyclic => Box::new(CyclicTopology),
     }
 }

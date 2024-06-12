@@ -14,7 +14,7 @@ impl TestOverrides for TernaryIbcTransferTest {
     }
 
     fn topology(&self) -> Option<TopologyType> {
-        Some(TopologyType::Full)
+        Some(TopologyType::Cyclic)
     }
 }
 
