@@ -51,7 +51,7 @@ pub enum TopologyType {
     Full,
 }
 
-impl FromStr for TopologyTypes {
+impl FromStr for TopologyType {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -73,7 +73,7 @@ pub trait Topology<Handle: ChainHandle> {
 pub struct FullyConnectedTopology;
 
 impl<Handle: ChainHandle> Topology<Handle> for FullyConnectedTopology {
-    fn get_topology(
+    fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
     ) -> Result<HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>, Error> {
@@ -99,7 +99,7 @@ impl<Handle: ChainHandle> Topology<Handle> for FullyConnectedTopology {
 pub struct LinearTopology;
 
 impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
-    fn get_topology(
+    fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
     ) -> Result<HashMap<usize, HashMap<usize, ForeignClient<Handle, Handle>>>, Error> {
@@ -132,14 +132,11 @@ impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
     }
 }
 
-pub fn bootstrap_topology<Handle: ChainHandle>(topology: TopologyType) -> Box<dyn Topology<Handle>> {
-    if let Ok(topology_type) = value.parse() {
-        match topology_type {
-            TopologyTypes::Full => Box::new(FullyConnectedTopology),
-            TopologyTypes::Linear => Box::new(LinearTopology),
-        }
-    } else {
-        tracing::warn!("Failed to parse topology type `{value}`. Will fallback to Linear topology");
-        Box::new(LinearTopology)
+pub fn bootstrap_topology<Handle: ChainHandle>(
+    topology: TopologyType,
+) -> Box<dyn Topology<Handle>> {
+    match topology {
+        TopologyType::Full => Box::new(FullyConnectedTopology),
+        TopologyType::Linear => Box::new(LinearTopology),
     }
 }

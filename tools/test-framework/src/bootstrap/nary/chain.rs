@@ -14,7 +14,7 @@ use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
 use crate::types::single::node::FullNode;
-use crate::types::topology::get_topology;
+use crate::types::topology::{bootstrap_topology, TopologyType};
 
 /**
   Bootstrap a fixed number of chains specified by `SIZE`.
@@ -80,9 +80,18 @@ pub fn boostrap_chains_with_any_nodes(
 
     // Retrieve the topology or fallback to the Linear topology
     let topology_str = std::env::var("TOPOLOGY").unwrap_or_else(|_| "linear".to_owned());
-    let topology = get_topology(&topology_str);
+    let topology_type = match topology_str.parse() {
+        Ok(topology_type) => topology_type,
+        Err(_) => {
+            tracing::warn!(
+                "Failed to parse topology type `{topology_str}`. Will fallback to Linear topology"
+            );
+            TopologyType::Linear
+        }
+    };
+    let topology = bootstrap_topology(topology_type);
 
-    let foreign_clients = topology.get_topology(&chain_handles)?;
+    let foreign_clients = topology.create_topology(&chain_handles)?;
 
     let relayer = RelayerDriver {
         config_path,
