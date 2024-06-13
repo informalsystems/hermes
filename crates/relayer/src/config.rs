@@ -175,7 +175,11 @@ pub mod default {
     }
 
     pub fn poll_interval() -> Duration {
-        Duration::from_secs(1)
+        Duration::from_millis(500)
+    }
+
+    pub fn max_retries() -> u32 {
+        4
     }
 
     pub fn batch_delay() -> Duration {
@@ -622,6 +626,11 @@ pub enum EventSourceMode {
         /// The polling interval
         #[serde(default = "default::poll_interval", with = "humantime_serde")]
         interval: Duration,
+
+        /// The maximum retries to collect the block results
+        /// before giving up and moving to the next block
+        #[serde(default = "default::max_retries")]
+        max_retries: u32,
     },
 }
 

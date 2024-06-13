@@ -7,11 +7,14 @@ use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRe
 use ibc_proto::ibc::core::client::v1::{MsgIbcSoftwareUpgrade, UpgradeProposal};
 use ibc_relayer::error::Error as RelayerError;
 
-use crate::chain::cli::upgrade::vote_proposal;
+use crate::chain::cli::upgrade::{submit_gov_proposal, vote_proposal};
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
-use crate::prelude::handle_generic_error;
+use crate::prelude::{handle_generic_error, TaggedChainDriverExt};
 use crate::types::tagged::*;
+use crate::util::proposal_status::ProposalStatus;
+
+use super::bootstrap::ChainBootstrapMethodsExt;
 
 pub trait ChainProposalMethodsExt {
     fn query_upgrade_proposal_height(
@@ -20,7 +23,25 @@ pub trait ChainProposalMethodsExt {
         proposal_id: u64,
     ) -> Result<u64, Error>;
 
-    fn vote_proposal(&self, fees: &str) -> Result<(), Error>;
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error>;
+
+    fn initialise_channel_upgrade(
+        &self,
+        port_id: &str,
+        channel_id: &str,
+        ordering: &str,
+        connection_hops: &str,
+        version: &str,
+        signer: &str,
+        proposal_id: &str,
+    ) -> Result<(), Error>;
+
+    fn update_channel_params(
+        &self,
+        timestamp: u64,
+        signer: &str,
+        proposal_id: &str,
+    ) -> Result<(), Error>;
 }
 
 impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
@@ -34,14 +55,123 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             .block_on(query_upgrade_proposal_height(grpc_address, proposal_id))
     }
 
-    fn vote_proposal(&self, fees: &str) -> Result<(), Error> {
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error> {
         vote_proposal(
             self.value().chain_id.as_str(),
             &self.value().command_path,
             &self.value().home_path,
             &self.value().rpc_listen_address(),
             fees,
+            proposal_id,
         )?;
+        Ok(())
+    }
+
+    fn initialise_channel_upgrade(
+        &self,
+        port_id: &str,
+        channel_id: &str,
+        ordering: &str,
+        connection_hops: &str,
+        version: &str,
+        signer: &str,
+        proposal_id: &str,
+    ) -> Result<(), Error> {
+        let gov_address = self.query_auth_module("gov")?;
+        let channel_upgrade_proposal = create_channel_upgrade_proposal(
+            self.value(),
+            port_id,
+            channel_id,
+            ordering,
+            connection_hops,
+            version,
+            &gov_address,
+        )?;
+        submit_gov_proposal(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            signer,
+            &channel_upgrade_proposal,
+        )?;
+
+        self.value().assert_proposal_status(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            ProposalStatus::VotingPeriod,
+            proposal_id,
+        )?;
+
+        vote_proposal(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            "1200stake",
+            proposal_id,
+        )?;
+
+        self.value().assert_proposal_status(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            ProposalStatus::Passed,
+            proposal_id,
+        )?;
+
+        Ok(())
+    }
+
+    // The timestamp is in nanoseconds
+    fn update_channel_params(
+        &self,
+        timestamp: u64,
+        signer: &str,
+        proposal_id: &str,
+    ) -> Result<(), Error> {
+        let gov_address = self.query_auth_module("gov")?;
+        let channel_update_params_proposal =
+            create_channel_update_params_proposal(self.value(), timestamp, &gov_address)?;
+        submit_gov_proposal(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            signer,
+            &channel_update_params_proposal,
+        )?;
+
+        self.value().assert_proposal_status(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            ProposalStatus::VotingPeriod,
+            proposal_id,
+        )?;
+
+        vote_proposal(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            "1200stake",
+            proposal_id,
+        )?;
+
+        self.value().assert_proposal_status(
+            self.value().chain_id.as_str(),
+            &self.value().command_path,
+            &self.value().home_path,
+            &self.value().rpc_listen_address(),
+            ProposalStatus::Passed,
+            proposal_id,
+        )?;
+
         Ok(())
     }
 }
@@ -70,10 +200,10 @@ pub async fn query_upgrade_proposal_height(
         .map(|r| r.into_inner())
         .map_err(|e| RelayerError::grpc_status(e, "query_upgrade_proposal_height".to_owned()))?;
 
-    // Querying for a balance might fail, i.e. if the account doesn't actually exist
+    // Querying for proposal might not exist if the proposal id is incorrect
     let proposal = response
         .proposal
-        .ok_or_else(|| RelayerError::empty_query_account(proposal_id.to_string()))?;
+        .ok_or_else(|| RelayerError::empty_proposal(proposal_id.to_string()))?;
 
     let proposal_content = proposal
         .content
@@ -108,4 +238,78 @@ pub async fn query_upgrade_proposal_height(
     };
 
     Ok(height)
+}
+
+fn create_channel_upgrade_proposal(
+    chain_driver: &ChainDriver,
+    port_id: &str,
+    channel_id: &str,
+    ordering: &str,
+    connection_hops: &str,
+    version: &str,
+    gov_address: &str,
+) -> Result<String, Error> {
+    let raw_proposal = r#"
+    {
+        "messages": [
+            {
+              "@type": "/ibc.core.channel.v1.MsgChannelUpgradeInit",
+              "port_id": "{port_id}",
+              "channel_id": "{channel_id}",
+              "fields": {
+                "ordering": "{ordering}",
+                "connection_hops": ["{connection_hops}"],
+                "version": {version}
+              },
+              "signer":"{signer}"
+            }
+          ],
+        "deposit": "10000001stake",
+        "title": "Channel upgrade",
+        "summary": "Upgrade channel version",
+        "expedited": false
+    }"#;
+
+    let proposal = raw_proposal.replace("{port_id}", port_id);
+    let proposal = proposal.replace("{channel_id}", channel_id);
+    let proposal = proposal.replace("{ordering}", ordering);
+    let proposal = proposal.replace("{connection_hops}", connection_hops);
+    let proposal = proposal.replace("{version}", version);
+    let proposal = proposal.replace("{signer}", gov_address);
+
+    chain_driver.write_file("channel_upgrade_proposal.json", &proposal)?;
+    Ok("channel_upgrade_proposal.json".to_owned())
+}
+
+fn create_channel_update_params_proposal(
+    chain_driver: &ChainDriver,
+    timestamp: u64,
+    gov_address: &str,
+) -> Result<String, Error> {
+    let raw_proposal = r#"
+    {
+        "messages": [
+            {
+              "@type": "/ibc.core.channel.v1.MsgUpdateParams",
+              "params": {
+                "upgrade_timeout": {
+                    "timestamp": {timestamp}
+                }
+              },
+              "authority":"{signer}"
+            }
+          ],
+        "deposit": "10000001stake",
+        "title": "Channel update params",
+        "summary": "Update channel params",
+        "expedited": false
+    }"#;
+
+    let proposal = raw_proposal.replace("{timestamp}", &timestamp.to_string());
+    let proposal = proposal.replace("{signer}", gov_address);
+
+    let output_file = "channel_update_params_proposal.json";
+
+    chain_driver.write_file(output_file, &proposal)?;
+    Ok(output_file.to_owned())
 }

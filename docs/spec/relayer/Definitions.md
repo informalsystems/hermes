@@ -224,7 +224,7 @@ CreateUpdateClientDatagrams(shs []SignedHeader) IBCDatagram[]
 // Submit given datagram to a given chain 
 Submit(chain Chain, datagram IBCDatagram) Error 
 
-// Return the correspondin chain for a given chainID 
+// Return the corresponding chain for a given chainID
 // We assume that the relayer maintains a map of known chainIDs and the corresponding chains.                
 GetChain(chainID String) Chain
 ```

@@ -50,13 +50,13 @@ mod handshake_retry {
 
     /// Defines the increment in delay between subsequent retries.
     /// A value of `0` will make the retry delay constant.
-    const DELAY_INCREMENT: Duration = Duration::from_secs(1);
+    const DELAY_INCREMENT: Duration = Duration::from_secs(0);
 
     /// Maximum number of retries
     const MAX_RETRIES: u32 = 10;
 
     /// The default retry strategy.
-    /// We retry with a growing backoff strategy. The strategy is parametrized by the
+    /// We retry with a constant backoff strategy. The strategy is parametrized by the
     /// maximum block time expressed as a `Duration`.
     pub fn default_strategy(max_block_time: Duration) -> impl Iterator<Item = Duration> {
         let retry_delay = max_block_time / PER_BLOCK_RETRIES;
@@ -1365,7 +1365,9 @@ fn check_destination_connection_state(
         && existing_connection.counterparty().client_id()
             == expected_connection.counterparty().client_id();
 
-    let good_state = *existing_connection.state() as u32 <= *expected_connection.state() as u32;
+    let good_state = existing_connection
+        .state()
+        .less_or_equal_progress(*expected_connection.state());
 
     let good_connection_ids = existing_connection.counterparty().connection_id().is_none()
         || existing_connection.counterparty().connection_id()

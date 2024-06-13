@@ -4,12 +4,13 @@
    We expose the modules as public so that cargo doc
    will pick up the definition by default.
 */
+
 pub mod clear_packet;
 pub mod client_expiration;
 pub mod client_filter;
 pub mod client_refresh;
 pub mod client_settings;
-#[cfg(not(any(feature = "celestia", feature = "juno")))]
+#[cfg(not(feature = "celestia"))]
 pub mod client_upgrade;
 pub mod connection_delay;
 pub mod consensus_states;
@@ -34,6 +35,9 @@ pub mod async_icq;
 
 #[cfg(any(doc, feature = "authz"))]
 pub mod authz;
+
+#[cfg(any(doc, feature = "channel-upgrade"))]
+pub mod channel_upgrade;
 
 #[cfg(any(doc, feature = "ics29-fee"))]
 pub mod fee;

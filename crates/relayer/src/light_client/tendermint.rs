@@ -27,15 +27,12 @@ use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::Height as ICSHeight;
 
-#[cfg(test)]
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
-
 use crate::{
-    chain::cosmos::config::CosmosSdkConfig,
-    chain::cosmos::CosmosSdkChain,
+    chain::cosmos::{config::CosmosSdkConfig, CosmosSdkChain},
     client_state::AnyClientState,
     error::Error,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
+    HERMES_VERSION,
 };
 
 use super::{
@@ -150,12 +147,6 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
-
-            #[cfg(test)]
-            _ => Err(Error::misbehaviour(format!(
-                "client type incompatible for chain {}",
-                self.chain_id
-            ))),
         }?;
 
         let next_validators = self
@@ -264,7 +255,10 @@ fn io_for_addr(
     peer_id: PeerId,
     timeout: Option<Duration>,
 ) -> Result<ProdIo, Error> {
-    let rpc_client = rpc::HttpClient::new(addr.clone()).map_err(|e| Error::rpc(addr.clone(), e))?;
+    let rpc_client = rpc::HttpClient::builder(addr.clone().try_into().unwrap())
+        .user_agent(format!("hermes/{}", HERMES_VERSION))
+        .build()
+        .map_err(|e| Error::rpc(addr.clone(), e))?;
     Ok(ProdIo::new(peer_id, rpc_client, timeout))
 }
 
@@ -317,12 +311,6 @@ impl LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok(client_state),
-
-            #[cfg(test)]
-            _ => Err(Error::client_type_mismatch(
-                ClientType::Tendermint,
-                client_state.client_type(),
-            )),
         }?;
 
         Ok(TmLightClient::new(

@@ -12,6 +12,7 @@ const PROVENANCE_HD_PATH: &str = "m/44'/505'/0'/0/0";
 #[derive(Clone, Debug)]
 pub enum ChainType {
     Cosmos,
+    Osmosis,
     Evmos,
     Provenance,
     Injective,
@@ -20,7 +21,7 @@ pub enum ChainType {
 impl ChainType {
     pub fn hd_path(&self) -> &str {
         match self {
-            Self::Cosmos => COSMOS_HD_PATH,
+            Self::Cosmos | Self::Osmosis => COSMOS_HD_PATH,
             Self::Evmos | Self::Injective => EVMOS_HD_PATH,
             Self::Provenance => PROVENANCE_HD_PATH,
         }
@@ -35,6 +36,13 @@ impl ChainType {
                     ChainId::from_string(&format!("ibc{prefix}"))
                 }
             }
+            Self::Osmosis => {
+                if use_random_id {
+                    ChainId::from_string(&format!("osmosis-{}-{:x}", prefix, random_u32()))
+                } else {
+                    ChainId::from_string(&format!("osmosis{prefix}"))
+                }
+            }
             Self::Injective => ChainId::from_string(&format!("injective-{prefix}")),
             Self::Evmos => ChainId::from_string(&format!("evmos_9000-{prefix}")),
             Self::Provenance => ChainId::from_string(&format!("pio-mainnet-{prefix}")),
@@ -47,6 +55,9 @@ impl ChainType {
         let json_rpc_port = random_unused_tcp_port();
         match self {
             Self::Cosmos | Self::Injective | Self::Provenance => {}
+            Self::Osmosis => {
+                res.push("--reject-config-defaults".to_owned());
+            }
             Self::Evmos => {
                 res.push("--json-rpc.address".to_owned());
                 res.push(format!("localhost:{json_rpc_port}"));
@@ -59,7 +70,7 @@ impl ChainType {
     pub fn extra_add_genesis_account_args(&self, chain_id: &ChainId) -> Vec<String> {
         let mut res = vec![];
         match self {
-            Self::Cosmos | Self::Evmos | Self::Provenance => {}
+            Self::Cosmos | Self::Osmosis | Self::Evmos | Self::Provenance => {}
             Self::Injective => {
                 res.push("--chain-id".to_owned());
                 res.push(format!("{chain_id}"));
@@ -70,7 +81,7 @@ impl ChainType {
 
     pub fn address_type(&self) -> AddressType {
         match self {
-            Self::Cosmos | Self::Provenance => AddressType::default(),
+            Self::Cosmos | Self::Osmosis | Self::Provenance => AddressType::default(),
             Self::Evmos => AddressType::Ethermint {
                 pk_type: "/ethermint.crypto.v1.ethsecp256k1.PubKey".to_string(),
             },
@@ -89,6 +100,7 @@ impl FromStr for ChainType {
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
             name if name.contains("injectived") => Ok(ChainType::Injective),
             name if name.contains("provenanced") => Ok(ChainType::Provenance),
+            name if name.contains("osmosisd") => Ok(ChainType::Osmosis),
             _ => Ok(ChainType::Cosmos),
         }
     }

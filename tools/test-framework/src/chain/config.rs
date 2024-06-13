@@ -190,6 +190,51 @@ pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> 
     Ok(())
 }
 
+pub fn add_allow_message_interchainaccounts(
+    genesis: &mut serde_json::Value,
+    message: &str,
+) -> Result<(), Error> {
+    let allow_messages = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("interchainaccounts"))
+        .and_then(|ica| ica.get_mut("host_genesis_state"))
+        .and_then(|state| state.get_mut("params"))
+        .and_then(|params| params.get_mut("allow_messages"))
+        .and_then(|allow_messages| allow_messages.as_array_mut())
+        .ok_or_else(|| {
+            eyre!("failed to retrieve allow_messages as a vector, in the genesis file")
+        })?;
+
+    // Only add `MsgSend` if the wildcard '*' is not specified
+    if allow_messages.iter().all(|v| v.as_str() != Some("*")) {
+        allow_messages.push(serde_json::Value::String(message.to_string()));
+    }
+
+    Ok(())
+}
+
+pub fn add_allow_message_interchainquery(
+    genesis: &mut serde_json::Value,
+    message: &str,
+) -> Result<(), Error> {
+    let allow_messages = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("interchainquery"))
+        .and_then(|ica| ica.get_mut("params"))
+        .and_then(|params| params.get_mut("allow_queries"))
+        .and_then(|allow_messages| allow_messages.as_array_mut())
+        .ok_or_else(|| {
+            eyre!("failed to retrieve allow_messages as a vector, in the genesis file")
+        })?;
+
+    // Only add `MsgSend` if the wildcard '*' is not specified
+    if allow_messages.iter().all(|v| v.as_str() != Some("*")) {
+        allow_messages.push(serde_json::Value::String(message.to_string()));
+    }
+
+    Ok(())
+}
+
 pub fn set_min_deposit_amount(
     genesis: &mut serde_json::Value,
     min_deposit_amount: u64,
@@ -359,11 +404,18 @@ pub fn consensus_params_max_gas(
     genesis: &mut serde_json::Value,
     max_gas: &str,
 ) -> Result<(), Error> {
-    let block = genesis
-        .get_mut("consensus_params")
-        .and_then(|consensus_params| consensus_params.get_mut("block"))
-        .and_then(|block| block.as_object_mut())
-        .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?;
+    let block = match genesis.get_mut("consensus_params") {
+        Some(consensus_params) => consensus_params
+            .get_mut("block")
+            .and_then(|block| block.as_object_mut())
+            .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?,
+        None => genesis
+            .get_mut("consensus")
+            .and_then(|consensus| consensus.get_mut("params"))
+            .and_then(|params| params.get_mut("block"))
+            .and_then(|block| block.as_object_mut())
+            .ok_or_else(|| eyre!("failed to get `block` field in genesis file"))?,
+    };
 
     block.insert(
         "max_gas".to_owned(),
@@ -393,6 +445,25 @@ pub fn globalfee_minimum_gas_prices(
         }
         None => debug!("chain doesn't have `globalfee`"),
     }
+
+    Ok(())
+}
+
+pub fn set_retry_delay_period(
+    genesis: &mut serde_json::Value,
+    retry_delay_period: &str,
+) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("ccvconsumer"))
+        .and_then(|ccvconsumer| ccvconsumer.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get ccvconsumer params in genesis file"))?;
+
+    params.insert(
+        "retry_delay_period".to_owned(),
+        serde_json::Value::String(retry_delay_period.to_string()),
+    );
 
     Ok(())
 }

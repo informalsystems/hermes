@@ -7,6 +7,7 @@ use tracing::Span;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
@@ -18,6 +19,7 @@ use ibc_relayer_types::{
         ics04_channel::{
             channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
+            upgrade::{ErrorReceipt, Upgrade},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
@@ -371,6 +373,20 @@ pub enum ChainRequest {
     QueryConsumerChains {
         reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
     },
+
+    QueryUpgrade {
+        request: QueryUpgradeRequest,
+        height: Height,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(Upgrade, Option<MerkleProof>)>,
+    },
+
+    QueryUpgradeError {
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        include_proof: IncludeProof,
+        reply_to: ReplyTo<(ErrorReceipt, Option<MerkleProof>)>,
+    },
 }
 
 pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
@@ -684,4 +700,18 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
 
     fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error>;
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error>;
 }

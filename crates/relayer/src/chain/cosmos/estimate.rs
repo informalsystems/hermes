@@ -212,7 +212,6 @@ fn can_recover_from_simulation_failure(e: &Error) -> bool {
     }
 }
 
-#[cfg(feature = "telemetry")]
 fn get_error_text(e: &Error) -> String {
     use crate::error::ErrorDetail::*;
 

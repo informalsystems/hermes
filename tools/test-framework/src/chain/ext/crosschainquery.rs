@@ -14,7 +14,7 @@ use crate::types::tagged::MonoTagged;
    If you encounter retry error, verify the value of `stride_epoch`in
    the `stride_epoch` configuration in Stride's `genesis.toml` file.
 */
-const WAIT_CROSS_CHAIN_QUERY_ATTEMPTS: u16 = 60;
+const WAIT_CROSS_CHAIN_QUERY_ATTEMPTS: u16 = 100;
 
 pub trait CrossChainQueryMethodsExt<Chain> {
     fn assert_pending_cross_chain_query(&self) -> Result<(), Error>;
@@ -72,14 +72,13 @@ impl<'a, Chain: Send> CrossChainQueryMethodsExt<Chain> for MonoTagged<Chain, &'a
                 )?;
 
                 // Verify that the there are no more pending Cross Chain Queries.
-                if json::from_str::<json::Value>(&output)
+                if !json::from_str::<json::Value>(&output)
                     .map_err(handle_generic_error)?
                     .get("pending_queries")
                     .ok_or_else(|| eyre!("no pending cross chain queries"))?
                     .as_array()
                     .ok_or_else(|| eyre!("pending cross chain queries is not an array"))?
-                    .first()
-                    .is_some()
+                    .is_empty()
                 {
                     return Err(Error::generic(eyre!(
                         "Pending query has not been processed"

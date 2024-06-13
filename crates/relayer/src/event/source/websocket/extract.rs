@@ -1,6 +1,7 @@
 use alloc::collections::BTreeMap as HashMap;
 use ibc_relayer_types::applications::ics29_fee::events::DistributionType;
 
+use ibc_relayer_types::applications::ics31_icq;
 use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData};
 
 use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
@@ -234,6 +235,12 @@ fn event_is_type_channel(ev: &IbcEvent) -> bool {
             | IbcEvent::OpenConfirmChannel(_)
             | IbcEvent::CloseInitChannel(_)
             | IbcEvent::CloseConfirmChannel(_)
+            | IbcEvent::UpgradeInitChannel(_)
+            | IbcEvent::UpgradeTryChannel(_)
+            | IbcEvent::UpgradeAckChannel(_)
+            | IbcEvent::UpgradeConfirmChannel(_)
+            | IbcEvent::UpgradeOpenChannel(_)
+            | IbcEvent::UpgradeErrorChannel(_)
             | IbcEvent::SendPacket(_)
             | IbcEvent::ReceivePacket(_)
             | IbcEvent::WriteAcknowledgement(_)
@@ -313,6 +320,11 @@ fn extract_block_events(
         extract_events(height, block_events, "channel_open_confirm", "channel_id"),
         height,
     );
+    append_events::<ChannelEvents::UpgradeInit>(
+        &mut events,
+        extract_events(height, block_events, "channel_upgrade_init", "channel_id"),
+        height,
+    );
     append_events::<ChannelEvents::SendPacket>(
         &mut events,
         extract_events(height, block_events, "send_packet", "packet_data_hex"),
@@ -328,10 +340,17 @@ fn extract_block_events(
         extract_events(height, block_events, "channel_close_confirm", "channel_id"),
         height,
     );
-    // extract cross chain query event from block_events
-    if let Ok(ccq) = CrossChainQueryPacket::extract_query_event(block_events) {
-        events.push(IbcEventWithHeight::new(ccq, height));
-    }
+
+    append_events::<CrossChainQueryPacket>(
+        &mut events,
+        extract_events(
+            height,
+            block_events,
+            ics31_icq::events::EVENT_TYPE_PREFIX,
+            "query_id",
+        ),
+        height,
+    );
 
     events
 }

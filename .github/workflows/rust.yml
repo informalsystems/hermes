@@ -38,10 +38,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
       - uses: actions-rs/cargo@v1
         with:
           command: fmt
@@ -51,12 +50,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
           components: clippy
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/clippy-check@v1
         with:
           name: clippy-all-features
@@ -67,12 +64,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
           components: clippy
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/clippy-check@v1
         with:
           name: clippy-no-default-features
@@ -84,11 +79,9 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - uses: actions-rs/cargo@v1
@@ -100,13 +93,27 @@ jobs:
           command: nextest
           args: run --all-features --no-fail-fast --workspace --exclude ibc-integration-test --no-capture
 
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install cargo-binstall
+        uses: taiki-e/install-action@cargo-binstall
+      - name: Install cargo-msrv
+        run: cargo binstall --no-confirm --force cargo-msrv@0.16.0-beta.20
+      - name: Check MSRV
+        run: cargo msrv verify --output-format minimal --manifest-path crates/relayer-cli/Cargo.toml -- 'cargo check --all-features'
+
   # test-coverage:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - uses: actions/checkout@v4
   #       with:
   #         fetch-depth: 0
-  #     - uses: actions-rs/toolchain@v1
+  #     - uses: actions-rust-lang/setup-rust-toolchain@v1
   #       with:
   #         toolchain: stable
   #         override: true

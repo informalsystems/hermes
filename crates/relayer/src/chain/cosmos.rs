@@ -17,6 +17,7 @@ use ibc_proto::cosmos::staking::v1beta1::Params as StakingParams;
 use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
@@ -32,6 +33,7 @@ use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd};
+use ibc_relayer_types::core::ics04_channel::channel::{State, UpgradeState};
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
@@ -39,11 +41,16 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
 use ibc_relayer_types::core::ics24_host::path::{
-    AcksPath, ChannelEndsPath, ClientConsensusStatePath, ClientStatePath, CommitmentsPath,
-    ConnectionsPath, ReceiptsPath, SeqRecvsPath,
+    AcksPath, ChannelEndsPath, ChannelUpgradeErrorPath, ChannelUpgradePath,
+    ClientConsensusStatePath, ClientStatePath, CommitmentsPath, ConnectionsPath, ReceiptsPath,
+    SeqRecvsPath,
 };
 use ibc_relayer_types::core::ics24_host::{
     ClientUpgradePath, Path, IBC_QUERY_PATH, SDK_UPGRADE_QUERY_PATH,
+};
+use ibc_relayer_types::core::{
+    ics02_client::height::Height, ics04_channel::upgrade::ErrorReceipt,
+    ics04_channel::upgrade::Upgrade,
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
@@ -103,6 +110,7 @@ use crate::util::pretty::PrettySlice;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
+use crate::HERMES_VERSION;
 
 use self::gas::dynamic_gas_price;
 use self::types::app_state::GenesisAppState;
@@ -335,10 +343,14 @@ impl CosmosSdkChain {
                 *batch_delay,
                 self.rt.clone(),
             ),
-            Mode::Pull { interval } => EventSource::rpc(
+            Mode::Pull {
+                interval,
+                max_retries,
+            } => EventSource::rpc(
                 self.config.id.clone(),
                 self.rpc_client.clone(),
                 *interval,
+                *max_retries,
                 self.rt.clone(),
             ),
         }
@@ -481,7 +493,7 @@ impl CosmosSdkChain {
     }
 
     /// The minimum gas price that this node accepts
-    pub fn min_gas_price(&self) -> Result<Vec<GasPrice>, Error> {
+    pub fn min_gas_price(&self) -> Result<Option<Vec<GasPrice>>, Error> {
         crate::time!(
             "min_gas_price",
             {
@@ -489,10 +501,9 @@ impl CosmosSdkChain {
             }
         );
 
-        let min_gas_price: Vec<GasPrice> =
-            self.query_config_params()?.map_or(vec![], |cfg_response| {
-                parse_gas_prices(cfg_response.minimum_gas_price)
-            });
+        let min_gas_price: Option<Vec<GasPrice>> = self
+            .query_config_params()?
+            .map(|cfg_response| parse_gas_prices(cfg_response.minimum_gas_price));
 
         Ok(min_gas_price)
     }
@@ -970,7 +981,9 @@ impl ChainEndpoint for CosmosSdkChain {
             return Err(Error::config(ConfigError::wrong_type()));
         };
 
-        let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
+        let mut rpc_client = HttpClient::builder(config.rpc_addr.clone().try_into().unwrap())
+            .user_agent(format!("hermes/{}", HERMES_VERSION))
+            .build()
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
@@ -1660,7 +1673,9 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::grpc_status(e, "query_connection_channels".to_owned()))?
             .into_inner();
 
-        let channels = response
+        let height = self.query_chain_latest_height()?;
+
+        let channels: Vec<IdentifiedChannelEnd> = response
             .channels
             .into_iter()
             .filter_map(|ch| {
@@ -1674,7 +1689,27 @@ impl ChainEndpoint for CosmosSdkChain {
                     })
                     .ok()
             })
+            .map(|mut channel| {
+                // If the channel is open, look for an upgrade in order to correctly set the
+                // state to Open(Upgrading) or Open(NotUpgrading)
+                if channel.channel_end.is_open()
+                    && self
+                        .query_upgrade(
+                            QueryUpgradeRequest {
+                                port_id: channel.port_id.to_string(),
+                                channel_id: channel.channel_id.to_string(),
+                            },
+                            height,
+                            IncludeProof::No,
+                        )
+                        .is_ok()
+                {
+                    channel.channel_end.state = State::Open(UpgradeState::Upgrading);
+                }
+                channel
+            })
             .collect();
+
         Ok(channels)
     }
 
@@ -1710,6 +1745,8 @@ impl ChainEndpoint for CosmosSdkChain {
             .map_err(|e| Error::grpc_status(e, "query_channels".to_owned()))?
             .into_inner();
 
+        let height = self.query_chain_latest_height()?;
+
         let channels = response
             .channels
             .into_iter()
@@ -1723,6 +1760,25 @@ impl ChainEndpoint for CosmosSdkChain {
                         )
                     })
                     .ok()
+            })
+            .map(|mut channel| {
+                // If the channel is open, look for an upgrade in order to correctly set the
+                // state to Open(Upgrading) or Open(NotUpgrading)
+                if channel.channel_end.is_open()
+                    && self
+                        .query_upgrade(
+                            QueryUpgradeRequest {
+                                port_id: channel.port_id.to_string(),
+                                channel_id: channel.channel_id.to_string(),
+                            },
+                            height,
+                            IncludeProof::No,
+                        )
+                        .is_ok()
+                {
+                    channel.channel_end.state = State::Open(UpgradeState::Upgrading);
+                }
+                channel
             })
             .collect();
 
@@ -1743,12 +1799,34 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_channel");
 
         let res = self.query(
-            ChannelEndsPath(request.port_id, request.channel_id),
+            ChannelEndsPath(request.port_id.clone(), request.channel_id.clone()),
             request.height,
             matches!(include_proof, IncludeProof::Yes),
         )?;
 
-        let channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+        let mut channel_end = ChannelEnd::decode_vec(&res.value).map_err(Error::decode)?;
+
+        if channel_end.is_open() {
+            let height = match request.height {
+                QueryHeight::Latest => self.query_chain_latest_height()?,
+                QueryHeight::Specific(height) => height,
+            };
+            // In order to determine if the channel is Open upgrading or not the Upgrade is queried.
+            // If an upgrade is ongoing then the query will succeed in finding an Upgrade.
+            if self
+                .query_upgrade(
+                    QueryUpgradeRequest {
+                        port_id: request.port_id.to_string(),
+                        channel_id: request.channel_id.to_string(),
+                    },
+                    height,
+                    IncludeProof::No,
+                )
+                .is_ok()
+            {
+                channel_end.state = State::Open(UpgradeState::Upgrading);
+            }
+        }
 
         match include_proof {
             IncludeProof::Yes => {
@@ -2375,6 +2453,64 @@ impl ChainEndpoint for CosmosSdkChain {
 
         Ok(result)
     }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let res = self.query(
+            ChannelUpgradePath {
+                port_id,
+                channel_id,
+            },
+            QueryHeight::Specific(height),
+            true,
+        )?;
+        let upgrade = Upgrade::decode_vec(&res.value).map_err(Error::decode)?;
+
+        match include_proof {
+            IncludeProof::Yes => {
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((upgrade, Some(proof)))
+            }
+            IncludeProof::No => Ok((upgrade, None)),
+        }
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        let port_id = PortId::from_str(&request.port_id)
+            .map_err(|_| Error::invalid_port_string(request.port_id))?;
+        let channel_id = ChannelId::from_str(&request.channel_id)
+            .map_err(|_| Error::invalid_channel_string(request.channel_id))?;
+        let res = self.query(
+            ChannelUpgradeErrorPath {
+                port_id,
+                channel_id,
+            },
+            QueryHeight::Specific(height),
+            true,
+        )?;
+        let error_receipt = ErrorReceipt::decode_vec(&res.value).map_err(Error::decode)?;
+
+        match include_proof {
+            IncludeProof::Yes => {
+                let proof = res.proof.ok_or_else(Error::empty_response_proof)?;
+                Ok((error_receipt, Some(proof)))
+            }
+            IncludeProof::No => Ok((error_receipt, None)),
+        }
+    }
 }
 
 fn sort_events_by_sequence(events: &mut [IbcEventWithHeight]) {
@@ -2467,38 +2603,44 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     let relayer_gas_price = &chain.config.gas_price;
-    let node_min_gas_prices = chain.min_gas_price()?;
+    let node_min_gas_prices_result = chain.min_gas_price()?;
 
-    if !node_min_gas_prices.is_empty() {
-        let mut found_matching_denom = false;
+    match node_min_gas_prices_result {
+        Some(node_min_gas_prices) if !node_min_gas_prices.is_empty() => {
+            let mut found_matching_denom = false;
 
-        for price in node_min_gas_prices {
-            match relayer_gas_price.partial_cmp(&price) {
-                Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
-                Some(_) => {
-                    found_matching_denom = true;
-                    break;
+            for price in node_min_gas_prices {
+                match relayer_gas_price.partial_cmp(&price) {
+                    Some(Ordering::Less) => return Err(Error::gas_price_too_low(chain_id.clone())),
+                    Some(_) => {
+                        found_matching_denom = true;
+                        break;
+                    }
+                    None => continue,
                 }
-                None => continue,
+            }
+
+            if !found_matching_denom {
+                warn!(
+                        "chain '{}' has no minimum gas price of denomination '{}' \
+                        that is strictly less than the `gas_price` specified for that chain in the Hermes configuration. \
+                        This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
+                        chain_id, relayer_gas_price.denom
+                    );
             }
         }
 
-        if !found_matching_denom {
-            warn!(
-                "chain '{}' has no minimum gas price of denomination '{}' \
-                that is strictly less than the `gas_price` specified for \
-                that chain in the Hermes configuration. \
-                This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
-                chain_id, relayer_gas_price.denom
-            );
-        }
-    } else {
-        warn!(
+        Some(_) => warn!(
             "chain '{}' has no minimum gas price value configured for denomination '{}'. \
-            This is usually a sign of misconfiguration, please check your chain and \
-            relayer configurations",
+            This is usually a sign of misconfiguration, please check your chain and relayer configurations",
             chain_id, relayer_gas_price.denom
-        );
+        ),
+
+        None => warn!(
+            "chain '{}' does not implement the `cosmos.base.node.v1beta1.Service/Params` endpoint. \
+            It is impossible to check whether the chain's minimum-gas-prices matches the ones specified in config",
+            chain_id,
+        ),
     }
 
     let version_specs = chain.block_on(fetch_version_specs(&chain.config.id, &chain.grpc_addr))?;
@@ -2520,17 +2662,8 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
 #[cfg(test)]
 mod tests {
-    use ibc_relayer_types::{
-        core::{ics02_client::client_type::ClientType, ics24_host::identifier::ClientId},
-        mock::client_state::MockClientState,
-        mock::header::MockHeader,
-        Height,
-    };
-
-    use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
-    use crate::{chain::cosmos::client_id_suffix, config::GasPrice};
-
     use super::calculate_fee;
+    use crate::config::GasPrice;
 
     #[test]
     fn mul_ceil() {
@@ -2567,39 +2700,5 @@ mod tests {
 
         let fee = calculate_fee(gas_amount, &gas_price);
         assert_eq!(&fee.amount, "90000000000000000000000000");
-    }
-
-    #[test]
-    fn sort_clients_id_suffix() {
-        let mut clients: Vec<IdentifiedAnyClientState> = vec![
-            IdentifiedAnyClientState::new(
-                ClientId::new(ClientType::Tendermint, 4).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                    Height::new(0, 1).unwrap(),
-                ))),
-            ),
-            IdentifiedAnyClientState::new(
-                ClientId::new(ClientType::Tendermint, 1).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                    Height::new(0, 1).unwrap(),
-                ))),
-            ),
-            IdentifiedAnyClientState::new(
-                ClientId::new(ClientType::Tendermint, 7).unwrap(),
-                AnyClientState::Mock(MockClientState::new(MockHeader::new(
-                    Height::new(0, 1).unwrap(),
-                ))),
-            ),
-        ];
-        clients.sort_by_cached_key(|c| client_id_suffix(&c.client_id).unwrap_or(0));
-        assert_eq!(
-            client_id_suffix(&clients.first().unwrap().client_id).unwrap(),
-            1
-        );
-        assert_eq!(client_id_suffix(&clients[1].client_id).unwrap(), 4);
-        assert_eq!(
-            client_id_suffix(&clients.last().unwrap().client_id).unwrap(),
-            7
-        );
     }
 }

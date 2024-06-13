@@ -1,7 +1,9 @@
 use core::time::Duration;
 use crossbeam_channel::Receiver;
-use tracing::{debug, error_span};
+use ibc_relayer_types::events::IbcEventType;
+use tracing::{debug, error_span, warn};
 
+use crate::chain::requests::QueryHeight;
 use crate::channel::{channel_handshake_retry, Channel as RelayChannel};
 use crate::util::retry::RetryResult;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
@@ -34,6 +36,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
 ) -> TaskHandle {
     let mut complete_handshake_on_new_block = true;
+
     spawn_background_task(
         error_span!("worker.channel", channel = %channel.short_name()),
         Some(Duration::from_millis(200)),
@@ -48,20 +51,68 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                         debug!("starts processing {:?}", last_event);
 
                         complete_handshake_on_new_block = false;
+
                         if let Some(event_with_height) = last_event {
-                            retry_with_index(
-                                channel_handshake_retry::default_strategy(max_block_times),
-                                |index| match RelayChannel::restore_from_event(
-                                    chains.a.clone(),
-                                    chains.b.clone(),
-                                    event_with_height.event.clone(),
-                                ) {
-                                    Ok(mut handshake_channel) => handshake_channel
-                                        .step_event(&event_with_height.event, index),
-                                    Err(_) => RetryResult::Retry(index),
-                                },
-                            )
-                            .map_err(|e| TaskError::Fatal(RunError::retry(e)))
+                            match event_with_height.event.event_type() {
+                                IbcEventType::UpgradeInitChannel
+                                | IbcEventType::UpgradeTryChannel
+                                | IbcEventType::UpgradeAckChannel
+                                | IbcEventType::UpgradeConfirmChannel
+                                | IbcEventType::UpgradeOpenChannel
+                                | IbcEventType::UpgradeTimeoutChannel => retry_with_index(
+                                    channel_handshake_retry::default_strategy(max_block_times),
+                                    |index| match RelayChannel::restore_from_state(
+                                        chains.a.clone(),
+                                        chains.b.clone(),
+                                        channel.clone(),
+                                        QueryHeight::Latest,
+                                    ) {
+                                        Ok((mut handshake_channel, state)) => {
+                                            handshake_channel.step_state(state, index)
+                                        }
+                                        Err(_) => RetryResult::Retry(index),
+                                    },
+                                )
+                                .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+
+                                IbcEventType::UpgradeErrorChannel => retry_with_index(
+                                    channel_handshake_retry::default_strategy(max_block_times),
+                                    |index| match RelayChannel::restore_from_state(
+                                        chains.a.clone(),
+                                        chains.b.clone(),
+                                        channel.clone(),
+                                        QueryHeight::Latest,
+                                    ) {
+                                        Ok((handshake_channel, _)) => {
+                                            match handshake_channel
+                                                .build_chan_upgrade_cancel_and_send()
+                                            {
+                                                Ok(_) => RetryResult::Ok(Next::Abort),
+                                                Err(e) => {
+                                                    warn!("Channel upgrade cancel failed: {e}");
+                                                    RetryResult::Retry(index)
+                                                }
+                                            }
+                                        }
+                                        Err(_) => RetryResult::Retry(index),
+                                    },
+                                )
+                                .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+
+                                _ => retry_with_index(
+                                    channel_handshake_retry::default_strategy(max_block_times),
+                                    |index| match RelayChannel::restore_from_event(
+                                        chains.a.clone(),
+                                        chains.b.clone(),
+                                        event_with_height.event.clone(),
+                                    ) {
+                                        Ok(mut handshake_channel) => handshake_channel
+                                            .step_event(&event_with_height.event, index),
+                                        Err(_) => RetryResult::Retry(index),
+                                    },
+                                )
+                                .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+                            }
                         } else {
                             Ok(Next::Continue)
                         }
@@ -73,18 +124,15 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                     } if complete_handshake_on_new_block => {
                         debug!("starts processing block event at {:#?}", current_height);
 
-                        let height = current_height
-                            .decrement()
-                            .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?;
-
                         complete_handshake_on_new_block = false;
+
                         retry_with_index(
                             channel_handshake_retry::default_strategy(max_block_times),
                             |index| match RelayChannel::restore_from_state(
                                 chains.a.clone(),
                                 chains.b.clone(),
                                 channel.clone(),
-                                height,
+                                QueryHeight::Latest,
                             ) {
                                 Ok((mut handshake_channel, state)) => {
                                     handshake_channel.step_state(state, index)
