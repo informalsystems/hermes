@@ -118,23 +118,21 @@ impl<Handle: ChainHandle> From<ConnectedChannels<Handle, 2>> for NthConnectedCha
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedChannels<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for inner_channels in self.channels.map.iter() {
-            for channel in inner_channels.1.iter() {
-                writer.write_env(
-                    &format!("CONNECTION_ID_{}_to_{}", inner_channels.0, channel.0),
-                    &format!("{}", channel.1.connection.connection_id_a),
-                );
+        for (src_chain, dst_chain, channel, _) in self.channels.iter() {
+            writer.write_env(
+                &format!("CONNECTION_ID_{}_to_{}", src_chain, dst_chain),
+                &format!("{}", channel.connection.connection_id_a),
+            );
 
-                writer.write_env(
-                    &format!("CHANNEL_ID_{}_to_{}", inner_channels.0, channel.0),
-                    &format!("{}", channel.1.channel_id_a),
-                );
+            writer.write_env(
+                &format!("CHANNEL_ID_{}_to_{}", src_chain, dst_chain),
+                &format!("{}", channel.channel_id_a),
+            );
 
-                writer.write_env(
-                    &format!("PORT_{}_to_{}", inner_channels.0, channel.0),
-                    &format!("{}", channel.1.port_a),
-                );
-            }
+            writer.write_env(
+                &format!("PORT_{}_to_{}", src_chain, dst_chain),
+                &format!("{}", channel.port_a),
+            );
         }
     }
 }
