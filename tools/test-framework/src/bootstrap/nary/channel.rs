@@ -33,7 +33,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
     let mut channels: TwoDimMap<ConnectedChannel<Handle, Handle>> = TwoDimMap::new();
 
-    for (src_chain, dst_chain, connection, _) in connections.connections().iter() {
+    for (src_chain, dst_chain, connection) in connections.connections().iter() {
         let channel = if let Some(counterparty_channel) = channels.get((dst_chain, src_chain)) {
             counterparty_channel.clone().flip()
         } else {

@@ -27,7 +27,7 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
     let mut connections: TwoDimMap<ConnectedConnection<Handle, Handle>> = TwoDimMap::new();
 
-    for (src_chain, dst_chain, foreign_client, _) in foreign_clients.iter() {
+    for (src_chain, dst_chain, foreign_client) in foreign_clients.iter() {
         let connection = if let Some(counterparty_connection) =
             connections.get((dst_chain, src_chain))
         {

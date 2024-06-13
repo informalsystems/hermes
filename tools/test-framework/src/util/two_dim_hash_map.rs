@@ -48,18 +48,13 @@ pub struct Iter<'a, T> {
 }
 
 impl<'a, T> Iterator for Iter<'a, T> {
-    type Item = (usize, usize, &'a T, bool);
+    type Item = (usize, usize, &'a T);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(inner_iter) = &mut self.inner_iter {
                 if let Some((inner_key, inner_value)) = inner_iter.next() {
-                    return Some((
-                        self.outer_key,
-                        *inner_key,
-                        inner_value,
-                        inner_iter.len() == 0,
-                    ));
+                    return Some((self.outer_key, *inner_key, inner_value));
                 }
             }
 
@@ -106,12 +101,12 @@ mod tests {
         let two_dim_hash_map = TwoDimMap::from(outer_hashmap);
         let mut two_dim_hash_map_iter = two_dim_hash_map.iter();
 
-        assert_eq!(two_dim_hash_map_iter.next(), Some((0, 1, &"a", true)));
+        assert_eq!(two_dim_hash_map_iter.next(), Some((0, 1, &"a")));
 
-        assert_eq!(two_dim_hash_map_iter.next(), Some((1, 0, &"b", false)));
-        assert_eq!(two_dim_hash_map_iter.next(), Some((1, 2, &"c", true)));
+        assert_eq!(two_dim_hash_map_iter.next(), Some((1, 0, &"b")));
+        assert_eq!(two_dim_hash_map_iter.next(), Some((1, 2, &"c")));
 
-        assert_eq!(two_dim_hash_map_iter.next(), Some((2, 1, &"d", true)));
+        assert_eq!(two_dim_hash_map_iter.next(), Some((2, 1, &"d")));
 
         assert_eq!(two_dim_hash_map_iter.next(), None);
     }
