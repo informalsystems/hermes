@@ -6,7 +6,6 @@ use core::time::Duration;
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use std::collections::BTreeMap;
 
 use crate::bootstrap::binary::connection::{bootstrap_connection, BootstrapConnectionOptions};
 use crate::error::Error;
@@ -26,52 +25,35 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
     connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
-    let mut connections: BTreeMap<usize, BTreeMap<usize, ConnectedConnection<Handle, Handle>>> =
-        BTreeMap::new();
+    let mut connections: TwoDimMap<ConnectedConnection<Handle, Handle>> = TwoDimMap::new();
 
-    for foreign_client in foreign_clients.map.iter() {
-        let mut inner_connections: BTreeMap<usize, ConnectedConnection<Handle, Handle>> =
-            BTreeMap::new();
+    for (src_chain, dst_chain, foreign_client, _) in foreign_clients.iter() {
+        let connection = if let Some(counterparty_connection) =
+            connections.get((dst_chain, src_chain))
+        {
+            counterparty_connection.clone().flip()
+        } else {
+            // No connection is found, will create one
+            let client_a_to_b = foreign_client.clone();
+            let client_b_to_a = foreign_clients.get((dst_chain, src_chain)).ok_or_else(|| {
+                Error::generic(eyre!(
+                    "No client entry found from chain `{}` to `{}`",
+                    dst_chain,
+                    src_chain,
+                ))
+            })?;
+            let foreign_clients = ForeignClientPair::new(client_a_to_b, client_b_to_a.clone());
 
-        for client in foreign_client.1.iter() {
-            let connection = if let Some(counterparty_connections) = connections.get(client.0) {
-                let counterparty_connection = counterparty_connections
-                    .get(foreign_client.0)
-                    .ok_or_else(|| {
-                        Error::generic(eyre!(
-                            "No connection entry found from chain `{}` to `{}`",
-                            client.0,
-                            foreign_client.0
-                        ))
-                    })?;
-                counterparty_connection.clone().flip()
-            } else {
-                // No connection is found, will create one
-                let client_a_to_b = client.1.clone();
-                let client_b_to_a = foreign_clients
-                    .get((*client.0, *foreign_client.0))
-                    .ok_or_else(|| {
-                        Error::generic(eyre!(
-                            "No client entry found from chain `{}` to `{}`",
-                            client.0,
-                            foreign_client.0
-                        ))
-                    })?;
-                let foreign_clients = ForeignClientPair::new(client_a_to_b, client_b_to_a.clone());
+            let bootstrap_options = BootstrapConnectionOptions::default()
+                .connection_delay(connection_delay)
+                .bootstrap_with_random_ids(bootstrap_with_random_ids);
 
-                let bootstrap_options = BootstrapConnectionOptions::default()
-                    .connection_delay(connection_delay)
-                    .bootstrap_with_random_ids(bootstrap_with_random_ids);
-
-                bootstrap_connection(&foreign_clients, bootstrap_options)?
-            };
-
-            inner_connections.insert(*client.0, connection);
-        }
-        connections.insert(*foreign_client.0, inner_connections);
+            bootstrap_connection(&foreign_clients, bootstrap_options)?
+        };
+        connections.insert((src_chain, dst_chain), connection);
     }
 
-    Ok(DynamicConnectedConnections::new(connections.into()))
+    Ok(DynamicConnectedConnections::new(connections))
 }
 
 pub fn bootstrap_connections<Handle: ChainHandle, const SIZE: usize>(

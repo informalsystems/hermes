@@ -33,11 +33,9 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
     let mut channels: TwoDimMap<ConnectedChannel<Handle, Handle>> = TwoDimMap::new();
 
-    //for inner_connections in connections.connections().map.iter() {
     for (src_chain, dst_chain, connection, _) in connections.connections().iter() {
-        if let Some(counterparty_connection) = channels.get((dst_chain, src_chain)) {
-            let connection = counterparty_connection.clone().flip();
-            channels.insert((src_chain, dst_chain), connection);
+        let channel = if let Some(counterparty_channel) = channels.get((dst_chain, src_chain)) {
+            counterparty_channel.clone().flip()
         } else {
             // No channel is found, will create one
             let chain_a = &connection.connection.a_chain();
@@ -49,16 +47,16 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
                 .order(order)
                 .bootstrap_with_random_ids(bootstrap_with_random_ids);
 
-            let connection = bootstrap_channel_with_connection(
+            bootstrap_channel_with_connection(
                 chain_a,
                 chain_b,
                 connection.clone(),
                 &DualTagged::new(&port_a),
                 &DualTagged::new(&port_b),
                 bootstrap_options,
-            )?;
-            channels.insert((src_chain, dst_chain), connection);
-        }
+            )?
+        };
+        channels.insert((src_chain, dst_chain), channel);
     }
 
     Ok(DynamicConnectedChannels::new(channels))

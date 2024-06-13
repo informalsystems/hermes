@@ -115,13 +115,11 @@ impl<Handle: ChainHandle> From<ConnectedConnections<Handle, 2>>
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedConnections<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for inner_connections in self.connections.map.iter() {
-            for connection in inner_connections.1.iter() {
-                writer.write_env(
-                    &format!("CONNECTION_ID_{}_to_{}", inner_connections.0, connection.0),
-                    &format!("{}", connection.1.connection_id_a),
-                );
-            }
+        for (src_chain, dst_chain, connection, _) in self.connections.iter() {
+            writer.write_env(
+                &format!("CONNECTION_ID_{}_to_{}", src_chain, dst_chain),
+                &format!("{}", connection.connection_id_a),
+            );
         }
     }
 }
