@@ -6,6 +6,7 @@ use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
+use namada_ibc::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout};
 use namada_sdk::address::{Address, ImplicitAddress};
 use namada_sdk::args::{self, TxBuilder};
 use namada_sdk::args::{InputAmount, Tx as TxArgs, TxCustom};
@@ -19,7 +20,6 @@ use namada_sdk::ibc::core::channel::types::msgs::{
     MsgTimeout as IbcMsgTimeout, ACKNOWLEDGEMENT_TYPE_URL, RECV_PACKET_TYPE_URL, TIMEOUT_TYPE_URL,
 };
 use namada_sdk::ibc::core::host::types::identifiers::{ChannelId, PortId};
-use namada_ibc::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout};
 use namada_sdk::masp::{PaymentAddress, TransferTarget};
 use namada_sdk::masp_primitives::transaction::Transaction as MaspTransaction;
 use namada_sdk::{signing, tx, Namada};
