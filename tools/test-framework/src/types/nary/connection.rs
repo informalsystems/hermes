@@ -13,9 +13,10 @@ use crate::types::tagged::*;
 use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
-   A fixed-size N-ary connected connections as specified by `SIZE`.
+   A two dimensional BTreeMap of connected connections as specified by `SIZE`
+   and topology.
 
-   Contains `SIZE`x`SIZE` number of binary [`ConnectedConnection`]s.
+   The number of binary [`ConnectedConnection`]s depends on the topology.
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedConnections<Handle: ChainHandle, const SIZE: usize> {
@@ -23,9 +24,10 @@ pub struct ConnectedConnections<Handle: ChainHandle, const SIZE: usize> {
 }
 
 /**
-   A dynamic-sized N-ary connected connections, made of a
-   nested vector of binary [`ConnectedConnection`] which must be
-   in the same dimension.
+   A two dimensional BTreeMap of connected connections as specified by `SIZE`
+   and topology.
+
+   The number of binary [`ConnectedConnection`]s depends on the topology.
 */
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedConnections<Handle: ChainHandle> {

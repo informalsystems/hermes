@@ -14,9 +14,10 @@ use crate::types::tagged::*;
 use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
-   A fixed-size N-ary connected channels as specified by `SIZE`.
+   A two dimensional BTreeMap of connected channels as specified by `SIZE`
+   and topology.
 
-   Contains `SIZE`x`SIZE` number of binary [`ConnectedChannel`]s.
+   The number of binary [`ConnectedChannel`]s depends on the topology.
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
@@ -24,9 +25,10 @@ pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
 }
 
 /**
-   A dynamic-sized N-ary connected channels, consist of a nested
-   vector of binary [`ConnectedChannel`]s which must be of the
-   same length.
+   A two dimensional BTreeMap of connected channels as specified by `SIZE`
+   and topology.
+
+   The number of binary [`ConnectedChannel`]s depends on the topology.
 */
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedChannels<Handle: ChainHandle> {

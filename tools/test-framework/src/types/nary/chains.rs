@@ -20,7 +20,8 @@ use crate::util::two_dim_hash_map::TwoDimMap;
    A fixed-size N-ary connected chains as specified by `SIZE`.
 
    Contains `SIZE` number of [`ChainHandle`]s, `SIZE` number of
-   [`FullNode`]s, and `SIZE`x`SIZE` numbers of [`ForeignClient`] pairs.
+   [`FullNode`]s, and a numbers of [`ForeignClient`] pairs
+   depending on `SIZE` and the topology.
 
    A `ConnectedChains` can be constructed by first constructing
    a [`DynamicConnectedChains`], and then calling
