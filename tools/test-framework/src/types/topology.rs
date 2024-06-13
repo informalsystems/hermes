@@ -49,7 +49,6 @@
 */
 
 use eyre::eyre;
-use std::collections::HashMap;
 use std::str::FromStr;
 
 use ibc_relayer::chain::handle::ChainHandle;
@@ -57,7 +56,7 @@ use ibc_relayer::foreign_client::ForeignClient;
 
 use crate::bootstrap::binary::chain::bootstrap_foreign_client;
 use crate::error::Error;
-use crate::util::two_dim_hash_map::TwoDimHashMap;
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 pub enum TopologyType {
     Linear,
@@ -82,7 +81,7 @@ pub trait Topology<Handle: ChainHandle> {
     fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
-    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error>;
+    ) -> Result<TwoDimMap<ForeignClient<Handle, Handle>>, Error>;
 }
 
 pub struct FullyConnectedTopology;
@@ -91,23 +90,18 @@ impl<Handle: ChainHandle> Topology<Handle> for FullyConnectedTopology {
     fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
-    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error> {
-        let mut foreign_clients: HashMap<usize, HashMap<usize, ForeignClient<_, _>>> =
-            HashMap::new();
+    ) -> Result<TwoDimMap<ForeignClient<Handle, Handle>>, Error> {
+        let mut foreign_clients: TwoDimMap<ForeignClient<_, _>> = TwoDimMap::new();
 
         for (i, handle_a) in chain_handles.iter().enumerate() {
-            let mut foreign_clients_b = HashMap::new();
-
             for (j, handle_b) in chain_handles.iter().enumerate() {
                 let foreign_client =
                     bootstrap_foreign_client(handle_a, handle_b, Default::default())?;
 
-                foreign_clients_b.insert(j, foreign_client);
+                foreign_clients.insert((i, j), foreign_client);
             }
-
-            foreign_clients.insert(i, foreign_clients_b);
         }
-        Ok(foreign_clients.into())
+        Ok(foreign_clients)
     }
 }
 
@@ -117,20 +111,18 @@ impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
     fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
-    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error> {
-        let mut foreign_clients: HashMap<usize, HashMap<usize, ForeignClient<_, _>>> =
-            HashMap::new();
+    ) -> Result<TwoDimMap<ForeignClient<Handle, Handle>>, Error> {
+        let mut foreign_clients: TwoDimMap<ForeignClient<_, _>> = TwoDimMap::new();
 
         let last_index = chain_handles.len() - 1;
         for (i, _) in chain_handles.iter().enumerate() {
-            let mut clients = HashMap::new();
             if i < last_index {
                 let client = bootstrap_foreign_client(
                     &chain_handles[i],
                     &chain_handles[i + 1],
                     Default::default(),
                 )?;
-                clients.insert(i + 1, client);
+                foreign_clients.insert((i, i + 1), client);
             }
             if i > 0 {
                 let client = bootstrap_foreign_client(
@@ -138,12 +130,10 @@ impl<Handle: ChainHandle> Topology<Handle> for LinearTopology {
                     &chain_handles[i - 1],
                     Default::default(),
                 )?;
-                clients.insert(i - 1, client);
+                foreign_clients.insert((i, i - 1), client);
             }
-
-            foreign_clients.insert(i, clients);
         }
-        Ok(foreign_clients.into())
+        Ok(foreign_clients)
     }
 }
 
@@ -153,13 +143,11 @@ impl<Handle: ChainHandle> Topology<Handle> for CyclicTopology {
     fn create_topology(
         &self,
         chain_handles: &Vec<Handle>,
-    ) -> Result<TwoDimHashMap<ForeignClient<Handle, Handle>>, Error> {
-        let mut foreign_clients: HashMap<usize, HashMap<usize, ForeignClient<_, _>>> =
-            HashMap::new();
+    ) -> Result<TwoDimMap<ForeignClient<Handle, Handle>>, Error> {
+        let mut foreign_clients: TwoDimMap<ForeignClient<_, _>> = TwoDimMap::new();
 
         let last_index = chain_handles.len() - 1;
         for (i, _) in chain_handles.iter().enumerate() {
-            let mut clients = HashMap::new();
             // Create client from first chain to last
             if i == 0 {
                 let client = bootstrap_foreign_client(
@@ -167,7 +155,7 @@ impl<Handle: ChainHandle> Topology<Handle> for CyclicTopology {
                     &chain_handles[last_index],
                     Default::default(),
                 )?;
-                clients.insert(last_index, client);
+                foreign_clients.insert((i, last_index), client);
             }
             // Create client from last chain to first
             if i == last_index {
@@ -176,7 +164,7 @@ impl<Handle: ChainHandle> Topology<Handle> for CyclicTopology {
                     &chain_handles[0],
                     Default::default(),
                 )?;
-                clients.insert(0, client);
+                foreign_clients.insert((i, 0), client);
             }
             if i < last_index {
                 let client = bootstrap_foreign_client(
@@ -184,7 +172,7 @@ impl<Handle: ChainHandle> Topology<Handle> for CyclicTopology {
                     &chain_handles[i + 1],
                     Default::default(),
                 )?;
-                clients.insert(i + 1, client);
+                foreign_clients.insert((i, i + 1), client);
             }
             if i > 0 {
                 let client = bootstrap_foreign_client(
@@ -192,12 +180,10 @@ impl<Handle: ChainHandle> Topology<Handle> for CyclicTopology {
                     &chain_handles[i - 1],
                     Default::default(),
                 )?;
-                clients.insert(i - 1, client);
+                foreign_clients.insert((i, i - 1), client);
             }
-
-            foreign_clients.insert(i, clients);
         }
-        Ok(foreign_clients.into())
+        Ok(foreign_clients)
     }
 }
 

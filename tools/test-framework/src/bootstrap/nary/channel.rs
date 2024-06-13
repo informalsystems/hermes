@@ -7,7 +7,7 @@ use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::bootstrap::binary::channel::{
     bootstrap_channel_with_connection, BootstrapChannelOptions,
@@ -32,11 +32,11 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
     order: Ordering,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedChannels<Handle>, Error> {
-    let mut channels: HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>> =
-        HashMap::new();
+    let mut channels: BTreeMap<usize, BTreeMap<usize, ConnectedChannel<Handle, Handle>>> =
+        BTreeMap::new();
 
-    for inner_connections in connections.connections().iter() {
-        let mut inner_channels: HashMap<usize, ConnectedChannel<Handle, Handle>> = HashMap::new();
+    for inner_connections in connections.connections().map.iter() {
+        let mut inner_channels: BTreeMap<usize, ConnectedChannel<Handle, Handle>> = BTreeMap::new();
 
         for connection in inner_connections.1.iter() {
             let channel = if let Some(counterparty_channels) = channels.get(connection.0) {
@@ -76,7 +76,7 @@ pub fn bootstrap_channels_with_connections_dynamic<Handle: ChainHandle>(
         channels.insert(*inner_connections.0, inner_channels);
     }
 
-    Ok(DynamicConnectedChannels::new(channels))
+    Ok(DynamicConnectedChannels::new(channels.into()))
 }
 
 /**

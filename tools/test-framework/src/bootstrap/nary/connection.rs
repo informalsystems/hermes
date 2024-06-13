@@ -6,7 +6,7 @@ use core::time::Duration;
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::bootstrap::binary::connection::{bootstrap_connection, BootstrapConnectionOptions};
 use crate::error::Error;
@@ -14,7 +14,7 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
 use crate::types::nary::foreign_client::ForeignClientPairs;
-use crate::util::two_dim_hash_map::TwoDimHashMap;
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
    Bootstrap a dynamic number of connections based on the
@@ -22,16 +22,16 @@ use crate::util::two_dim_hash_map::TwoDimHashMap;
    See [`crate::types::topology`] for more information.
 */
 pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
-    foreign_clients: &TwoDimHashMap<ForeignClient<Handle, Handle>>,
+    foreign_clients: &TwoDimMap<ForeignClient<Handle, Handle>>,
     connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
-    let mut connections: HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>> =
-        HashMap::new();
+    let mut connections: BTreeMap<usize, BTreeMap<usize, ConnectedConnection<Handle, Handle>>> =
+        BTreeMap::new();
 
     for foreign_client in foreign_clients.map.iter() {
-        let mut inner_connections: HashMap<usize, ConnectedConnection<Handle, Handle>> =
-            HashMap::new();
+        let mut inner_connections: BTreeMap<usize, ConnectedConnection<Handle, Handle>> =
+            BTreeMap::new();
 
         for client in foreign_client.1.iter() {
             let connection = if let Some(counterparty_connections) = connections.get(client.0) {
@@ -71,7 +71,7 @@ pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
         connections.insert(*foreign_client.0, inner_connections);
     }
 
-    Ok(DynamicConnectedConnections::new(connections))
+    Ok(DynamicConnectedConnections::new(connections.into()))
 }
 
 pub fn bootstrap_connections<Handle: ChainHandle, const SIZE: usize>(

@@ -7,7 +7,7 @@ use crate::error::Error;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
-use crate::util::two_dim_hash_map::TwoDimHashMap;
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
    A [`ForeignClient`] that is tagged by a `Handle: ChainHandle` and
@@ -21,7 +21,7 @@ pub type NthForeignClientPair<Handle, const DST: usize, const SRC: usize> =
 
 #[derive(Clone)]
 pub struct ForeignClientPairs<Handle: ChainHandle, const SIZE: usize> {
-    foreign_clients: TwoDimHashMap<ForeignClient<Handle, Handle>>,
+    foreign_clients: TwoDimMap<ForeignClient<Handle, Handle>>,
 }
 
 impl<Handle: ChainHandle, const SIZE: usize> ForeignClientPairs<Handle, SIZE> {
@@ -53,17 +53,17 @@ impl<Handle: ChainHandle, const SIZE: usize> ForeignClientPairs<Handle, SIZE> {
         Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
     }
 
-    pub fn into_nested_vec(self) -> TwoDimHashMap<ForeignClient<Handle, Handle>> {
+    pub fn into_nested_vec(self) -> TwoDimMap<ForeignClient<Handle, Handle>> {
         self.foreign_clients
     }
 }
 
-impl<Handle: ChainHandle, const SIZE: usize> TryFrom<TwoDimHashMap<ForeignClient<Handle, Handle>>>
+impl<Handle: ChainHandle, const SIZE: usize> TryFrom<TwoDimMap<ForeignClient<Handle, Handle>>>
     for ForeignClientPairs<Handle, SIZE>
 {
     type Error = Error;
 
-    fn try_from(clients: TwoDimHashMap<ForeignClient<Handle, Handle>>) -> Result<Self, Error> {
+    fn try_from(clients: TwoDimMap<ForeignClient<Handle, Handle>>) -> Result<Self, Error> {
         let foreign_clients = clients;
         Ok(Self { foreign_clients })
     }

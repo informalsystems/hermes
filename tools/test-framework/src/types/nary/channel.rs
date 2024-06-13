@@ -1,9 +1,6 @@
 /*!
    Constructs for N-ary connected channels.
 */
-
-use std::collections::HashMap;
-
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::channel::Channel;
@@ -14,6 +11,7 @@ use crate::error::Error;
 use crate::types::binary::channel::ConnectedChannel;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
    A fixed-size N-ary connected channels as specified by `SIZE`.
@@ -22,7 +20,7 @@ use crate::types::tagged::*;
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
-    pub channels: HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>>,
+    pub channels: TwoDimMap<ConnectedChannel<Handle, Handle>>,
 }
 
 /**
@@ -32,7 +30,7 @@ pub struct ConnectedChannels<Handle: ChainHandle, const SIZE: usize> {
 */
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedChannels<Handle: ChainHandle> {
-    channels: HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>>,
+    channels: TwoDimMap<ConnectedChannel<Handle, Handle>>,
 }
 
 /**
@@ -71,11 +69,9 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
     pub fn channel_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
     ) -> Result<NthConnectedChannel<CHAIN_A, CHAIN_B, Handle>, Error> {
-        let inner_channels = self.channels.get(&CHAIN_A).ok_or_else(|| {
-            Error::generic(eyre!("No channel entries found for chain `{CHAIN_A}`"))
-        })?;
-        let raw_channel = inner_channels
-            .get(&CHAIN_B)
+        let raw_channel = self
+            .channels
+            .get((CHAIN_A, CHAIN_B))
             .ok_or_else(|| {
                 Error::generic(eyre!(
                     "No channel entry found for chain `{CHAIN_A}` to `{CHAIN_B}`"
@@ -87,17 +83,17 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedChannels<Handle, SIZE> {
         Ok(channel)
     }
 
-    pub fn channels(&self) -> &HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>> {
+    pub fn channels(&self) -> &TwoDimMap<ConnectedChannel<Handle, Handle>> {
         &self.channels
     }
 }
 
 impl<Handle: ChainHandle> DynamicConnectedChannels<Handle> {
-    pub fn new(channels: HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>>) -> Self {
+    pub fn new(channels: TwoDimMap<ConnectedChannel<Handle, Handle>>) -> Self {
         Self { channels }
     }
 
-    pub fn channels(&self) -> &HashMap<usize, HashMap<usize, ConnectedChannel<Handle, Handle>>> {
+    pub fn channels(&self) -> &TwoDimMap<ConnectedChannel<Handle, Handle>> {
         &self.channels
     }
 }
@@ -122,7 +118,7 @@ impl<Handle: ChainHandle> From<ConnectedChannels<Handle, 2>> for NthConnectedCha
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedChannels<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for inner_channels in self.channels.iter() {
+        for inner_channels in self.channels.map.iter() {
             for channel in inner_channels.1.iter() {
                 writer.write_env(
                     &format!("CONNECTION_ID_{}_to_{}", inner_channels.0, channel.0),

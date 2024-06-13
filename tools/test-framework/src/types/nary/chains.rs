@@ -14,7 +14,7 @@ use crate::types::nary::foreign_client::*;
 use crate::types::single::node::FullNode;
 use crate::types::tagged::*;
 use crate::util::array::try_into_array;
-use crate::util::two_dim_hash_map::TwoDimHashMap;
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
    A fixed-size N-ary connected chains as specified by `SIZE`.
@@ -45,7 +45,7 @@ pub struct NaryConnectedChains<Handle: ChainHandle, const SIZE: usize> {
 pub struct DynamicConnectedChains<Handle: ChainHandle> {
     chain_handles: Vec<Handle>,
     full_nodes: Vec<FullNode>,
-    pub foreign_clients: TwoDimHashMap<ForeignClient<Handle, Handle>>,
+    pub foreign_clients: TwoDimMap<ForeignClient<Handle, Handle>>,
 }
 
 /**
@@ -183,7 +183,7 @@ impl<Handle: ChainHandle> DynamicConnectedChains<Handle> {
     pub fn new(
         chain_handles: Vec<Handle>,
         full_nodes: Vec<FullNode>,
-        foreign_clients: TwoDimHashMap<ForeignClient<Handle, Handle>>,
+        foreign_clients: TwoDimMap<ForeignClient<Handle, Handle>>,
     ) -> Self {
         Self {
             chain_handles,
@@ -200,7 +200,7 @@ impl<Handle: ChainHandle> DynamicConnectedChains<Handle> {
         &self.full_nodes
     }
 
-    pub fn foreign_clients(&self) -> &TwoDimHashMap<ForeignClient<Handle, Handle>> {
+    pub fn foreign_clients(&self) -> &TwoDimMap<ForeignClient<Handle, Handle>> {
         &self.foreign_clients
     }
 }

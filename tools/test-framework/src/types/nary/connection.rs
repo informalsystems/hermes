@@ -1,9 +1,6 @@
 /*!
    Constructs for N-ary connected connections.
 */
-
-use std::collections::HashMap;
-
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
@@ -13,6 +10,7 @@ use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
    A fixed-size N-ary connected connections as specified by `SIZE`.
@@ -21,7 +19,7 @@ use crate::types::tagged::*;
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedConnections<Handle: ChainHandle, const SIZE: usize> {
-    connections: HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>>,
+    connections: TwoDimMap<ConnectedConnection<Handle, Handle>>,
 }
 
 /**
@@ -31,7 +29,7 @@ pub struct ConnectedConnections<Handle: ChainHandle, const SIZE: usize> {
 */
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedConnections<Handle: ChainHandle> {
-    connections: HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>>,
+    connections: TwoDimMap<ConnectedConnection<Handle, Handle>>,
 }
 
 /**
@@ -56,11 +54,9 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> 
     pub fn connection_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
     ) -> Result<NthConnectedConnection<CHAIN_A, CHAIN_B, Handle>, Error> {
-        let inner_connections = self.connections.get(&CHAIN_A).ok_or_else(|| {
-            Error::generic(eyre!("No connection entries found for chain `{CHAIN_A}`"))
-        })?;
-        let raw_connection = inner_connections
-            .get(&CHAIN_B)
+        let raw_connection = self
+            .connections
+            .get((CHAIN_A, CHAIN_B))
             .ok_or_else(|| {
                 Error::generic(eyre!(
                     "No connection entry found for chain `{CHAIN_A}` to `{CHAIN_B}`"
@@ -72,23 +68,17 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> 
         Ok(connection)
     }
 
-    pub fn connections(
-        &self,
-    ) -> &HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>> {
+    pub fn connections(&self) -> &TwoDimMap<ConnectedConnection<Handle, Handle>> {
         &self.connections
     }
 }
 
 impl<Handle: ChainHandle> DynamicConnectedConnections<Handle> {
-    pub fn new(
-        connections: HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>>,
-    ) -> Self {
+    pub fn new(connections: TwoDimMap<ConnectedConnection<Handle, Handle>>) -> Self {
         Self { connections }
     }
 
-    pub fn connections(
-        &self,
-    ) -> &HashMap<usize, HashMap<usize, ConnectedConnection<Handle, Handle>>> {
+    pub fn connections(&self) -> &TwoDimMap<ConnectedConnection<Handle, Handle>> {
         &self.connections
     }
 }
@@ -125,7 +115,7 @@ impl<Handle: ChainHandle> From<ConnectedConnections<Handle, 2>>
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedConnections<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for inner_connections in self.connections.iter() {
+        for inner_connections in self.connections.map.iter() {
             for connection in inner_connections.1.iter() {
                 writer.write_env(
                     &format!("CONNECTION_ID_{}_to_{}", inner_connections.0, connection.0),
