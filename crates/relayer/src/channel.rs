@@ -17,6 +17,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{
 };
 use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
 use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::proofs::MultihopProofHeights;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use serde::Serialize;
@@ -1036,7 +1037,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(dst_expected_channel)
     }
 
-    pub fn update_channel_path_clients(&self) -> Result<Vec<Height>, ChannelError> {
+    pub fn update_channel_path_clients(&self) -> Result<Vec<MultihopProofHeights>, ChannelError> {
         let channel_id = self
             .a_side
             .channel_id()
@@ -1058,16 +1059,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // The height which will be provided to update the client hosted by the next chain in this
-        // channel path. The height must be equal to 'query_height' + 1, as any proofs queried at
-        // height `query_height` can only be verified by having access to the application's state
-        // Merkle Root (the AppHash), which is included in the subsequent block.
-        let mut target_height = query_height.increment();
+        // This height will be provided as the target to update the client hosted by the next
+        // chain in this channel path. The height must be equal to 'query_height' + 1, as any proofs
+        // queried at height `query_height` can only be verified by having access to the application's
+        // state Merkle Root (the AppHash) for height 'query_height', which is only included in the
+        // subsequent block.
+        let mut target_client_height = query_height.increment();
 
         // Store the heights at which the proofs must be queried after the clients in the channel
-        // path are updated. If the client that tracks a chain 'Chain A' is updated with a
-        // consensus height 'h', the proofs on 'Chain A' must be queried at height 'h - 1'.
-        let mut proof_query_heights = vec![query_height];
+        // path are updated. Here, for the first chain in the channel path, store only the height
+        // at which to query the proofs since the chain does not have to be queried for a consensus
+        // state from a previous chain in the path.
+        let mut proof_heights = vec![MultihopProofHeights::new(query_height, None)];
 
         // Get access to the registry to get or spawn chain handles
         let registry = get_global_registry();
@@ -1095,22 +1098,25 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 hop_src_chain.clone(),
             );
 
-            // Build and send a MsgUpdateClient to update the client to 'target_height'
+            // Build and send a MsgUpdateClient to update the client so that it tracks the
+            // consensus state for the height 'target_client_height'
             client
-                .build_update_client_and_send(QueryHeight::Specific(target_height), None)
+                .build_update_client_and_send(QueryHeight::Specific(target_client_height), None)
                 .map_err(|e| {
                     ChannelError::client_operation(client.id().clone(), hop_dst_chain.id(), e)
                 })?;
 
-            // Fetch the UpdateClient event from the chain that hosts the client
+            // Fetch the UpdateClient event which updates the client to track 'target_client_height'
             let maybe_update = client
-                .fetch_update_client_event(target_height)
+                .fetch_update_client_event(target_client_height)
                 .map_err(|e| {
                     ChannelError::client_operation(client.id().clone(), hop_dst_chain.id(), e)
                 })?;
 
-            // Retrieve the height at which the UpdateClient message was included in the chain
-            let update_height = match maybe_update {
+            // Retrieve the height at which the UpdateClient message was included in the chain.
+            // This height can be used to query for the consensus state that corresponds to
+            // `target_client_height`.
+            let update_event_height = match maybe_update {
                 Some((_, height)) => height,
                 None => {
                     return Err(ChannelError::failed_channel_path_client_update(
@@ -1122,24 +1128,57 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 }
             };
 
-            // The height to use for querying proofs when sending packets and handshake messages.
-            // Proofs queried at height 'update_height' can only be verified if the client in
-            // the receiving chain stores the consensus state for the consensus height of
-            // 'update_height' + 1.
-            proof_query_heights.push(update_height);
+            proof_heights.push(MultihopProofHeights::new(
+                // The height at which the consensus state for the previous chain was included
+                // in this chain. Consensus proofs and other required proofs will be queried at
+                // this height.
+                update_event_height,
+                // This is the consensus height from the previous chain that was received in an
+                // update at height 'update_event_height'. This height will be used as the
+                // consensus_height to query for when querying for the consensus state proof
+                // at chain height 'update_event_height'.
+                Some(target_client_height),
+            ));
 
-            // The height to use for updating the next client in the channel path, if the next
-            // chain is not the channel path's destination chain. Allows for the verification
-            // of proofs queried at height 'update_height'.
-            target_height = update_height.increment();
+            // The height to use for updating the next client in the channel path. Not used if
+            // the next chain is the channel path's destination chain. Allows for the verification
+            // of proofs queried at height 'update_event_height'.
+            target_client_height = update_event_height.increment();
         }
 
-        Ok(proof_query_heights) // REVIEW: Perhaps we would like to return a Vec with the events or their heights?
+        Ok(proof_heights)
     }
 
-    pub fn build_multihop_proofs(_query_heights: &[Height]) {
-        todo!();
-    }
+    // pub fn build_multihop_proofs(&self, query_heights: &[Height]) -> Result<(), ChannelError> {
+    //     // 1. For the src_chain, query the key proof and the connection_end proof.
+    //     // 2. For the intermediate chains, query the proof of consensus state and connection_end
+    //     let channel_id = self
+    //         .a_side
+    //         .channel_id()
+    //         .ok_or(ChannelError::missing_local_channel_id())?;
+
+    //     let connection_hops =
+    //         self.a_side
+    //             .connection_hops()
+    //             .ok_or(ChannelError::missing_local_connection_hops(
+    //                 channel_id.clone(),
+    //                 self.a_side.chain_id().clone(),
+    //             ))?;
+
+    //     // Get access to the registry to get or spawn chain handles
+    //     let registry = get_global_registry();
+
+    //     // Query channel proof in src_chain
+    //     // Query connection_end in src_chain
+
+    //     // Iterate remaining hops after first hop.
+    //     // For each hop
+    //     // Query client in intermediary chain for the consensus state of previous chain + 1
+    //     // query connection_end in intermediary chain
+    //     // ..repeat
+
+    //     todo!();
+    // }
 
     pub fn build_multihop_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must be specified
@@ -1200,25 +1239,28 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .map_err(ChannelError::channel_proof)?;
 
         // Update the clients along the channel path and store the heights necessary for querying
-        // multihop proofs.
-        let proof_query_heights = self.update_channel_path_clients()?;
+        // multihop proofs. 'proof_heights' contains the height at which proofs should be queried,
+        // ordered from the sending chain to the penultimate chain in the channel path. In order to
+        // verify proofs queried at the height 'query_height'  stored in 'proof_query_heights', the
+        // client on the chain that receives the proof must be updated to store the consensus state
+        // for height 'query_height + 1'.
+        let proof_heights = self.update_channel_path_clients()?;
 
-        // Build message(s) to update client on destination. 'proof_query_heights' contains the
-        // height at which proofs should be queried, ordered the sending chain to the penultimate
-        // chain in the channel path. In order to verify proofs queried at the height, 'query_height'
-        // stored in 'proof_query_heights', the client on the chain that receives the proof must be
-        // updated to store the consensus state for height 'query_height + 1'.
-        let mut msgs = self.build_update_client_on_last_hop(
-            proof_query_heights
+        let last_hop_heights =
+            proof_heights
                 .last()
-                .ok_or(ChannelError::missing_proof_query_heights(
+                .ok_or(ChannelError::missing_multihop_proof_heights(
                     src_channel_id.clone(),
                     self.src_chain().id(),
-                ))?
-                .increment(),
-        )?;
+                ))?;
+
+        // Build the message to update the client on the channel path's destination. The client
+        // update height is equal to the penultimate chain's `query_height` + 1.
+        let mut msgs =
+            self.build_update_client_on_last_hop(last_hop_heights.query_height().increment())?;
 
         // --------- IN PROGRESS BELOW --------- //
+
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 

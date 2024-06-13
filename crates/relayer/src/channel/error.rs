@@ -237,13 +237,13 @@ define_error! {
              for channel '{}' on chain '{}'", e.client_id, e.client_host_chain_id, e.channel_id, e.chain_id)
         },
 
-        MissingProofQueryHeights
+        MissingMultihopProofHeights
         {
             channel_id: ChannelId,
             chain_id: ChainId,
         }
         | e | {
-            format_args!("missing proof query heights for the channel '{}'s path on chain '{}'", e.channel_id, e.chain_id)
+            format_args!("missing proof heights for the channel '{}'s path on chain '{}'", e.channel_id, e.chain_id)
         },
     }
 }
