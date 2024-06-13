@@ -236,6 +236,15 @@ define_error! {
             format_args!("failed to update client '{}' on chain '{}' while updating the channel path \
              for channel '{}' on chain '{}'", e.client_id, e.client_host_chain_id, e.channel_id, e.chain_id)
         },
+
+        MissingProofQueryHeights
+        {
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        | e | {
+            format_args!("missing proof query heights for the channel '{}'s path on chain '{}'", e.channel_id, e.chain_id)
+        },
     }
 }
 
