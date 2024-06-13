@@ -71,13 +71,11 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<TwoDimMap<ForeignClient<Han
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ForeignClientPairs<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for inner_clients in self.foreign_clients.map.iter() {
-            for client in inner_clients.1.iter() {
-                writer.write_env(
-                    &format!("CLIENT_ID_{}_to_{}", inner_clients.0, client.0),
-                    &format!("{}", client.1.id()),
-                );
-            }
+        for (src_chain, dst_chain, client, _) in self.foreign_clients.iter() {
+            writer.write_env(
+                &format!("CLIENT_ID_{}_to_{}", src_chain, dst_chain),
+                &format!("{}", client.id()),
+            );
         }
     }
 }
