@@ -13,6 +13,8 @@ const TOTAL_MESSAGES: usize = MESSAGES_PER_BATCH * TOTAL_TRANSACTIONS;
 const BLOCK_TIME_MILLIS: u64 = 1000;
 const BLOCK_TIME: Duration = Duration::from_millis(BLOCK_TIME_MILLIS);
 
+// TODO: Need batching transactions
+#[cfg(not(feature = "namada"))]
 #[test]
 fn test_sequential_commit() -> Result<(), Error> {
     run_binary_channel_test(&SequentialCommitTest)
@@ -22,6 +24,15 @@ pub struct SequentialCommitTest;
 
 impl TestOverrides for SequentialCommitTest {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
+        let config = if let Some(config) = config.get_mut("ledger") {
+            // Namada
+            config
+                .get_mut("cometbft")
+                .ok_or_else(|| eyre!("expect cometbft section"))?
+        } else {
+            config
+        };
+
         config::cosmos::set_timeout_commit(config, BLOCK_TIME)?;
         config::cosmos::set_timeout_propose(config, BLOCK_TIME)?;
 

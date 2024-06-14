@@ -17,11 +17,14 @@ pub mod consensus_states;
 pub mod denom_trace;
 pub mod error_events;
 pub mod execute_schedule;
+#[cfg(not(feature = "namada"))]
 pub mod handshake_on_start;
 pub mod ics20_filter;
 pub mod memo;
+#[cfg(not(feature = "namada"))]
 pub mod python;
 pub mod query_packet;
+#[cfg(not(feature = "namada"))]
 pub mod supervisor;
 pub mod tendermint;
 #[cfg(not(any(feature = "celestia")))]
