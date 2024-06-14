@@ -8,6 +8,7 @@ use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, PortChannelId, PortId,
 };
 use ibc_relayer_types::events::IbcEvent;
+use ibc_relayer_types::proofs::ProofError;
 
 use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
@@ -83,6 +84,9 @@ define_error! {
             [ RelayerError ]
             |e| { format_args!("failed during a query to chain '{0}'", e.chain_id) },
 
+        QueriedProofNotFound
+        |_| { "Requested proof with query but no proof was returned." },
+
         ChainQuery
             { chain_id: ChainId }
             [ RelayerError ]
@@ -133,6 +137,10 @@ define_error! {
               channel_state: State,
             }
             | e | { format_args!("expected state of channel '{}' to be '{}', but found '{}'", e.channel_id, e.expected_state, e.channel_state) },
+
+        MalformedProof
+            [ ProofError ]
+            |_| { "malformed proof" },
 
         MismatchChannelEnds
             {

@@ -23,6 +23,9 @@ impl ConnectionHop {
         }
     }
 
+    pub fn connection_id(&self) -> &ConnectionId {
+        self.connection.id()
+    }
     pub fn connection(&self) -> &ConnectionEnd {
         &self.connection.connection_end
     }

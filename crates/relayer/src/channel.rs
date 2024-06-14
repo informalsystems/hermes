@@ -3,6 +3,8 @@ use core::time::Duration;
 
 pub use error::ChannelError;
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::channel::v1::{MsgMultihopProofs, MultihopProof};
+use ibc_proto::Protobuf;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
 };
@@ -12,8 +14,13 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenA
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
+use ibc_relayer_types::core::ics23_commitment::merkle::apply_prefix;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
+};
+use ibc_relayer_types::core::ics24_host::path::{
+    ChannelEndsPath, ClientConsensusStatePath, ConnectionsPath, Path,
 };
 use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
 use ibc_relayer_types::events::IbcEvent;
@@ -27,7 +34,7 @@ use crate::chain::counterparty::{channel_connection_client, channel_state_on_des
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
     IncludeProof, PageRequest, QueryChannelRequest, QueryConnectionChannelsRequest,
-    QueryConnectionRequest, QueryHeight,
+    QueryConnectionRequest, QueryConsensusStateRequest, QueryHeight,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::connection::Connection;
@@ -1149,36 +1156,211 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(proof_heights)
     }
 
-    // pub fn build_multihop_proofs(&self, query_heights: &[Height]) -> Result<(), ChannelError> {
-    //     // 1. For the src_chain, query the key proof and the connection_end proof.
-    //     // 2. For the intermediate chains, query the proof of consensus state and connection_end
-    //     let channel_id = self
-    //         .a_side
-    //         .channel_id()
-    //         .ok_or(ChannelError::missing_local_channel_id())?;
+    pub fn build_multihop_proofs(
+        &self,
+        proof_heights: &[MultihopProofHeights],
+    ) -> Result<MsgMultihopProofs, ChannelError> {
+        let src_channel_id = self
+            .a_side
+            .channel_id()
+            .ok_or(ChannelError::missing_local_channel_id())?;
 
-    //     let connection_hops =
-    //         self.a_side
-    //             .connection_hops()
-    //             .ok_or(ChannelError::missing_local_connection_hops(
-    //                 channel_id.clone(),
-    //                 self.a_side.chain_id().clone(),
-    //             ))?;
+        let connection_hops =
+            self.a_side
+                .connection_hops()
+                .ok_or(ChannelError::missing_local_connection_hops(
+                    src_channel_id.clone(),
+                    self.a_side.chain_id().clone(),
+                ))?;
 
-    //     // Get access to the registry to get or spawn chain handles
-    //     let registry = get_global_registry();
+        if proof_heights.len() != connection_hops.hops.len() {
+            return Err(ChannelError::missing_multihop_proof_heights(
+                src_channel_id.clone(),
+                self.src_chain().id().clone(),
+            ));
+        }
 
-    //     // Query channel proof in src_chain
-    //     // Query connection_end in src_chain
+        let src_chain_query_height = QueryHeight::Specific(proof_heights[0].query_height());
 
-    //     // Iterate remaining hops after first hop.
-    //     // For each hop
-    //     // Query client in intermediary chain for the consensus state of previous chain + 1
-    //     // query connection_end in intermediary chain
-    //     // ..repeat
+        // Query channel proof in src_chain
+        let (src_channel, maybe_channel_proof) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: src_chain_query_height,
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-    //     todo!();
-    // }
+        let Some(channel_proof) = maybe_channel_proof else {
+            return Err(ChannelError::queried_proof_not_found());
+        };
+
+        let channel_proof_bytes =
+            CommitmentProofBytes::try_from(channel_proof).map_err(ChannelError::malformed_proof)?;
+
+        let key_path = vec![Path::ChannelEnds(ChannelEndsPath(
+            self.src_port_id().clone(),
+            src_channel_id.clone(),
+        ))
+        .to_string()];
+
+        let store_prefix = self
+            .src_chain()
+            .query_commitment_prefix()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let prefixed_key = apply_prefix(&store_prefix, key_path);
+
+        let key_proof = MultihopProof {
+            proof: channel_proof_bytes.into_bytes(),
+            value: src_channel.encode_vec(),
+            prefixed_key: Some(prefixed_key),
+        };
+
+        let src_connection_id = connection_hops
+            .hops
+            .first()
+            .ok_or(ChannelError::missing_connection_hops(
+                src_channel_id.clone(),
+                self.src_chain().id(),
+            ))?
+            .connection_id();
+
+        let (src_connection, maybe_conn_proof) = self
+            .src_chain()
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: src_connection_id.clone(),
+                    height: src_chain_query_height,
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        let Some(conn_proof) = maybe_conn_proof else {
+            return Err(ChannelError::queried_proof_not_found());
+        };
+
+        let conn_proof_bytes =
+            CommitmentProofBytes::try_from(conn_proof).map_err(ChannelError::malformed_proof)?;
+
+        // Path of connection on src_chain
+        let connection_path =
+            vec![Path::Connections(ConnectionsPath(src_connection_id.clone())).to_string()];
+
+        let prefixed_key = apply_prefix(&store_prefix, connection_path);
+
+        let src_connection_proof = MultihopProof {
+            proof: conn_proof_bytes.into_bytes(),
+            value: src_connection.encode_vec(),
+            prefixed_key: Some(prefixed_key),
+        };
+
+        let mut connection_proofs = vec![src_connection_proof];
+        let mut consensus_proofs: Vec<MultihopProof> = Vec::new();
+
+        let registry = get_global_registry();
+
+        for (proof_height, conn_hop) in proof_heights
+            .iter()
+            .skip(1)
+            .zip(connection_hops.hops.iter().skip(1))
+        {
+            let hop_src_chain = registry
+                .get_or_spawn(&conn_hop.src_chain_id.clone())
+                .map_err(ChannelError::spawn)?;
+
+            let query_height = QueryHeight::Specific(proof_height.query_height());
+
+            let (hop_connection, maybe_conn_proof) = hop_src_chain
+                .query_connection(
+                    QueryConnectionRequest {
+                        connection_id: conn_hop.connection_id().clone(),
+                        height: query_height,
+                    },
+                    IncludeProof::Yes,
+                )
+                .map_err(|e| ChannelError::query(hop_src_chain.id(), e))?;
+
+            let Some(conn_proof) = maybe_conn_proof else {
+                return Err(ChannelError::queried_proof_not_found());
+            };
+
+            let conn_proof_bytes = CommitmentProofBytes::try_from(conn_proof)
+                .map_err(ChannelError::malformed_proof)?;
+
+            // Path of connection on hop_src_chain
+            let connection_path =
+                vec![
+                    Path::Connections(ConnectionsPath(conn_hop.connection_id().clone()))
+                        .to_string(),
+                ];
+
+            let prefixed_key = apply_prefix(&store_prefix, connection_path);
+
+            let hop_connection_proof = MultihopProof {
+                proof: conn_proof_bytes.into_bytes(),
+                value: hop_connection.encode_vec(),
+                prefixed_key: Some(prefixed_key),
+            };
+
+            let desired_consensus_height = proof_height.consensus_height().ok_or(
+                ChannelError::missing_multihop_proof_heights(
+                    src_channel_id.clone(),
+                    self.src_chain().id(),
+                ),
+            )?;
+
+            let (consensus_state, maybe_consensus_state_proof) = hop_src_chain
+                .query_consensus_state(
+                    QueryConsensusStateRequest {
+                        client_id: conn_hop.connection().counterparty().client_id().clone(),
+                        consensus_height: desired_consensus_height.clone(),
+                        query_height,
+                    },
+                    IncludeProof::Yes,
+                )
+                .map_err(|e| ChannelError::query(hop_src_chain.id(), e))?;
+
+            let Some(consensus_state_proof) = maybe_consensus_state_proof else {
+                return Err(ChannelError::queried_proof_not_found());
+            };
+
+            let consensus_state_proof_bytes = CommitmentProofBytes::try_from(consensus_state_proof)
+                .map_err(ChannelError::malformed_proof)?;
+
+            // Path of consensus state on hop_src_chain
+            let consensus_state_path = vec![Path::ClientConsensusState(ClientConsensusStatePath {
+                client_id: conn_hop.connection().counterparty().client_id().clone(),
+                epoch: desired_consensus_height.revision_number(),
+                height: desired_consensus_height.revision_height(),
+            })
+            .to_string()];
+
+            let prefixed_key = apply_prefix(&store_prefix, consensus_state_path);
+
+            let hop_consensus_proof = MultihopProof {
+                proof: consensus_state_proof_bytes.into_bytes(),
+                value: consensus_state.encode_vec(),
+                prefixed_key: Some(prefixed_key),
+            };
+
+            connection_proofs.push(hop_connection_proof);
+            consensus_proofs.push(hop_consensus_proof);
+        }
+
+        connection_proofs.reverse();
+        consensus_proofs.reverse();
+        Ok(MsgMultihopProofs {
+            key_proof: Some(key_proof),
+            connection_proofs,
+            consensus_proofs,
+        })
+    }
 
     pub fn build_multihop_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must be specified
@@ -1233,10 +1415,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .query_latest_height()
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        let proofs = self
-            .src_chain()
-            .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
-            .map_err(ChannelError::channel_proof)?;
+        // let proofs = self
+        //     .src_chain()
+        //     .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
+        //     .map_err(ChannelError::channel_proof)?;
 
         // Update the clients along the channel path and store the heights necessary for querying
         // multihop proofs. 'proof_heights' contains the height at which proofs should be queried,
@@ -1246,6 +1428,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // for height 'query_height + 1'.
         let proof_heights = self.update_channel_path_clients()?;
 
+        // Get the multihop proof heights for the chain from which the last hop originates, i.e,
+        // the penultimate chain in the channel path.
         let last_hop_heights =
             proof_heights
                 .last()
@@ -1255,10 +1439,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 ))?;
 
         // Build the message to update the client on the channel path's destination. The client
-        // update height is equal to the penultimate chain's `query_height` + 1.
+        // update height must greater than the height at which the proofs will be queried at the
+        // penultimate chain, therefore the target update height is equal to the penultimate chain's
+        // `query_height` + 1.
         let mut msgs =
             self.build_update_client_on_last_hop(last_hop_heights.query_height().increment())?;
 
+        let multihop_proofs = self.build_multihop_proofs(&proof_heights)?;
+
+        let multihop_proof_bytes = prost::Message::encode_to_vec(&multihop_proofs);
+
+        // let multihop_proof_bytes = prost::Message::encode_to_vec(multihop_proofs).unwrap();
         // --------- IN PROGRESS BELOW --------- //
 
         let counterparty =
@@ -1266,6 +1457,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Reuse the version that was either set on ChanOpenInit or overwritten by the application.
         let version = src_channel.version().clone();
+
+        let proofs = ibc_relayer_types::proofs::Proofs::new(
+            CommitmentProofBytes::try_from(multihop_proof_bytes).unwrap(),
+            None,
+            None,
+            None,
+            None,
+            // proof_heights[0].query_height().increment(),
+            last_hop_heights.query_height(),
+        )
+        .unwrap(); // FIXME
+
+        println!("\n\n\n {:?} \n\n\n", proofs);
 
         let channel = ChannelEnd::new(
             State::TryOpen,

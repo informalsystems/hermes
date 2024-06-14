@@ -119,7 +119,7 @@ impl ConsensusProof {
 
 #[derive(Clone, Debug, Copy, PartialEq, Eq)]
 // This struct stores the heights necessary for querying multihop channel proofs.
-// The first/sending chain in a channel path has no preceeding chain and need not be queried
+// The first/sending chain in a channel path has no preceding chain and need not be queried
 // to check if it stores a consensus state for a previous chain. Hence, 'consensus_height` is
 // an optional field.
 pub struct MultihopProofHeights {
