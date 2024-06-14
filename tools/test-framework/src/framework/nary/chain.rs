@@ -11,7 +11,7 @@ use crate::bootstrap::nary::chain::{
 };
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::RelayerConfigOverride;
+use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest};
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
@@ -48,7 +48,8 @@ where
         + NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
-        + SupervisorOverride,
+        + SupervisorOverride
+        + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunWithSupervisor::new(test)))
 }
@@ -77,7 +78,8 @@ where
         + NodeConfigOverride
         + NodeGenesisOverride
         + RelayerConfigOverride
-        + SupervisorOverride,
+        + SupervisorOverride
+        + TopologyOverride,
 {
     run_nary_node_test(&RunSelfConnectedNaryChainTest::new(
         &RunWithSupervisor::new(test),
@@ -125,12 +127,17 @@ impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<SIZE> for RunNaryChain
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride,
+    Overrides: RelayerConfigOverride + TopologyOverride,
 {
     fn run(&self, config: &TestConfig, nodes: [FullNode; SIZE]) -> Result<(), Error> {
-        let (relayer, chains) = boostrap_chains_with_nodes(config, nodes, |config| {
-            self.test.get_overrides().modify_relayer_config(config);
-        })?;
+        let (relayer, chains) = boostrap_chains_with_nodes(
+            config,
+            nodes,
+            self.test.get_overrides().topology(),
+            |config| {
+                self.test.get_overrides().modify_relayer_config(config);
+            },
+        )?;
 
         let env_path = config.chain_store_dir.join("nary-chains.env");
 
@@ -155,13 +162,17 @@ impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<1>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: RelayerConfigOverride,
+    Overrides: RelayerConfigOverride + TopologyOverride,
 {
     fn run(&self, config: &TestConfig, nodes: [FullNode; 1]) -> Result<(), Error> {
-        let (relayer, chains) =
-            boostrap_chains_with_self_connected_node(config, nodes[0].clone(), |config| {
+        let (relayer, chains) = boostrap_chains_with_self_connected_node(
+            config,
+            nodes[0].clone(),
+            self.test.get_overrides().topology(),
+            |config| {
                 self.test.get_overrides().modify_relayer_config(config);
-            })?;
+            },
+        )?;
 
         let env_path = config.chain_store_dir.join("nary-chains.env");
 
