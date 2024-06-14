@@ -3403,6 +3403,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.8",
  "subtle-encoding",
+ "tendermint",
  "tendermint-rpc",
  "tokio",
  "toml 0.8.13",

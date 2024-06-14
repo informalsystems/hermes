@@ -20,6 +20,7 @@ ibc-relayer-cli   = { workspace = true }
 ibc-proto         = { workspace = true, features = ["serde"] }
 namada_ibc        = { workspace = true }
 namada_sdk        = { workspace = true }
+tendermint        = { workspace = true }
 tendermint-rpc    = { workspace = true, features = ["http-client", "websocket-client"] }
 
 color-eyre         = { workspace = true }

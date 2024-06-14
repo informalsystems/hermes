@@ -106,6 +106,8 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
                 &token.value().amount.to_string(),
                 &channel_id.to_string(),
                 &self.value().rpc_port.to_string(),
+                None,
+                None,
             ),
             _ => {
                 let rpc_client = self.rpc_client()?;
@@ -134,18 +136,38 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         memo: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<(), Error> {
-        let rpc_client = self.rpc_client()?;
-        self.value().runtime.block_on(ibc_token_transfer(
-            rpc_client.as_ref(),
-            &self.tx_config(),
-            port_id,
-            channel_id,
-            sender,
-            recipient,
-            token,
-            memo,
-            timeout,
-        ))
+        match self.value().chain_type {
+            ChainType::Namada => {
+                let denom = token.value().denom.to_string();
+                let amount = token.value().amount.to_string();
+                let rpc_port = self.value().rpc_port.to_string();
+                ibc_namada_token_transfer(
+                    &self.value().home_path,
+                    &sender.value().id.to_string(),
+                    recipient.value().as_str(),
+                    &denom,
+                    &amount,
+                    channel_id.value().as_ref(),
+                    &rpc_port,
+                    memo,
+                    timeout,
+                )
+            }
+            _ => {
+                let rpc_client = self.rpc_client()?;
+                self.value().runtime.block_on(ibc_token_transfer(
+                    rpc_client.as_ref(),
+                    &self.tx_config(),
+                    port_id,
+                    channel_id,
+                    sender,
+                    recipient,
+                    token,
+                    memo,
+                    timeout,
+                ))
+            }
+        }
     }
 
     fn ibc_transfer_token_multiple<Counterparty>(
@@ -158,7 +180,6 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         num_msgs: usize,
         memo: Option<String>,
     ) -> Result<(), Error> {
-        let rpc_client = self.rpc_client()?;
         match self.value().chain_type {
             ChainType::Namada => {
                 let denom = token.value().denom.to_string();
@@ -174,21 +195,26 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
                         &amount,
                         &channel_id.to_string(),
                         &rpc_port,
+                        memo.clone(),
+                        None,
                     )?;
                 }
                 Ok(())
             }
-            _ => self.value().runtime.block_on(batched_ibc_token_transfer(
-                rpc_client.as_ref(),
-                &self.tx_config(),
-                port_id,
-                channel_id,
-                sender,
-                recipient,
-                token,
-                num_msgs,
-                memo,
-            )),
+            _ => {
+                let rpc_client = self.rpc_client()?;
+                self.value().runtime.block_on(batched_ibc_token_transfer(
+                    rpc_client.as_ref(),
+                    &self.tx_config(),
+                    port_id,
+                    channel_id,
+                    sender,
+                    recipient,
+                    token,
+                    num_msgs,
+                    memo,
+                ))
+            }
         }
     }
 
@@ -207,7 +233,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
                 local_namada_token_transfer(
                     &driver.home_path,
                     &sender.value().id.to_string(),
-                    &recipient.value().as_str(),
+                    recipient.value().as_str(),
                     &denom,
                     &amount,
                     &rpc_port,
@@ -249,6 +275,8 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
                     &amount,
                     channel.as_ref(),
                     &rpc_port,
+                    None,
+                    None,
                 )
             }
             _ => {

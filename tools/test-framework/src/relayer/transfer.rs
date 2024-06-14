@@ -7,6 +7,7 @@ use core::ops::Add;
 use core::time::Duration;
 use eyre::eyre;
 use ibc_relayer_types::events::IbcEvent;
+use std::io::Write;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::batched_send_tx;
@@ -170,31 +171,49 @@ pub fn ibc_namada_token_transfer(
     amount: &str,
     channel_id: &str,
     rpc_port: &str,
+    memo: Option<String>,
+    timeout: Option<Duration>,
 ) -> Result<(), Error> {
-    simple_exec(
-        "namada transfer",
-        "namadac",
-        &[
-            //"client",
-            "--base-dir",
-            home_path,
-            "ibc-transfer",
-            "--source",
-            sender,
-            "--receiver",
-            receiver,
-            "--token",
-            denom,
-            "--amount",
-            amount,
-            "--signing-keys",
-            &format!("{sender}-key"),
-            "--channel-id",
-            channel_id,
-            "--node",
-            &format!("http://127.0.0.1:{rpc_port}"),
-        ],
-    )?;
+    let signing_key = format!("{sender}-key");
+    let node = format!("http://127.0.0.1:{rpc_port}");
+    let mut args = vec![
+        "--base-dir",
+        home_path,
+        "ibc-transfer",
+        "--source",
+        sender,
+        "--receiver",
+        receiver,
+        "--token",
+        denom,
+        "--amount",
+        amount,
+        "--signing-keys",
+        &signing_key,
+        "--channel-id",
+        channel_id,
+        "--node",
+        &node,
+    ];
+
+    let path = format!("{home_path}/memo.txt");
+    if let Some(memo) = memo {
+        let mut memo_file = std::fs::File::create(&path).expect("Creating a memo file failed");
+        memo_file
+            .write_all(memo.as_bytes())
+            .expect("Writing memo failed");
+        args.push("--memo-path");
+        args.push(&path);
+    }
+
+    let timeout_str;
+    if let Some(timeout) = timeout {
+        args.push("--timeout-sec-offset");
+        timeout_str = timeout.as_secs().to_string();
+        args.push(&timeout_str);
+    }
+
+    simple_exec("namada transfer", "namadac", &args)?;
 
     Ok(())
 }

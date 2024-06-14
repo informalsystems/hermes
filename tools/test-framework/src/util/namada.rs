@@ -1,13 +1,18 @@
 use ibc_proto::Protobuf;
 use ibc_relayer::consensus_state::{AnyConsensusState, AnyConsensusStateWithHeight};
-use ibc_relayer_types::core::ics24_host::identifier::ClientId;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, PortId};
+use ibc_relayer_types::events::IbcEventType;
 use ibc_relayer_types::Height;
+use itertools::Itertools;
 use namada_ibc::storage::{consensus_height, consensus_state_prefix};
+use namada_sdk::events::extend::Height as HeightAttr;
 use namada_sdk::queries::RPC;
 use namada_sdk::storage::{Key, PrefixValue};
+use namada_sdk::tx::Tx;
 use std::fs::File;
 use std::io::Read;
-use tendermint_rpc::{HttpClient, Url};
+use tendermint_rpc::{Client, HttpClient, Url};
 use toml::Value;
 
 use crate::prelude::*;
@@ -51,7 +56,7 @@ pub async fn query_consensus_states(
         .expect("Client ID conversion shouldn't fail");
     let prefix = consensus_state_prefix(&client_id);
     let mut states = vec![];
-    for PrefixValue { key, value } in query_ibc_prefix(rpc_address, &prefix).await? {
+    for PrefixValue { key, value } in query_prefix(rpc_address, &prefix).await? {
         let height = consensus_height(&key).expect("Key should have the height");
         let state = AnyConsensusStateWithHeight {
             height: Height::new(height.revision_number(), height.revision_height()).unwrap(),
@@ -63,12 +68,107 @@ pub async fn query_consensus_states(
     Ok(states)
 }
 
-async fn query_ibc_prefix(rpc_address: Url, prefix: &Key) -> Result<Vec<PrefixValue>, Error> {
+async fn query_prefix(rpc_address: Url, prefix: &Key) -> Result<Vec<PrefixValue>, Error> {
     let client = HttpClient::new(rpc_address).expect("Failed to make a RPC client");
     let response = RPC
         .shell()
-        .storage_prefix(&client, None, None, false, &prefix)
+        .storage_prefix(&client, None, None, false, prefix)
         .await
         .map_err(|e| eyre!("Namada query with prefix failed: {e}"))?;
     Ok(response.data)
+}
+
+pub async fn query_receive_tx_memo(
+    rpc_address: Url,
+    src_port_id: &PortId,
+    src_channel_id: &ChannelId,
+    dst_port_id: &PortId,
+    dst_channel_id: &ChannelId,
+    sequence: Sequence,
+) -> Result<String, Error> {
+    let client = HttpClient::new(rpc_address).expect("Failed to make a RPC client");
+    let height = query_write_ack_packet_height(
+        &client,
+        src_port_id,
+        src_channel_id,
+        dst_port_id,
+        dst_channel_id,
+        sequence,
+    )
+    .await?;
+
+    let response = client
+        .block(height)
+        .await
+        .map_err(|e| eyre!("Query a block failed: {e}"))?;
+    let memo: Vec<String> = response
+        .block
+        .data
+        .iter()
+        .flat_map(|tx_bytes| {
+            let tx = Tx::try_from(&tx_bytes[..])
+                .map_err(|e| e.to_string())
+                .expect("Decoding tx failed");
+            let memo: Vec<String> = tx
+                .header()
+                .batch
+                .iter()
+                .filter_map(|cmt| {
+                    tx.memo(cmt)
+                        .map(|memo_bytes| String::from_utf8_lossy(&memo_bytes).to_string())
+                })
+                .collect();
+            memo
+        })
+        .collect();
+
+    // All memo should be the same for now
+    assert!(memo.iter().all_equal());
+
+    let memo = memo.first().ok_or_else(|| eyre!("No memo field"))?;
+    Ok(memo.to_string())
+}
+
+async fn query_write_ack_packet_height(
+    client: &HttpClient,
+    src_port_id: &PortId,
+    src_channel_id: &ChannelId,
+    dst_port_id: &PortId,
+    dst_channel_id: &ChannelId,
+    sequence: Sequence,
+) -> Result<Height, Error> {
+    let event = RPC
+        .shell()
+        .ibc_packet(
+            client,
+            &IbcEventType::WriteAck
+                .as_str()
+                .parse()
+                .expect("IbcEventType should be parsable"),
+            &src_port_id
+                .as_str()
+                .parse()
+                .expect("PortId should be parsable"),
+            &src_channel_id
+                .as_str()
+                .parse()
+                .expect("ChannelId should be parsable"),
+            &dst_port_id
+                .as_str()
+                .parse()
+                .expect("PortId should be parsable"),
+            &dst_channel_id
+                .as_str()
+                .parse()
+                .expect("ChannelId should be parsable"),
+            &u64::from(sequence).into(),
+        )
+        .await
+        .map_err(|e| eyre!("Namada packet query failed: {e}"))?
+        .ok_or_else(|| eyre!("No write ack event"))?;
+    let height = event
+        .read_attribute::<HeightAttr>()
+        .expect("Height should exist");
+
+    Ok(Height::new(0, height.0).expect("Height conversion shouldn't fail"))
 }
