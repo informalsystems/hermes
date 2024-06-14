@@ -144,7 +144,7 @@ pub fn local_namada_token_transfer(
         &[
             "--base-dir",
             home_path,
-            "transfer",
+            "transparent-transfer",
             "--source",
             sender,
             "--target",

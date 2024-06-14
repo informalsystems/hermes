@@ -2740,7 +2740,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-chain-registry"
-version = "0.27.2"
+version = "0.28.0"
 dependencies = [
  "async-trait",
  "flex-error",
@@ -3129,7 +3129,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-integration-test"
-version = "0.27.2"
+version = "0.28.0"
 dependencies = [
  "byte-unit",
  "http 0.2.12",
@@ -3190,7 +3190,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.27.2"
+version = "0.28.0"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -3264,7 +3264,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "1.8.2"
+version = "1.9.0"
 dependencies = [
  "abscissa_core",
  "clap",
@@ -3305,7 +3305,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.27.2"
+version = "0.28.0"
 dependencies = [
  "axum",
  "crossbeam-channel",
@@ -3321,7 +3321,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-types"
-version = "0.27.2"
+version = "0.28.0"
 dependencies = [
  "bytes",
  "derive_more",
@@ -3352,7 +3352,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.27.2"
+version = "0.28.0"
 dependencies = [
  "axum",
  "dashmap",
@@ -3371,7 +3371,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-test-framework"
-version = "0.27.2"
+version = "0.28.0"
 dependencies = [
  "color-eyre",
  "crossbeam-channel",
@@ -3385,6 +3385,8 @@ dependencies = [
  "ibc-relayer-cli",
  "ibc-relayer-types",
  "itertools 0.12.1",
+ "namada_ibc",
+ "namada_sdk",
  "once_cell",
  "prost",
  "rand 0.8.5",
@@ -3394,6 +3396,7 @@ dependencies = [
  "serde_yaml",
  "sha2 0.10.8",
  "subtle-encoding",
+ "tendermint",
  "tendermint-rpc",
  "tokio",
  "toml 0.8.12",
