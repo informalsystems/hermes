@@ -55,7 +55,7 @@ color-eyre               = "0.6"
 console                  = "0.15.5"
 crossbeam-channel        = "0.5.12"
 dashmap                  = "5.4.0"
-derive_more              = { version = "0.99.17", default-features = false }
+derive_more              = { version = "0.99.18", default-features = false }
 dialoguer                = "0.11.0"
 digest                   = "0.10.6"
 dirs-next                = "2.0.0"
