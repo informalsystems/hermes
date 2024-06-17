@@ -1319,7 +1319,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .query_consensus_state(
                     QueryConsensusStateRequest {
                         client_id: conn_hop.connection().counterparty().client_id().clone(),
-                        consensus_height: desired_consensus_height.clone(),
+                        consensus_height: *desired_consensus_height,
                         query_height,
                     },
                     IncludeProof::Yes,
@@ -1355,6 +1355,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         connection_proofs.reverse();
         consensus_proofs.reverse();
+
         Ok(MsgMultihopProofs {
             key_proof: Some(key_proof),
             connection_proofs,
@@ -1410,16 +1411,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
-        let query_height = self
-            .src_chain()
-            .query_latest_height()
-            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
-
-        // let proofs = self
-        //     .src_chain()
-        //     .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
-        //     .map_err(ChannelError::channel_proof)?;
-
         // Update the clients along the channel path and store the heights necessary for querying
         // multihop proofs. 'proof_heights' contains the height at which proofs should be queried,
         // ordered from the sending chain to the penultimate chain in the channel path. In order to
@@ -1449,9 +1440,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         let multihop_proof_bytes = prost::Message::encode_to_vec(&multihop_proofs);
 
-        // let multihop_proof_bytes = prost::Message::encode_to_vec(multihop_proofs).unwrap();
-        // --------- IN PROGRESS BELOW --------- //
-
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
@@ -1465,17 +1453,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             None,
             None,
             // proof_heights[0].query_height().increment(),
-            last_hop_heights.query_height(),
+            last_hop_heights.query_height().increment(),
         )
         .unwrap(); // FIXME
-
-        println!("\n\n\n {:?} \n\n\n", proofs);
 
         let channel = ChannelEnd::new(
             State::TryOpen,
             *src_channel.ordering(),
             counterparty,
-            vec![self.dst_connection_id().clone()],
+            self.b_side
+                .connection_hops
+                .as_ref()
+                .map(|hops| hops.connection_ids())
+                .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
             version,
             0,
         );
