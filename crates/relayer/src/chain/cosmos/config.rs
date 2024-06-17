@@ -150,6 +150,9 @@ pub struct CosmosSdkConfig {
     pub clear_interval: Option<u64>,
     #[serde(default)]
     pub excluded_sequences: BTreeMap<ChannelId, Vec<Sequence>>,
+
+    #[serde(default = "default::allow_ccq")]
+    pub allow_ccq: bool,
 }
 
 impl CosmosSdkConfig {

@@ -246,6 +246,10 @@ pub mod default {
     pub fn ics20_max_receiver_size() -> Ics20FieldSizeLimit {
         Ics20FieldSizeLimit::new(true, Byte::from_bytes(2048))
     }
+
+    pub fn allow_ccq() -> bool {
+        true
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]

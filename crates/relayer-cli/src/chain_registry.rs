@@ -168,6 +168,7 @@ where
         compat_mode: None,
         clear_interval: None,
         excluded_sequences: BTreeMap::new(),
+        allow_ccq: true,
     }))
 }
 
