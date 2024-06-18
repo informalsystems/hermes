@@ -56,6 +56,9 @@ define_error! {
         MissingCounterpartyConnection
             |_| { "failed due to missing counterparty connection" },
 
+        MissingCounterpartyConnectionId
+            |_| { "failed due to missing counterparty connection" },
+
         MissingChannelOnDestination
             |_| { "missing channel on destination chain" },
 
@@ -251,7 +254,8 @@ define_error! {
             chain_id: ChainId,
         }
         | e | {
-            format_args!("missing proof heights for the channel '{}'s path on chain '{}'", e.channel_id, e.chain_id)
+            format_args!("missing proof heights on the path for channel '{}' on chain '{}'",
+            e.channel_id, e.chain_id)
         },
     }
 }

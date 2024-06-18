@@ -125,10 +125,10 @@ impl ConsensusProof {
 pub struct MultihopProofHeights {
     // This is the height at which the proof(s) should be queried. Different chains along the
     // channel path require different types of proofs, all of which must be queried at this height.
-    query_height: Height,
+    pub query_height: Height,
     // If a consensus state proof needs to be queried, it should be queried at 'proof_height'
     // and needs to prove the existence of the consensus state for height 'consensus_height'.
-    consensus_height: Option<Height>,
+    pub consensus_height: Option<Height>,
 }
 
 impl MultihopProofHeights {
@@ -137,13 +137,5 @@ impl MultihopProofHeights {
             query_height,
             consensus_height,
         }
-    }
-
-    pub fn query_height(&self) -> Height {
-        self.query_height
-    }
-
-    pub fn consensus_height(&self) -> Option<&Height> {
-        self.consensus_height.as_ref()
     }
 }
