@@ -7,7 +7,7 @@ use crate::error::Error;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
-use crate::util::array::{into_nested_vec, try_into_nested_array};
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
    A [`ForeignClient`] that is tagged by a `Handle: ChainHandle` and
@@ -21,7 +21,7 @@ pub type NthForeignClientPair<Handle, const DST: usize, const SRC: usize> =
 
 #[derive(Clone)]
 pub struct ForeignClientPairs<Handle: ChainHandle, const SIZE: usize> {
-    foreign_clients: [[ForeignClient<Handle, Handle>; SIZE]; SIZE],
+    foreign_clients: TwoDimMap<ForeignClient<Handle, Handle>>,
 }
 
 impl<Handle: ChainHandle, const SIZE: usize> ForeignClientPairs<Handle, SIZE> {
@@ -33,19 +33,15 @@ impl<Handle: ChainHandle, const SIZE: usize> ForeignClientPairs<Handle, SIZE> {
     pub fn foreign_client_at<const SRC: usize, const DEST: usize>(
         &self,
     ) -> Result<NthForeignClient<Handle, DEST, SRC>, Error> {
-        if SRC >= SIZE || DEST >= SIZE {
-            Err(Error::generic(eyre!(
-                "cannot get foreign client beyond position {}/{}",
-                SRC,
-                DEST
-            )))
-        } else {
-            let client = self.foreign_clients[SRC][DEST]
-                .clone()
-                .map_chain(MonoTagged::new, MonoTagged::new);
-
-            Ok(client)
-        }
+        let client = self
+            .foreign_clients
+            .get((SRC, DEST))
+            .ok_or_else(|| {
+                Error::generic(eyre!("No client entry found for chain `{SRC}` to `{DEST}`"))
+            })?
+            .clone()
+            .map_chain(MonoTagged::new, MonoTagged::new);
+        Ok(client)
     }
 
     pub fn foreign_client_pair_at<const CHAIN_A: usize, const CHAIN_B: usize>(
@@ -57,31 +53,29 @@ impl<Handle: ChainHandle, const SIZE: usize> ForeignClientPairs<Handle, SIZE> {
         Ok(ForeignClientPair::new(client_a_to_b, client_b_to_a))
     }
 
-    pub fn into_nested_vec(self) -> Vec<Vec<ForeignClient<Handle, Handle>>> {
-        into_nested_vec(self.foreign_clients)
+    pub fn into_nested_vec(self) -> TwoDimMap<ForeignClient<Handle, Handle>> {
+        self.foreign_clients
     }
 }
 
-impl<Handle: ChainHandle, const SIZE: usize> TryFrom<Vec<Vec<ForeignClient<Handle, Handle>>>>
+impl<Handle: ChainHandle, const SIZE: usize> TryFrom<TwoDimMap<ForeignClient<Handle, Handle>>>
     for ForeignClientPairs<Handle, SIZE>
 {
     type Error = Error;
 
-    fn try_from(clients: Vec<Vec<ForeignClient<Handle, Handle>>>) -> Result<Self, Error> {
-        let foreign_clients = try_into_nested_array(clients)?;
+    fn try_from(clients: TwoDimMap<ForeignClient<Handle, Handle>>) -> Result<Self, Error> {
+        let foreign_clients = clients;
         Ok(Self { foreign_clients })
     }
 }
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ForeignClientPairs<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for (source, inner_clients) in self.foreign_clients.iter().enumerate() {
-            for (destination, client) in inner_clients.iter().enumerate() {
-                writer.write_env(
-                    &format!("CLIENT_ID_{source}_to_{destination}"),
-                    &format!("{}", client.id()),
-                );
-            }
+        for (src_chain, dst_chain, client) in self.foreign_clients.iter() {
+            writer.write_env(
+                &format!("CLIENT_ID_{}_to_{}", src_chain, dst_chain),
+                &format!("{}", client.id()),
+            );
         }
     }
 }

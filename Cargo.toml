@@ -55,7 +55,7 @@ color-eyre               = "0.6"
 console                  = "0.15.5"
 crossbeam-channel        = "0.5.12"
 dashmap                  = "5.4.0"
-derive_more              = { version = "0.99.17", default-features = false }
+derive_more              = { version = "0.99.18", default-features = false }
 dialoguer                = "0.11.0"
 digest                   = "0.10.6"
 dirs-next                = "2.0.0"
@@ -86,7 +86,7 @@ primitive-types          = { version = "0.12.1", default-features = false }
 prometheus               = "0.13.4"
 prost                    = "0.12"
 rand                     = "0.8.5"
-regex                    = "1.10.4"
+regex                    = "1.10.5"
 reqwest                  = { version = "0.11.27", default-features = false }
 retry                    = { version = "2.0.0", default-features = false }
 ripemd                   = "0.1.3"

@@ -10,7 +10,7 @@ use tracing::info;
 use crate::bootstrap::nary::connection::bootstrap_connections;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::RelayerConfigOverride;
+use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
 use crate::framework::binary::connection::{BinaryConnectionTest, ConnectionDelayOverride};
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::chain::{NaryChainTest, RunNaryChainTest};
@@ -34,7 +34,8 @@ where
         + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
-        + ConnectionDelayOverride,
+        + ConnectionDelayOverride
+        + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunNaryConnectionTest::new(
         &RunWithSupervisor::new(test),
