@@ -384,11 +384,12 @@ pub(crate) mod port {
         }
 
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-            if v.contains('*') {
-                let wildcard = v.parse().map_err(E::custom)?;
+            let trimmed_v = v.trim();
+            if trimmed_v.contains('*') {
+                let wildcard = trimmed_v.parse().map_err(E::custom)?;
                 Ok(PortFilterMatch::Wildcard(wildcard))
             } else {
-                let port_id = PortId::from_str(v.trim()).map_err(E::custom)?;
+                let port_id = PortId::from_str(trimmed_v).map_err(E::custom)?;
                 Ok(PortFilterMatch::Exact(port_id))
             }
         }
@@ -412,11 +413,12 @@ pub(crate) mod channel {
         }
 
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-            if v.contains('*') {
-                let wildcard = v.parse().map_err(E::custom)?;
+            let trimmed_v = v.trim();
+            if trimmed_v.contains('*') {
+                let wildcard = trimmed_v.parse().map_err(E::custom)?;
                 Ok(ChannelFilterMatch::Wildcard(wildcard))
             } else {
-                let channel_id = ChannelId::from_str(v.trim()).map_err(E::custom)?;
+                let channel_id = ChannelId::from_str(trimmed_v.trim()).map_err(E::custom)?;
                 Ok(ChannelFilterMatch::Exact(channel_id))
             }
         }
