@@ -8,8 +8,6 @@
 //!   `MsgTransfer` is not authorized and that the chain's `tx authz exec`
 //!   command fails.
 
-use std::thread;
-
 use ibc_test_framework::chain::ext::authz::AuthzMethodsExt;
 use ibc_test_framework::prelude::*;
 
@@ -91,8 +89,6 @@ impl BinaryChannelTest for AuthzTest {
             &denom_a.with_amount(a_to_b_amount).as_ref(),
             &fees,
         )?;
-
-        thread::sleep(Duration::from_secs(10));
 
         // Assert that user on chain B received the tokens
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
@@ -185,8 +181,6 @@ impl BinaryChannelTest for NoAuthzTest {
                 .is_err(),
             "expected authz grant exec to fail"
         );
-
-        thread::sleep(Duration::from_secs(10));
 
         // Assert that user on chain B has not received tokens
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
