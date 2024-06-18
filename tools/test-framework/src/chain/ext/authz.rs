@@ -9,7 +9,13 @@ use super::bootstrap::ChainBootstrapMethodsExt;
 const WAIT_GRANT_ATTEMPTS: u16 = 5;
 
 pub trait AuthzMethodsExt<Chain> {
-    fn authz_grant(&self, granter: &str, grantee: &str, msg_type: &str) -> Result<(), Error>;
+    fn authz_grant(
+        &self,
+        granter: &str,
+        grantee: &str,
+        msg_type: &str,
+        fees: &str,
+    ) -> Result<(), Error>;
 
     fn assert_eventual_grant(
         &self,
@@ -26,11 +32,18 @@ pub trait AuthzMethodsExt<Chain> {
         channel: &ChannelId,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+        fees: &str,
     ) -> Result<(), Error>;
 }
 
 impl<'a, Chain: Send> AuthzMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
-    fn authz_grant(&self, granter: &str, grantee: &str, msg_type: &str) -> Result<(), Error> {
+    fn authz_grant(
+        &self,
+        granter: &str,
+        grantee: &str,
+        msg_type: &str,
+        fees: &str,
+    ) -> Result<(), Error> {
         authz_grant(
             self.value().chain_id.as_str(),
             &self.value().command_path,
@@ -39,6 +52,7 @@ impl<'a, Chain: Send> AuthzMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriv
             granter,
             grantee,
             msg_type,
+            fees,
         )
     }
 
@@ -76,6 +90,7 @@ impl<'a, Chain: Send> AuthzMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriv
         channel: &ChannelId,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+        fees: &str,
     ) -> Result<(), Error> {
         let ibc_transfer_tx = generate_transfer_from_chain_tx(
             self.value().chain_id.as_str(),
@@ -101,6 +116,7 @@ impl<'a, Chain: Send> AuthzMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriv
             &self.value().rpc_listen_address(),
             &format!("{}/{ibc_transfer_tx_filename}", self.value().home_path),
             grantee,
+            fees,
         )?;
 
         Ok(())

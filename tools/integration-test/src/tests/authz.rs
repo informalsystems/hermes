@@ -30,12 +30,14 @@ impl TestOverrides for AuthzTest {}
 impl BinaryChannelTest for AuthzTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(&config.native_tokens[0]));
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
         let a_to_b_amount = 12345u64;
@@ -54,10 +56,13 @@ impl BinaryChannelTest for AuthzTest {
             .value()
             .to_string();
 
+        let fees = fee_denom_a.with_amount(390000000u64).to_string();
+
         chains.node_a.chain_driver().authz_grant(
             &granter,
             &grantee,
             "/ibc.applications.transfer.v1.MsgTransfer",
+            &fees,
         )?;
 
         chains.node_a.chain_driver().assert_eventual_grant(
@@ -84,6 +89,7 @@ impl BinaryChannelTest for AuthzTest {
             channels.channel_id_a.value(),
             &wallet_b.address(),
             &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &fees,
         )?;
 
         thread::sleep(Duration::from_secs(10));
@@ -111,12 +117,14 @@ impl TestOverrides for NoAuthzTest {}
 impl BinaryChannelTest for NoAuthzTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(&config.native_tokens[0]));
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
         let a_to_b_amount = 12345u64;
@@ -159,6 +167,8 @@ impl BinaryChannelTest for NoAuthzTest {
             .chain_driver()
             .query_balance(&chains.node_a.wallets().user2().address(), &denom_a)?;
 
+        let fees = fee_denom_a.with_amount(390000000u64).to_string();
+
         assert!(
             chains
                 .node_a
@@ -170,6 +180,7 @@ impl BinaryChannelTest for NoAuthzTest {
                     channels.channel_id_a.value(),
                     &wallet_b.address(),
                     &denom_a.with_amount(a_to_b_amount).as_ref(),
+                    &fees,
                 )
                 .is_err(),
             "expected authz grant exec to fail"

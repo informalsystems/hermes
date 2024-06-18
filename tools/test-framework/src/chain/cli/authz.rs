@@ -14,6 +14,7 @@ pub fn authz_grant(
     granter: &str,
     grantee: &str,
     msg_type: &str,
+    fees: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -36,6 +37,8 @@ pub fn authz_grant(
             msg_type,
             "--from",
             granter,
+            "--fees",
+            fees,
             "--yes",
             "--log_format=json",
         ],
@@ -82,6 +85,7 @@ pub fn exec_grant(
     rpc_listen_address: &str,
     ibc_transfer_tx: &str,
     grantee: &str,
+    fees: &str,
 ) -> Result<(), Error> {
     let grant_exec_output = simple_exec(
         chain_id,
@@ -101,6 +105,8 @@ pub fn exec_grant(
             ibc_transfer_tx,
             "--from",
             grantee,
+            "--fees",
+            fees,
             "--yes",
             "--output",
             "json",
@@ -142,11 +148,17 @@ pub fn exec_grant(
         .get("raw_log")
         .ok_or_else(|| eyre!("expect `raw_log` string field to be present in json result"))?
         .as_str()
-        .ok_or_else(|| eyre!("expected `raw_log` to be an array"))?;
+        .ok_or_else(|| eyre!("expected `raw_log` to be a string"))?;
 
-    if !raw_log.is_empty() {
+    let code = json_res
+        .get("code")
+        .ok_or_else(|| eyre!("expect `code` string field to be present in json result"))?
+        .as_u64()
+        .ok_or_else(|| eyre!("expected `code` to be a u64"))?;
+
+    if !raw_log.is_empty() && code != 0 {
         return Err(Error::generic(eyre!(
-            "expected authz exec to succeed but failed with logs: {raw_log}"
+            "expected authz exec to succeed but failed with code: {code} and logs: {raw_log}"
         )));
     }
     Ok(())
