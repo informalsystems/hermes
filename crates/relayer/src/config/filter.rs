@@ -384,11 +384,12 @@ pub(crate) mod port {
         }
 
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-            if let Ok(port_id) = PortId::from_str(v) {
-                Ok(PortFilterMatch::Exact(port_id))
-            } else {
+            if v.contains('*') {
                 let wildcard = v.parse().map_err(E::custom)?;
                 Ok(PortFilterMatch::Wildcard(wildcard))
+            } else {
+                let port_id = PortId::from_str(v.trim()).map_err(E::custom)?;
+                Ok(PortFilterMatch::Exact(port_id))
             }
         }
 
@@ -411,11 +412,12 @@ pub(crate) mod channel {
         }
 
         fn visit_str<E: de::Error>(self, v: &str) -> Result<Self::Value, E> {
-            if let Ok(channel_id) = ChannelId::from_str(v) {
-                Ok(ChannelFilterMatch::Exact(channel_id))
-            } else {
+            if v.contains('*') {
                 let wildcard = v.parse().map_err(E::custom)?;
                 Ok(ChannelFilterMatch::Wildcard(wildcard))
+            } else {
+                let channel_id = ChannelId::from_str(v.trim()).map_err(E::custom)?;
+                Ok(ChannelFilterMatch::Exact(channel_id))
             }
         }
 
@@ -601,5 +603,22 @@ mod tests {
     fn to_string_wildcards() {
         let wildcard = "ica*".parse::<Wildcard>().unwrap();
         assert_eq!(wildcard.to_string(), "ica*".to_string());
+    }
+
+    #[test]
+    fn test_exact_matches() {
+        let allow_policy = r#"
+            policy = "allow"
+            list = [
+                [ "transfer", "channel-88", ], # Standard exact match
+                [ "transfer", "channel-476 ", ], # Whitespace abstraction
+            ]
+            "#;
+
+        let pf: ChannelPolicy =
+            toml::from_str(allow_policy).expect("could not parse filter policy");
+
+        let assert_allow = matches!(pf, ChannelPolicy::Allow(filters) if filters.is_exact());
+        assert!(assert_allow);
     }
 }
