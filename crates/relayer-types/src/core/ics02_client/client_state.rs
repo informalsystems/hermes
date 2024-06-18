@@ -6,10 +6,7 @@ use crate::core::ics24_host::identifier::ChainId;
 
 use crate::Height;
 
-pub trait ClientState: Clone + Debug + Send + Sync // Any: From<Self>,
-{
-    type UpgradeOptions;
-
+pub trait ClientState: Clone + Debug + Send + Sync {
     /// Return the chain identifier which this client is serving (i.e., the client is verifying
     /// consensus states from this chain).
     fn chain_id(&self) -> ChainId;
@@ -31,6 +28,10 @@ pub trait ClientState: Clone + Debug + Send + Sync // Any: From<Self>,
     /// Check if the state is expired when `elapsed` time has passed since the latest consensus
     /// state timestamp
     fn expired(&self, elapsed: Duration) -> bool;
+}
+
+pub trait UpgradableClientState: ClientState {
+    type UpgradeOptions;
 
     /// Helper function to verify the upgrade client procedure.
     /// Resets all fields except the blockchain-specific ones,

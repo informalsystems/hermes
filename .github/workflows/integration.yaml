@@ -45,16 +45,11 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia13
+          - package: gaia17
             command: gaiad
             account_prefix: cosmos
             native_token: stake
-            features: forward-packet,clean-workers
-          - package: gaia14
-            command: gaiad
-            account_prefix: cosmos
-            native_token: stake
-            features: forward-packet,clean-workers
+            features: forward-packet,clean-workers,ica,ics29-fee
           - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
@@ -69,7 +64,7 @@ jobs:
             command: simd
             account_prefix: cosmos
             native_token: stake
-            features: ica,ics29-fee
+            features: ica,ics29-fee,new-register-interchain-account,channel-upgrade
           - package: wasmd
             command: wasmd
             account_prefix: wasm
@@ -84,7 +79,7 @@ jobs:
             command: junod
             account_prefix: juno
             native_token: stake
-            features: juno,forward-packet
+            features: juno,forward-packet,ica
           - package: provenance
             command: provenanced
             account_prefix: pb
@@ -107,13 +102,15 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -143,13 +140,15 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -166,78 +165,37 @@ jobs:
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features ordered test_ordered_channel
 
-  interchain-security-no-ica:
-    runs-on: ubuntu-20.04
-    strategy:
-      fail-fast: false
-      matrix:
-        chain:
-          - package: .#gaia13 .#neutron
-            command: gaiad,neutrond
-            account_prefix: cosmos,neutron
-          - package: .#gaia14 .#neutron
-            command: gaiad,neutrond
-            account_prefix: cosmos,neutron
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-        with: 
-          extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
-      - name: Install cargo-nextest
-        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
-      - env:
-          RUST_LOG: trace
-          RUST_BACKTRACE: 1
-          NO_COLOR_LOG: 1
-          NEXTEST_RETRIES: 2
-          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
-          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
-        run: |
-          nix shell ${{ matrix.chain.package }} -c \
-            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-            --features interchain-security interchain_security::
-
   interchain-security-ica:
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia13 .#stride-consumer
+          - package: .#gaia17 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia14 .#stride-consumer
-            command: gaiad,strided
-            account_prefix: cosmos,stride
+          - package: .#gaia17 .#neutron
+            command: gaiad,neutrond
+            account_prefix: cosmos,neutron
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
-          args: -p ibc-integration-test --features interchain-security --no-fail-fast --no-run
+          args: -p ibc-integration-test --features interchain-security,ica --no-fail-fast --no-run
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - env:
@@ -258,10 +216,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia13 .#stride-consumer-no-admin
-            command: gaiad,strided
-            account_prefix: cosmos,stride
-          - package: .#gaia14 .#stride-consumer-no-admin
+          - package: .#gaia17 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -270,13 +225,15 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -300,11 +257,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia13
-            command: celestia-appd,gaiad
-            account_prefix: celestia,cosmos
-            native_token: utia,stake
-          - package: .#celestia .#gaia14
+          - package: .#celestia .#gaia17
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake
@@ -314,13 +267,15 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -331,7 +286,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
-          COMPAT_MODES: 0.34
+          COMPAT_MODES: 0.34,0.37
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
@@ -353,13 +308,15 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@main
         with: 
           extra-conf: |
-            substituters = https://cache.nixos.org https://cosmosnix-store.s3.us-east-2.amazonaws.com
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cosmosnix.store-1:O28HneR1MPtgY3WYruWFuXCimRPwY7em5s0iynkQxdk=
-      - uses: actions-rs/toolchain@v1
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-          override: true
-      - uses: Swatinem/rust-cache@v2
       - uses: actions-rs/cargo@v1
         with:
           command: test

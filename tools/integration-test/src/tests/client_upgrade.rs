@@ -32,6 +32,7 @@ const MAX_DEPOSIT_PERIOD: &str = "10s";
 const VOTING_PERIOD: u64 = 10;
 const DELTA_HEIGHT: u64 = 15;
 const WAIT_CHAIN_UPGRADE: Duration = Duration::from_secs(4);
+const WAIT_CHAIN_HEIGHT: Duration = Duration::from_secs(3);
 const MIN_DEPOSIT: u64 = 10000000u64;
 
 #[test]
@@ -121,7 +122,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string(), "1")?;
 
         info!("Assert that the chain upgrade proposal is eventually passed");
 
@@ -134,15 +135,28 @@ impl BinaryChainTest for ClientUpgradeTest {
             "1",
         )?;
 
-        // Wait for the chain to upgrade
-        std::thread::sleep(WAIT_CHAIN_UPGRADE);
+        let halt_height = (client_upgrade_height - 1).unwrap();
+
+        // Wait for the chain to get to the halt height
+        loop {
+            let latest_height = chains.handle_a().query_latest_height()?;
+            info!("latest height: {latest_height}");
+
+            if latest_height >= halt_height {
+                break;
+            }
+            std::thread::sleep(WAIT_CHAIN_HEIGHT);
+        }
+        // Wait for an additional height which is required to fetch
+        // the header
+        std::thread::sleep(WAIT_CHAIN_HEIGHT);
 
         // Trigger the client upgrade
         // The error is ignored as the client state will be asserted afterwards.
         let _ = foreign_clients.client_a_to_b.upgrade(client_upgrade_height);
 
         // Wait to seconds before querying the client state
-        std::thread::sleep(Duration::from_secs(2));
+        std::thread::sleep(WAIT_CHAIN_UPGRADE);
 
         let (state, _) = chains.handle_b().query_client_state(
             QueryClientStateRequest {
@@ -267,7 +281,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string(), "1")?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height.increment();
@@ -364,7 +378,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string(), "1")?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height

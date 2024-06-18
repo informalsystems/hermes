@@ -1,9 +1,6 @@
+use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str::FromStr;
 use std::time::Duration;
-use std::{
-    fmt::{Display, Error as FmtError, Formatter},
-    u64,
-};
 
 use ibc_proto::Protobuf;
 use serde::{Deserialize, Serialize};
@@ -388,6 +385,6 @@ impl TryFrom<i32> for State {
 
 impl From<State> for i32 {
     fn from(value: State) -> Self {
-        value.into()
+        value as i32
     }
 }

@@ -22,6 +22,7 @@ use crate::types::binary::chains::{ConnectedChains, DropChainHandle};
 use crate::types::config::TestConfig;
 use crate::types::env::write_env;
 use crate::types::single::node::FullNode;
+use crate::types::topology::TopologyType;
 use crate::util::suspend::hang_on_error;
 
 use super::dymension::DymensionChainTest;
@@ -113,6 +114,10 @@ pub trait BinaryChainTest {
 pub trait RelayerConfigOverride {
     /// Modify the relayer config
     fn modify_relayer_config(&self, config: &mut Config);
+}
+
+pub trait TopologyOverride {
+    fn topology(&self) -> Option<TopologyType>;
 }
 
 /// An internal trait that can be implemented by test cases to override the

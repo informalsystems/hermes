@@ -1769,8 +1769,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
         let tm_misbehaviour = match &evidence.misbehaviour {
             AnyMisbehaviour::Tendermint(tm_misbehaviour) => Some(tm_misbehaviour.clone()),
-            #[cfg(test)]
-            _ => None,
         }
         .ok_or_else(|| {
             ForeignClientError::misbehaviour_desc(format!(
