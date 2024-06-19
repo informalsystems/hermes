@@ -33,6 +33,9 @@ pub mod transfer;
 #[cfg(any(doc, feature = "async-icq"))]
 pub mod async_icq;
 
+#[cfg(any(doc, feature = "authz"))]
+pub mod authz;
+
 #[cfg(any(doc, feature = "channel-upgrade"))]
 pub mod channel_upgrade;
 
