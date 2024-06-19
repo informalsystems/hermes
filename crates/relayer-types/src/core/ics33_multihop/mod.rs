@@ -3,3 +3,4 @@
 
 pub mod channel_path;
 pub mod error;
+pub mod proofs;

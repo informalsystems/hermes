@@ -23,8 +23,8 @@ use ibc_relayer_types::core::ics24_host::path::{
     ChannelEndsPath, ClientConsensusStatePath, ConnectionsPath, Path,
 };
 use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
+use ibc_relayer_types::core::ics33_multihop::proofs::MultihopProofHeights;
 use ibc_relayer_types::events::IbcEvent;
-use ibc_relayer_types::proofs::MultihopProofHeights;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 use serde::Serialize;
@@ -866,6 +866,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .channel_id()
             .ok_or(ChannelError::missing_local_channel_id())?;
 
+        // Ensure connection_hops is not empty
         let connection_hops =
             self.a_side
                 .connection_hops()
@@ -874,6 +875,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     self.a_side.chain_id().clone(),
                 ))?;
 
+        // Get the last connection hop in the channel path
         let last_hop = connection_hops.hops.iter().last().ok_or(
             ChannelError::missing_local_connection_hops(
                 channel_id.clone(),
@@ -881,21 +883,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ),
         )?;
 
-        // Get access to the registry to get or spawn chain handles
+        // Get access to the registry to retrieve or spawn chain handles
         let registry = get_global_registry();
 
         let last_hop_src_chain = registry
             .get_or_spawn(&last_hop.src_chain_id)
             .map_err(ChannelError::spawn)?;
 
-        // Restore the client hosted by the channel path's (a_side to b_side) destination chain
-        // to track the state of the penultimate chain.
+        // Restore the client that is hosted by the channel path's (from a_side towards b_side)
+        // destination chain to track the state of the penultimate chain.
         let client = ForeignClient::restore(
             self.dst_client_id().clone(),
             self.dst_chain().clone(),
             last_hop_src_chain.clone(),
         );
 
+        // Build and return a MsgUpdateClient to update the client hosted by the channel path's
+        // destination chain to track the channel path's penultimate chain.
         client.wait_and_build_update_client(height).map_err(|e| {
             ChannelError::client_operation(self.dst_client_id().clone(), self.dst_chain().id(), e)
         })
@@ -1059,8 +1063,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     self.a_side.chain_id().clone(),
                 ))?;
 
-        // Get the source chain's latest height. This height will be used to query the key/commitment
-        // proof in the sending chain.
+        // Get the sending chain's latest height. This height will be used to query the key proof.
         let query_height = self
             .src_chain()
             .query_latest_height()
@@ -1083,8 +1086,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let registry = get_global_registry();
 
         // Update the clients along the channel path from the sending chain (a_side)
-        // towards the receiving chain (b_side), except for the client on the destination,
-        // which will receive the MsgUpdateClient bundled with the main message to be sent.
+        // towards the receiving chain (b_side), except for the client on the destination.
+        // The client hosted by the destination to track the penultimate chain in the channel path
+        // will receive the MsgUpdateClient together with the main message being sent.
         for conn_hop in connection_hops
             .hops
             .iter()
@@ -1140,23 +1144,23 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 // in this chain. Consensus proofs and other required proofs will be queried at
                 // this height.
                 update_event_height,
-                // This is the consensus height from the previous chain that was received in an
-                // update at height 'update_event_height'. This height will be used as the
-                // consensus_height to query for when querying for the consensus state proof
-                // at chain height 'update_event_height'.
+                // The previous chain's consensus height received in a client update that happened
+                // at height 'update_event_height'. This height should be used when querying for the
+                // existence of a consensus state for the previous chain at height 'update_event_height'.
                 Some(target_client_height),
             ));
 
-            // The height to use for updating the next client in the channel path. Not used if
-            // the next chain is the channel path's destination chain. Allows for the verification
-            // of proofs queried at height 'update_event_height'.
+            // The height to use for updating the client that tracks the current chain on the next
+            // chain in the channel path. Allows the next chain to verify proofs queried at height
+            // 'update_event_height' in the current chain. Not used if the next chain is the channel
+            // path's destination chain.
             target_client_height = update_event_height.increment();
         }
 
         Ok(proof_heights)
     }
 
-    pub fn build_multihop_proofs(
+    pub fn build_multihop_channel_proofs(
         &self,
         proof_heights: &[MultihopProofHeights],
     ) -> Result<MsgMultihopProofs, ChannelError> {
@@ -1182,8 +1186,17 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ));
         }
 
-        // Query for the key proof in the source chain using the query_height for the source chain (proof_heights[0]).
-        let query_height = QueryHeight::Specific(proof_heights[0].query_height);
+        // Get the first 'proof_query_height' in 'proof_heights' and use it to query for the key proof
+        // in the sending/source chain
+        let query_height = QueryHeight::Specific(
+            proof_heights
+                .first()
+                .ok_or(ChannelError::missing_multihop_proof_heights(
+                    src_channel_id.clone(),
+                    self.src_chain().id().clone(),
+                ))?
+                .proof_query_height,
+        );
 
         let (src_channel, maybe_channel_proof) = self
             .src_chain()
@@ -1229,16 +1242,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Get access to registry to retrieve or spawn chain handles
         let registry = get_global_registry();
 
-        // Perform the operations required for every connection hop in the path except the last.
-        // Iterate through the channel path from sending chain to receiving chain.
-        for i in 0..connection_hops.len() - 1 {
-            // The height to be used for querying the proofs in the hop's destination chain.
-            let query_height = QueryHeight::Specific(proof_heights[i + 1].query_height);
+        // Iterate through the connection hops from the sending chain towards the receiving chain,
+        // except for the last hop (from penultimate chain to receiving/destination chain).
+        // For every connection hop:
+        //  1. Query the proof of connection from the hop's destination chain towards the hop's
+        //     source chain.
+        //  2. Query the proof of the hop's source chain consensus state on the client that tracks
+        //     the hop's source chain in the the hop's destination chain.
+        for (conn_hop, proof_height) in connection_hops
+            .iter()
+            .take(connection_hops.len() - 1)
+            .zip(proof_heights.iter().skip(1))
+        {
+            // The height to be used when querying for proofs in the hop's destination chain.
+            let query_height = QueryHeight::Specific(proof_height.proof_query_height);
 
-            // The consensus height of the connections hop's source chain. We will query for
-            // the presence of this height and the associated proof in the connection hop's
-            // destination client.
-            let desired_consensus_height = proof_heights[i + 1].consensus_height.ok_or(
+            // The consensus height of the hop's source chain that must exist and be proved in the
+            // correspondent client in the hop's destination chain
+            let consensus_height_to_prove = proof_height.previous_chain_consensus_height.ok_or(
                 ChannelError::missing_multihop_proof_heights(
                     src_channel_id.clone(),
                     self.src_chain().id(),
@@ -1246,10 +1267,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )?;
 
             let hop_dst_chain = registry
-                .get_or_spawn(&connection_hops[i].dst_chain_id)
+                .get_or_spawn(&conn_hop.dst_chain_id)
                 .map_err(ChannelError::spawn)?;
 
-            let hop_dst_connection_id = connection_hops[i]
+            // Get ConnectionId for the connection leaving the hop's destination chain towards the
+            // hop's source chain
+            let hop_dst_connection_id = conn_hop
                 .connection()
                 .counterparty()
                 .connection_id()
@@ -1257,8 +1280,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             // On the connection hop's destination chain, query for the connection leading back to
             // the connection hop's source chain. Retrieve the connection proof as well. This is
-            // required because the receiving chain needs to validate the connections from the
-            // the receiving chain's side towards the sending chain.
+            // required because the receiving chain needs to validate the channel path connections
+            // from the the receiving chain's side towards the sending chain.
             let (hop_dst_connection, maybe_conn_proof) = hop_dst_chain
                 .query_connection(
                     QueryConnectionRequest {
@@ -1288,16 +1311,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             };
 
             // Query the client on the connection hop's destination for the consensus state of the
-            // connection hop's source chain.
+            // connection hop's source chain, denoted by 'consensus_height_to_prove'
             let (consensus_state, maybe_consensus_state_proof) = hop_dst_chain
                 .query_consensus_state(
                     QueryConsensusStateRequest {
-                        client_id: connection_hops[i]
-                            .connection()
-                            .counterparty()
-                            .client_id()
-                            .clone(),
-                        consensus_height: desired_consensus_height,
+                        client_id: conn_hop.connection().counterparty().client_id().clone(),
+                        consensus_height: consensus_height_to_prove,
                         query_height,
                     },
                     IncludeProof::Yes,
@@ -1312,13 +1331,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map_err(ChannelError::malformed_proof)?;
 
             let consensus_state_path = vec![Path::ClientConsensusState(ClientConsensusStatePath {
-                client_id: connection_hops[i]
-                    .connection()
-                    .counterparty()
-                    .client_id()
-                    .clone(),
-                epoch: desired_consensus_height.revision_number(),
-                height: desired_consensus_height.revision_height(),
+                client_id: conn_hop.connection().counterparty().client_id().clone(),
+                epoch: consensus_height_to_prove.revision_number(),
+                height: consensus_height_to_prove.revision_height(),
             })
             .to_string()];
 
@@ -1334,6 +1349,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             consensus_proofs.push(hop_consensus_proof);
         }
 
+        // The receiving chain will validate the proofs from the receiving side towards the sending
+        // chain's side. Since the proofs were constructed while iterating through the path from the
+        // sending side towards the receiving side, reverse them to match the order expected by the
+        // receiving chain.
         connection_proofs.reverse();
         consensus_proofs.reverse();
 
@@ -1352,7 +1371,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Channel must exist on source
         let (src_channel, _) = self
-            .src_chain() //~ ChainA
+            .src_chain()
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
@@ -1363,7 +1382,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // The channel end in src_chain must be in `Init` state
+        // The channel end in src_chain must be in 'Init' state
         if !src_channel.state_matches(&State::Init) {
             return Err(ChannelError::unexpected_channel_state(
                 src_channel_id.clone(),
@@ -1395,13 +1414,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         // Update the clients along the channel path and store the heights necessary for querying
         // multihop proofs. 'proof_heights' contains the height at which proofs should be queried,
         // ordered from the sending chain to the penultimate chain in the channel path. In order to
-        // verify proofs queried at the height 'query_height'  stored in 'proof_query_heights', the
-        // client on the chain that receives the proof must be updated to store the consensus state
-        // for height 'query_height + 1'.
+        // verify proofs queried at the height 'proof_query_height' stored in 'proof_heights', the
+        // client on the chain that receives the proof must possess the consensus state corresponding
+        // to height 'proof_query_height + 1' of the chain on which the proofs were queried.
         let proof_heights = self.update_channel_path_clients()?;
 
-        // Get the multihop proof heights for the chain from which the last hop originates, i.e,
-        // the penultimate chain in the channel path.
+        // Get the proof heights for the last hop in the channel path, which connects the penultimate
+        // chain to the destination.
         let last_hop_heights =
             proof_heights
                 .last()
@@ -1410,14 +1429,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     self.src_chain().id(),
                 ))?;
 
-        // Build the message to update the client on the channel path's destination. The client
-        // update height must greater than the height at which the proofs will be queried at the
-        // penultimate chain, therefore the target update height is equal to the penultimate chain's
-        // `query_height` + 1.
+        // Build the message to update the client on the channel path's destination chain. Because
+        // proofs are queried at height 'last_hop_heights.proof_query_height' in the penultimate chain,
+        // update the client that tracks the penultimate chain in the destination using height
+        // 'last_hop_heights.proof_query_height' + 1 to allow for proof verification.
         let mut msgs =
-            self.build_update_client_on_last_hop(last_hop_heights.query_height.increment())?;
+            self.build_update_client_on_last_hop(last_hop_heights.proof_query_height.increment())?;
 
-        let multihop_proofs = self.build_multihop_proofs(&proof_heights)?;
+        let multihop_proofs = self.build_multihop_channel_proofs(&proof_heights)?;
 
         let multihop_proof_bytes = prost::Message::encode_to_vec(&multihop_proofs);
 
@@ -1433,7 +1452,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             None,
             None,
             None,
-            last_hop_heights.query_height.increment(),
+            last_hop_heights.proof_query_height.increment(),
         )
         .map_err(ChannelError::malformed_proof)?;
 

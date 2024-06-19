@@ -356,7 +356,7 @@ impl Runnable for TxChanOpenTryCmd {
     fn run(&self) {
         let config = app_config();
 
-        // Set a global registry to get_or_spawn() chain handles
+        // Set a global registry to retrieve or spawn chain handles
         set_global_registry(SharedRegistry::new((*app_config()).clone()));
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
@@ -483,7 +483,7 @@ impl Runnable for TxChanOpenTryCmd {
             }
         } else {
             // If the channel path corresponds to a single-hop channel, there is only one
-            // connection hop from --dst-connection to --src-chain and vice-versa.
+            // connection hop from --dst-chain to --src-chain and vice-versa.
 
             // Get the single ConnectionId from a_side (--src-chain) to b_side (--dst-chain)
             // from the connection_hops field of the ChannelEnd in INIT state
@@ -562,10 +562,11 @@ impl Runnable for TxChanOpenTryCmd {
         }
 
         // The connection hops were assembled while traversing from --src-chain towards --dst-chain.
-        // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged.
+        // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged
+        // when reversed.
         b_side_hops.reverse();
 
-        // Ensure that the reverse channel path correctly leads to the chain passed to --src-chain
+        // Ensure that the reverse channel path that starts at --dst-chain correctly leads to --src-chain
         if let Some(last_hop) = &b_side_hops.last() {
             if last_hop.dst_chain_id != chains.src.id() {
                 Output::error(Error::ics33_hops_destination_mismatch(
