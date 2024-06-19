@@ -56,6 +56,7 @@ impl TestOverrides for IbcTransferTest {
                 ChainConfig::CosmosSdk(config) => {
                     config.event_source = EventSourceMode::Pull {
                         interval: Duration::from_secs(1),
+                        max_retries: 4,
                     };
                 }
             }

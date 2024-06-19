@@ -44,7 +44,6 @@ pub struct LightClient {
     chain_id: ChainId,
     peer_id: PeerId,
     io: AnyIo,
-    enable_verification: bool,
 }
 
 impl super::LightClient<CosmosSdkChain> for LightClient {
@@ -287,17 +286,10 @@ impl LightClient {
             }
         };
 
-        // If the full node is configured as trusted then, in addition to headers not being verified,
-        // the verification traces will not be provided. This may cause failure in client
-        // updates after significant change in validator sets.
-        let enable_verification = !config.trusted_node;
-
         Ok(Self {
             chain_id: config.id.clone(),
-            peer_id,
+            peer_id: peer_id.clone(),
             io,
-
-            enable_verification,
         })
     }
 

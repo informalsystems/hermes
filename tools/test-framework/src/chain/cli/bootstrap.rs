@@ -110,7 +110,7 @@ pub fn dymint_show_sequencer(chain_id: &str, home_path: &str) -> Result<String, 
 }
 
 pub fn validate_genesis(chain_id: &str, command_path: &str, home_path: &str) -> Result<(), Error> {
-    let output = simple_exec(
+    simple_exec(
         chain_id,
         command_path,
         &["--home", home_path, "validate-genesis"],
