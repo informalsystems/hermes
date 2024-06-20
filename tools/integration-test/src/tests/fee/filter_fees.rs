@@ -1,4 +1,3 @@
-use std::cmp::max;
 use std::collections::HashMap;
 
 use ibc_relayer::config::filter::{ChannelPolicy, FeePolicy, FilterPattern, MinFee};
@@ -76,14 +75,8 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
             let ack_fee = random_u128_range(200, 300);
             let timeout_fee = random_u128_range(100, 200);
 
-            let total_sent_fail = send_amount + receive_fee_fail + ack_fee + timeout_fee;
-
             // Before ibc-go v8.1.0 the amount escrowed for ICS29 fees is the sum of recv, ack and timeout fees
-            let balance_a2_fail = balance_a1.clone() - total_sent_fail;
-
-            // From ibc-go v8.1+ the amount escrowed for ICS29 fees is the highest value between recv + ack fees or timeout fee
-            let balance_a2_fail2 =
-                balance_a1 - send_amount - max(receive_fee_fail + ack_fee, timeout_fee);
+            let balance_a2 = balance_a1.clone() - send_amount;
 
             chain_driver_a.ibc_token_transfer_with_fee(
                 &port_a,
@@ -105,30 +98,18 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
 
             std::thread::sleep(Duration::from_secs(10));
 
-            // This double check is required because ibc-go versions previous to v8.1.0 escrow recv, ack and timeout
-            // fees for ICS29. From ibc-go v8.1+ only the highest value between recv+ack and timeout is escrowed.
-            match chain_driver_a
-                .assert_eventual_wallet_amount(&user_a.address(), &balance_a2_fail.as_ref())
-            {
-                Ok(()) => {}
-                Err(_) => chain_driver_a
-                    .assert_eventual_wallet_amount(&user_a.address(), &balance_a2_fail2.as_ref())?,
-            }
+            chain_driver_a.assert_eventual_escrowed_amount_ics29(
+                &user_a.address(),
+                &balance_a2.as_ref(),
+                receive_fee_fail,
+                ack_fee,
+                timeout_fee,
+            )?;
 
             chain_driver_b.assert_eventual_wallet_amount(
                 &user_b.address(),
                 &denom_b.with_amount(0u128).as_ref(),
             )?;
-
-            // This double check is required because ibc-go versions previous to v8.1.0 escrow recv, ack and timeout
-            // fees for ICS29. From ibc-go v8.1+ only the highest value between recv+ack and timeout is escrowed.
-            match chain_driver_a
-                .assert_eventual_wallet_amount(&user_a.address(), &(balance_a2_fail).as_ref())
-            {
-                Ok(()) => {}
-                Err(_) => chain_driver_a
-                    .assert_eventual_wallet_amount(&user_a.address(), &balance_a2_fail2.as_ref())?,
-            }
 
             chain_driver_a.assert_eventual_wallet_amount(
                 &relayer_a.address(),
@@ -242,13 +223,8 @@ impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
         let ack_fee = random_u128_range(200, 300);
         let timeout_fee = random_u128_range(100, 200);
 
-        let total_sent = send_amount + receive_fee + ack_fee + timeout_fee;
-
         // Before ibc-go v8.1.0 the amount escrowed for ICS29 fees is the sum of recv, ack and timeout fees
-        let balance_a2_legacy = balance_a1.clone() - total_sent;
-
-        // From ibc-go v8.1+ the amount escrowed for ICS29 fees is the highest value between recv + ack fees or timeout fee
-        let balance_a2 = balance_a1.clone() - send_amount - max(receive_fee + ack_fee, timeout_fee);
+        let balance_a2 = balance_a1.clone() - send_amount;
 
         let denom_b = derive_ibc_denom(
             &channel.port_b.as_ref(),
@@ -270,15 +246,13 @@ impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
             Duration::from_secs(60),
         )?;
 
-        // This double check is required because ibc-go versions previous to v8.1.0 escrow recv, ack and timeout
-        // fees for ICS29. From ibc-go v8.1+ only the highest value between recv+ack and timeout is escrowed.
-        match chain_driver_a
-            .assert_eventual_wallet_amount(&user_a.address(), &balance_a2_legacy.as_ref())
-        {
-            Ok(()) => {}
-            Err(_) => chain_driver_a
-                .assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?,
-        }
+        chain_driver_a.assert_eventual_escrowed_amount_ics29(
+            &user_a.address(),
+            &balance_a2.as_ref(),
+            receive_fee,
+            ack_fee,
+            timeout_fee,
+        )?;
 
         chain_driver_b.assert_eventual_wallet_amount(
             &user_b.address(),
