@@ -6,7 +6,7 @@ USAGE:
 
 OPTIONS:
         --connection-hops <CONNECTION_HOPS>
-            A list of identifiers of the intermediate connections between a source and destination
+            A list of identifiers of the intermediate connections between a destination and a source
             chain for a multi-hop channel, separated by slashes, e.g, 'connection-1/connection-0'
             (optional)
 

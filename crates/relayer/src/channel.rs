@@ -3,6 +3,8 @@ use core::time::Duration;
 
 pub use error::ChannelError;
 use ibc_proto::google::protobuf::Any;
+use ibc_proto::ibc::core::channel::v1::{MsgMultihopProofs, MultihopProof};
+use ibc_proto::Protobuf;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
 };
@@ -12,10 +14,16 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenA
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
+use ibc_relayer_types::core::ics23_commitment::merkle::apply_prefix;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ChannelId, ClientId, ConnectionId, PortId,
 };
+use ibc_relayer_types::core::ics24_host::path::{
+    ChannelEndsPath, ClientConsensusStatePath, ConnectionsPath, Path,
+};
 use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
+use ibc_relayer_types::core::ics33_multihop::proofs::MultihopProofHeights;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
@@ -26,12 +34,13 @@ use crate::chain::counterparty::{channel_connection_client, channel_state_on_des
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
     IncludeProof, PageRequest, QueryChannelRequest, QueryConnectionChannelsRequest,
-    QueryConnectionRequest, QueryHeight,
+    QueryConnectionRequest, QueryConsensusStateRequest, QueryHeight,
 };
 use crate::chain::tracking::TrackedMsgs;
 use crate::connection::Connection;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Channel as WorkerChannelObject;
+use crate::registry::get_global_registry;
 use crate::supervisor::error::Error as SupervisorError;
 use crate::util::pretty::{PrettyDuration, PrettyOption};
 use crate::util::retry::retry_with_index;
@@ -87,6 +96,7 @@ pub struct ChannelSide<Chain: ChainHandle> {
     pub chain: Chain,
     client_id: ClientId,
     connection_id: ConnectionId,
+    connection_hops: Option<ConnectionHops>,
     port_id: PortId,
     channel_id: Option<ChannelId>,
     version: Option<Version>,
@@ -108,6 +118,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
         chain: Chain,
         client_id: ClientId,
         connection_id: ConnectionId,
+        connection_hops: Option<ConnectionHops>,
         port_id: PortId,
         channel_id: Option<ChannelId>,
         version: Option<Version>,
@@ -116,6 +127,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
             chain,
             client_id,
             connection_id,
+            connection_hops,
             port_id,
             channel_id,
             version,
@@ -132,6 +144,10 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
 
     pub fn connection_id(&self) -> &ConnectionId {
         &self.connection_id
+    }
+
+    pub fn connection_hops(&self) -> Option<&ConnectionHops> {
+        self.connection_hops.as_ref()
     }
 
     pub fn port_id(&self) -> &PortId {
@@ -154,6 +170,7 @@ impl<Chain: ChainHandle> ChannelSide<Chain> {
             chain: mapper(self.chain),
             client_id: self.client_id,
             connection_id: self.connection_id,
+            connection_hops: self.connection_hops,
             port_id: self.port_id,
             channel_id: self.channel_id,
             version: self.version,
@@ -167,7 +184,6 @@ pub struct Channel<ChainA: ChainHandle, ChainB: ChainHandle> {
     pub ordering: Ordering,
     pub a_side: ChannelSide<ChainA>,
     pub b_side: ChannelSide<ChainB>,
-    pub connection_hops: Option<ConnectionHops>,
     pub connection_delay: Duration,
 }
 
@@ -193,7 +209,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         ordering: Ordering,
         a_port: PortId,
         b_port: PortId,
-        connection_hops: Option<ConnectionHops>,
+        a_side_hops: Option<ConnectionHops>,
+        b_side_hops: Option<ConnectionHops>,
         version: Option<Version>,
     ) -> Result<Self, ChannelError> {
         let src_connection_id = connection
@@ -209,6 +226,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection.src_chain(),
                 connection.src_client_id().clone(),
                 src_connection_id.clone(),
+                a_side_hops,
                 a_port,
                 Default::default(),
                 version.clone(),
@@ -217,11 +235,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 connection.dst_chain(),
                 connection.dst_client_id().clone(),
                 dst_connection_id.clone(),
+                b_side_hops,
                 b_port,
                 Default::default(),
                 version,
             ),
-            connection_hops,
             connection_delay: connection.delay_period,
         };
 
@@ -273,6 +291,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 chain,
                 connection.client_id().clone(),
                 connection_id.clone(),
+                None, //FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
                 port_id,
                 channel_id,
                 // The event does not include the version.
@@ -283,11 +302,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 counterparty_chain,
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
+                None, //FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
                 channel_event_attributes.counterparty_port_id.clone(),
                 channel_event_attributes.counterparty_channel_id,
                 None,
             ),
-            connection_hops: None,
             connection_delay: connection.delay_period(),
         })
     }
@@ -346,6 +365,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 chain.clone(),
                 a_connection.client_id().clone(),
                 a_connection_id.clone(),
+                None, // FIXME: Unsure about what to add here ('None' for now)
                 channel.src_port_id.clone(),
                 Some(channel.src_channel_id.clone()),
                 None,
@@ -354,11 +374,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 counterparty_chain.clone(),
                 a_connection.counterparty().client_id().clone(),
                 b_connection_id.clone(),
+                None, // FIXME: Unsure about what to add here ('None' for now)
                 a_channel.remote.port_id.clone(),
                 a_channel.remote.channel_id.clone(),
                 None,
             ),
-            connection_hops: None,
             connection_delay: a_connection.delay_period(),
         };
 
@@ -505,7 +525,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ordering: self.ordering,
             a_side: self.b_side.clone(),
             b_side: self.a_side.clone(),
-            connection_hops: None,
             connection_delay: self.connection_delay,
         }
     }
@@ -838,6 +857,54 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         })
     }
 
+    pub fn build_update_client_on_last_hop(
+        &self,
+        height: Height,
+    ) -> Result<Vec<Any>, ChannelError> {
+        let channel_id = self
+            .a_side
+            .channel_id()
+            .ok_or(ChannelError::missing_local_channel_id())?;
+
+        // Ensure connection_hops is not empty
+        let connection_hops =
+            self.a_side
+                .connection_hops()
+                .ok_or(ChannelError::missing_local_connection_hops(
+                    channel_id.clone(),
+                    self.a_side.chain_id().clone(),
+                ))?;
+
+        // Get the last connection hop in the channel path
+        let last_hop = connection_hops.hops.iter().last().ok_or(
+            ChannelError::missing_local_connection_hops(
+                channel_id.clone(),
+                self.a_side.chain_id().clone(),
+            ),
+        )?;
+
+        // Get access to the registry to retrieve or spawn chain handles
+        let registry = get_global_registry();
+
+        let last_hop_src_chain = registry
+            .get_or_spawn(&last_hop.src_chain_id)
+            .map_err(ChannelError::spawn)?;
+
+        // Restore the client that is hosted by the channel path's (from a_side towards b_side)
+        // destination chain to track the state of the penultimate chain.
+        let client = ForeignClient::restore(
+            self.dst_client_id().clone(),
+            self.dst_chain().clone(),
+            last_hop_src_chain.clone(),
+        );
+
+        // Build and return a MsgUpdateClient to update the client hosted by the channel path's
+        // destination chain to track the channel path's penultimate chain.
+        client.wait_and_build_update_client(height).map_err(|e| {
+            ChannelError::client_operation(self.dst_client_id().clone(), self.dst_chain().id(), e)
+        })
+    }
+
     pub fn build_chan_open_init(&self) -> Result<Vec<Any>, ChannelError> {
         let signer = self
             .dst_chain()
@@ -868,7 +935,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             State::Init,
             self.ordering,
             counterparty,
-            self.connection_hops
+            self.b_side
+                .connection_hops
                 .as_ref()
                 .map(|hops| hops.connection_ids())
                 .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
@@ -980,6 +1048,453 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         Ok(dst_expected_channel)
     }
 
+    pub fn update_channel_path_clients(&self) -> Result<Vec<MultihopProofHeights>, ChannelError> {
+        let channel_id = self
+            .a_side
+            .channel_id()
+            .ok_or(ChannelError::missing_local_channel_id())?;
+
+        // Make sure the connection_hops are not 'None'
+        let connection_hops =
+            self.a_side
+                .connection_hops()
+                .ok_or(ChannelError::missing_local_connection_hops(
+                    channel_id.clone(),
+                    self.a_side.chain_id().clone(),
+                ))?;
+
+        // Get the sending chain's latest height. This height will be used to query the key proof.
+        let query_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // This height will be provided as the target to update the client hosted by the next
+        // chain in this channel path. The height must be equal to 'query_height' + 1, as any proofs
+        // queried at height `query_height` can only be verified by having access to the application's
+        // state Merkle Root (the AppHash) for height 'query_height', which is only included in the
+        // subsequent block.
+        let mut target_client_height = query_height.increment();
+
+        // Store the heights at which the proofs must be queried after the clients in the channel
+        // path are updated. Here, for the first chain in the channel path, store only the height
+        // at which to query the proofs since the chain does not have to be queried for a consensus
+        // state from a previous chain in the path.
+        let mut proof_heights = vec![MultihopProofHeights::new(query_height, None)];
+
+        // Get access to the registry to get or spawn chain handles
+        let registry = get_global_registry();
+
+        // Update the clients along the channel path from the sending chain (a_side)
+        // towards the receiving chain (b_side), except for the client on the destination.
+        // The client hosted by the destination to track the penultimate chain in the channel path
+        // will receive the MsgUpdateClient together with the main message being sent.
+        for conn_hop in connection_hops
+            .hops
+            .iter()
+            .take(connection_hops.hops.len() - 1)
+        {
+            let hop_src_chain = registry
+                .get_or_spawn(&conn_hop.src_chain_id)
+                .map_err(ChannelError::spawn)?;
+
+            let hop_dst_chain = registry
+                .get_or_spawn(&conn_hop.dst_chain_id)
+                .map_err(ChannelError::spawn)?;
+
+            // Restore the client hosted by hop_dst_chain to track the state of hop_src_chain
+            let client = ForeignClient::restore(
+                conn_hop.connection().counterparty().client_id().clone(),
+                hop_dst_chain.clone(),
+                hop_src_chain.clone(),
+            );
+
+            // Build and send a MsgUpdateClient to update the client so that it tracks the
+            // consensus state for the height 'target_client_height'
+            client
+                .build_update_client_and_send(QueryHeight::Specific(target_client_height), None)
+                .map_err(|e| {
+                    ChannelError::client_operation(client.id().clone(), hop_dst_chain.id(), e)
+                })?;
+
+            // Fetch the UpdateClient event which updates the client to track 'target_client_height'
+            let maybe_update = client
+                .fetch_update_client_event(target_client_height)
+                .map_err(|e| {
+                    ChannelError::client_operation(client.id().clone(), hop_dst_chain.id(), e)
+                })?;
+
+            // Retrieve the height at which the UpdateClient message was included in the chain.
+            // This height can be used to query for the consensus state that corresponds to
+            // `target_client_height`.
+            let update_event_height = match maybe_update {
+                Some((_, height)) => height,
+                None => {
+                    return Err(ChannelError::failed_channel_path_client_update(
+                        client.id().clone(),
+                        hop_dst_chain.id(),
+                        channel_id.clone(),
+                        self.a_side.chain_id().clone(),
+                    ))
+                }
+            };
+
+            proof_heights.push(MultihopProofHeights::new(
+                // The height at which the consensus state for the previous chain was included
+                // in this chain. Consensus proofs and other required proofs will be queried at
+                // this height.
+                update_event_height,
+                // The previous chain's consensus height received in a client update that happened
+                // at height 'update_event_height'. This height should be used when querying for the
+                // existence of a consensus state for the previous chain at height 'update_event_height'.
+                Some(target_client_height),
+            ));
+
+            // The height to use for updating the client that tracks the current chain on the next
+            // chain in the channel path. Allows the next chain to verify proofs queried at height
+            // 'update_event_height' in the current chain. Not used if the next chain is the channel
+            // path's destination chain.
+            target_client_height = update_event_height.increment();
+        }
+
+        Ok(proof_heights)
+    }
+
+    pub fn build_multihop_channel_proofs(
+        &self,
+        proof_heights: &[MultihopProofHeights],
+    ) -> Result<MsgMultihopProofs, ChannelError> {
+        let src_channel_id = self
+            .a_side
+            .channel_id()
+            .ok_or(ChannelError::missing_local_channel_id())?;
+
+        let connection_hops = &self
+            .a_side
+            .connection_hops()
+            .ok_or(ChannelError::missing_local_connection_hops(
+                src_channel_id.clone(),
+                self.a_side.chain_id().clone(),
+            ))?
+            .hops;
+
+        // Ensure the number of proof heights matches the number of connection hops in the channel path
+        if proof_heights.len() != connection_hops.len() {
+            return Err(ChannelError::missing_multihop_proof_heights(
+                src_channel_id.clone(),
+                self.src_chain().id().clone(),
+            ));
+        }
+
+        // Get the first 'proof_query_height' in 'proof_heights' and use it to query for the key proof
+        // in the sending/source chain
+        let query_height = QueryHeight::Specific(
+            proof_heights
+                .first()
+                .ok_or(ChannelError::missing_multihop_proof_heights(
+                    src_channel_id.clone(),
+                    self.src_chain().id().clone(),
+                ))?
+                .proof_query_height,
+        );
+
+        let (src_channel, maybe_channel_proof) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: query_height,
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        let Some(channel_proof) = maybe_channel_proof else {
+            return Err(ChannelError::queried_proof_not_found());
+        };
+
+        let channel_proof_bytes =
+            CommitmentProofBytes::try_from(channel_proof).map_err(ChannelError::malformed_proof)?;
+
+        let key_path = vec![Path::ChannelEnds(ChannelEndsPath(
+            self.src_port_id().clone(),
+            src_channel_id.clone(),
+        ))
+        .to_string()];
+
+        let store_prefix = self
+            .src_chain()
+            .query_commitment_prefix()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let prefixed_key = apply_prefix(&store_prefix, key_path);
+
+        let key_proof = MultihopProof {
+            proof: channel_proof_bytes.into_bytes(),
+            value: src_channel.encode_vec(),
+            prefixed_key: Some(prefixed_key),
+        };
+
+        let mut connection_proofs = Vec::new();
+        let mut consensus_proofs = Vec::new();
+
+        // Get access to registry to retrieve or spawn chain handles
+        let registry = get_global_registry();
+
+        // Iterate through the connection hops from the sending chain towards the receiving chain,
+        // except for the last hop (from penultimate chain to receiving/destination chain).
+        // For every connection hop:
+        //  1. Query the proof of connection from the hop's destination chain towards the hop's
+        //     source chain.
+        //  2. Query the proof of the hop's source chain consensus state on the client that tracks
+        //     the hop's source chain in the the hop's destination chain.
+        for (conn_hop, proof_height) in connection_hops
+            .iter()
+            .take(connection_hops.len() - 1)
+            .zip(proof_heights.iter().skip(1))
+        {
+            // The height to be used when querying for proofs in the hop's destination chain.
+            let query_height = QueryHeight::Specific(proof_height.proof_query_height);
+
+            // The consensus height of the hop's source chain that must exist and be proved in the
+            // correspondent client in the hop's destination chain
+            let consensus_height_to_prove = proof_height.previous_chain_consensus_height.ok_or(
+                ChannelError::missing_multihop_proof_heights(
+                    src_channel_id.clone(),
+                    self.src_chain().id(),
+                ),
+            )?;
+
+            let hop_dst_chain = registry
+                .get_or_spawn(&conn_hop.dst_chain_id)
+                .map_err(ChannelError::spawn)?;
+
+            // Get ConnectionId for the connection leaving the hop's destination chain towards the
+            // hop's source chain
+            let hop_dst_connection_id = conn_hop
+                .connection()
+                .counterparty()
+                .connection_id()
+                .ok_or(ChannelError::missing_counterparty_connection_id())?;
+
+            // On the connection hop's destination chain, query for the connection leading back to
+            // the connection hop's source chain. Retrieve the connection proof as well. This is
+            // required because the receiving chain needs to validate the channel path connections
+            // from the the receiving chain's side towards the sending chain.
+            let (hop_dst_connection, maybe_conn_proof) = hop_dst_chain
+                .query_connection(
+                    QueryConnectionRequest {
+                        connection_id: hop_dst_connection_id.clone(),
+                        height: query_height,
+                    },
+                    IncludeProof::Yes,
+                )
+                .map_err(|e| ChannelError::query(hop_dst_chain.id(), e))?;
+
+            let Some(conn_proof) = maybe_conn_proof else {
+                return Err(ChannelError::queried_proof_not_found());
+            };
+
+            let conn_proof_bytes = CommitmentProofBytes::try_from(conn_proof)
+                .map_err(ChannelError::malformed_proof)?;
+
+            let connection_path =
+                vec![Path::Connections(ConnectionsPath(hop_dst_connection_id.clone())).to_string()];
+
+            let prefixed_key = apply_prefix(&store_prefix, connection_path);
+
+            let hop_dst_connection_proof = MultihopProof {
+                proof: conn_proof_bytes.into_bytes(),
+                value: hop_dst_connection.encode_vec(),
+                prefixed_key: Some(prefixed_key),
+            };
+
+            // Query the client on the connection hop's destination for the consensus state of the
+            // connection hop's source chain, denoted by 'consensus_height_to_prove'
+            let (consensus_state, maybe_consensus_state_proof) = hop_dst_chain
+                .query_consensus_state(
+                    QueryConsensusStateRequest {
+                        client_id: conn_hop.connection().counterparty().client_id().clone(),
+                        consensus_height: consensus_height_to_prove,
+                        query_height,
+                    },
+                    IncludeProof::Yes,
+                )
+                .map_err(|e| ChannelError::query(hop_dst_chain.id(), e))?;
+
+            let Some(consensus_state_proof) = maybe_consensus_state_proof else {
+                return Err(ChannelError::queried_proof_not_found());
+            };
+
+            let consensus_state_proof_bytes = CommitmentProofBytes::try_from(consensus_state_proof)
+                .map_err(ChannelError::malformed_proof)?;
+
+            let consensus_state_path = vec![Path::ClientConsensusState(ClientConsensusStatePath {
+                client_id: conn_hop.connection().counterparty().client_id().clone(),
+                epoch: consensus_height_to_prove.revision_number(),
+                height: consensus_height_to_prove.revision_height(),
+            })
+            .to_string()];
+
+            let prefixed_key = apply_prefix(&store_prefix, consensus_state_path);
+
+            let hop_consensus_proof = MultihopProof {
+                proof: consensus_state_proof_bytes.into_bytes(),
+                value: consensus_state.encode_vec(),
+                prefixed_key: Some(prefixed_key),
+            };
+
+            connection_proofs.push(hop_dst_connection_proof);
+            consensus_proofs.push(hop_consensus_proof);
+        }
+
+        // The receiving chain will validate the proofs from the receiving side towards the sending
+        // chain's side. Since the proofs were constructed while iterating through the path from the
+        // sending side towards the receiving side, reverse them to match the order expected by the
+        // receiving chain.
+        connection_proofs.reverse();
+        consensus_proofs.reverse();
+
+        Ok(MsgMultihopProofs {
+            key_proof: Some(key_proof),
+            connection_proofs,
+            consensus_proofs,
+        })
+    }
+
+    pub fn build_multihop_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
+        // Source channel ID must be specified
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+
+        // Channel must exist on source
+        let (src_channel, _) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // The channel end in src_chain must be in 'Init' state
+        if !src_channel.state_matches(&State::Init) {
+            return Err(ChannelError::unexpected_channel_state(
+                src_channel_id.clone(),
+                State::Init,
+                *src_channel.state(),
+            ));
+        }
+
+        if src_channel.counterparty().port_id() != self.dst_port_id() {
+            return Err(ChannelError::mismatch_port(
+                self.dst_chain().id(),
+                self.dst_port_id().clone(),
+                self.src_chain().id(),
+                src_channel.counterparty().port_id().clone(),
+                src_channel_id.clone(),
+            ));
+        }
+
+        self.dst_chain()
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_connection_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+
+        // Update the clients along the channel path and store the heights necessary for querying
+        // multihop proofs. 'proof_heights' contains the height at which proofs should be queried,
+        // ordered from the sending chain to the penultimate chain in the channel path. In order to
+        // verify proofs queried at the height 'proof_query_height' stored in 'proof_heights', the
+        // client on the chain that receives the proof must possess the consensus state corresponding
+        // to height 'proof_query_height + 1' of the chain on which the proofs were queried.
+        let proof_heights = self.update_channel_path_clients()?;
+
+        // Get the proof heights for the last hop in the channel path, which connects the penultimate
+        // chain to the destination.
+        let last_hop_heights =
+            proof_heights
+                .last()
+                .ok_or(ChannelError::missing_multihop_proof_heights(
+                    src_channel_id.clone(),
+                    self.src_chain().id(),
+                ))?;
+
+        // Build the message to update the client on the channel path's destination chain. Because
+        // proofs are queried at height 'last_hop_heights.proof_query_height' in the penultimate chain,
+        // update the client that tracks the penultimate chain in the destination using height
+        // 'last_hop_heights.proof_query_height' + 1 to allow for proof verification.
+        let mut msgs =
+            self.build_update_client_on_last_hop(last_hop_heights.proof_query_height.increment())?;
+
+        let multihop_proofs = self.build_multihop_channel_proofs(&proof_heights)?;
+
+        let multihop_proof_bytes = prost::Message::encode_to_vec(&multihop_proofs);
+
+        let counterparty =
+            Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
+
+        // Reuse the version that was either set on ChanOpenInit or overwritten by the application.
+        let version = src_channel.version().clone();
+
+        let proofs = ibc_relayer_types::proofs::Proofs::new(
+            CommitmentProofBytes::try_from(multihop_proof_bytes).unwrap(),
+            None,
+            None,
+            None,
+            None,
+            last_hop_heights.proof_query_height.increment(),
+        )
+        .map_err(ChannelError::malformed_proof)?;
+
+        let channel = ChannelEnd::new(
+            State::TryOpen,
+            *src_channel.ordering(),
+            counterparty,
+            self.b_side
+                .connection_hops
+                .as_ref()
+                .map(|hops| hops.connection_ids())
+                .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
+            version,
+            0,
+        );
+
+        // Get signer
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        let previous_channel_id = if src_channel.counterparty().channel_id.is_none() {
+            self.b_side.channel_id.clone()
+        } else {
+            src_channel.counterparty().channel_id.clone()
+        };
+
+        // Build the domain type message
+        let new_msg = MsgChannelOpenTry {
+            port_id: self.dst_port_id().clone(),
+            previous_channel_id,
+            counterparty_version: src_channel.version().clone(),
+            channel,
+            proofs,
+            signer,
+        };
+
+        msgs.push(new_msg.to_any());
+        Ok(msgs)
+    }
+
     pub fn build_chan_open_try(&self) -> Result<Vec<Any>, ChannelError> {
         // Source channel ID must be specified
         let src_channel_id = self
@@ -998,6 +1513,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 IncludeProof::No,
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // The channel end in src_chain must be in `Init` state
+        if !src_channel.state_matches(&State::Init) {
+            return Err(ChannelError::unexpected_channel_state(
+                src_channel_id.clone(),
+                State::Init,
+                *src_channel.state(),
+            ));
+        }
 
         if src_channel.counterparty().port_id() != self.dst_port_id() {
             return Err(ChannelError::mismatch_port(
@@ -1075,7 +1599,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     pub fn build_chan_open_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
-        let dst_msgs = self.build_chan_open_try()?;
+        let dst_msgs = if self.a_side.connection_hops.is_some() {
+            self.build_multihop_chan_open_try()?
+        } else {
+            self.build_chan_open_try()?
+        };
 
         let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenTry");
 
@@ -1492,7 +2020,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             ordering: self.ordering,
             a_side: self.a_side.map_chain(mapper_a),
             b_side: self.b_side.map_chain(mapper_b),
-            connection_hops: None,
             connection_delay: self.connection_delay,
         }
     }

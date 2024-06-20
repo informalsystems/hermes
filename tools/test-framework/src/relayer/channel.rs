@@ -53,6 +53,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_a.clone(),
             client_id_a.cloned_value(),
             connection_id_a.cloned_value(),
+            None,
             src_port_id.cloned_value(),
             None,
             None,
@@ -61,11 +62,11 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_b.clone(),
             client_id_b.cloned_value(),
             connection_id_b.cloned_value(),
+            None,
             dst_port_id.cloned_value(),
             None,
             None,
         ),
-        connection_hops: None,
     };
 
     let event = channel.build_chan_open_init_and_send()?;
@@ -93,6 +94,7 @@ pub fn init_channel_version<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_a.clone(),
             client_id_a.cloned_value(),
             connection_id_a.cloned_value(),
+            None,
             src_port_id.cloned_value(),
             None,
             Some(version.clone()),
@@ -101,11 +103,11 @@ pub fn init_channel_version<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_b.clone(),
             client_id_b.cloned_value(),
             connection_id_b.cloned_value(),
+            None,
             dst_port_id.cloned_value(),
             None,
             Some(version),
         ),
-        connection_hops: None,
     };
 
     let event = channel.build_chan_open_init_and_send()?;
@@ -131,6 +133,7 @@ pub fn init_channel_optimistic<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_a.clone(),
             client_id_a.cloned_value(),
             ConnectionId::default(),
+            None,
             src_port_id.cloned_value(),
             None,
             None,
@@ -139,11 +142,11 @@ pub fn init_channel_optimistic<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_b.clone(),
             client_id_b.cloned_value(),
             connection_id_b.cloned_value(),
+            None,
             dst_port_id.cloned_value(),
             None,
             None,
         ),
-        connection_hops: None,
     };
 
     let event = channel.build_chan_open_init_and_send()?;

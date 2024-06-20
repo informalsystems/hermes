@@ -58,6 +58,8 @@ mod counting;
 pub use base::BaseChainHandle;
 pub use counting::CountingChainHandle;
 
+pub type DefaultChainHandle = CountingAndCachingChainHandle;
+
 pub type CachingChainHandle = cache::CachingChainHandle<BaseChainHandle>;
 pub type CountingAndCachingChainHandle =
     cache::CachingChainHandle<CountingChainHandle<BaseChainHandle>>;

@@ -3,8 +3,14 @@
     with connected foreign clients.
 */
 
+use std::path::Path;
+use std::time::Duration;
+use std::{fs, thread};
+
 use eyre::Report as Error;
-use ibc_relayer::chain::handle::{ChainHandle, CountingAndCachingChainHandle};
+use tracing::{debug, info};
+
+use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::config::Config;
 use ibc_relayer::error::ErrorDetail as RelayerErrorDetail;
 use ibc_relayer::foreign_client::{
@@ -13,10 +19,6 @@ use ibc_relayer::foreign_client::{
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
-use std::path::Path;
-use std::time::Duration;
-use std::{fs, thread};
-use tracing::{debug, info};
 
 use crate::relayer::driver::RelayerDriver;
 use crate::types::binary::chains::ConnectedChains;
@@ -189,7 +191,7 @@ pub fn pad_client_ids<ChainA: ChainHandle, ChainB: ChainHandle>(
 */
 pub fn spawn_chain_handle<Seed>(
     _: Seed,
-    registry: &SharedRegistry<impl ChainHandle>,
+    registry: &SharedRegistry,
     node: &FullNode,
 ) -> Result<impl ChainHandle, Error> {
     let chain_id = &node.chain_driver.chain_id;
@@ -245,8 +247,8 @@ pub fn add_keys_to_chain_handle<Chain: ChainHandle>(
    Create a new [`SharedRegistry`] that uses [`CountingAndCachingChainHandle`]
    as the [`ChainHandle`] implementation.
 */
-pub fn new_registry(config: Config) -> SharedRegistry<CountingAndCachingChainHandle> {
-    <SharedRegistry<CountingAndCachingChainHandle>>::new(config)
+pub fn new_registry(config: Config) -> SharedRegistry {
+    SharedRegistry::new(config)
 }
 
 /**
