@@ -54,17 +54,17 @@ jobs:
             command: simd
             account_prefix: cosmos
             native_token: stake
-            features: ica,ics29-fee
+            features: ica,ics29-fee,authz
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
             native_token: stake
-            features: ica,ics29-fee
+            features: ica,ics29-fee,authz
           - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
             native_token: stake
-            features: ica,ics29-fee,new-register-interchain-account,channel-upgrade
+            features: ica,ics29-fee,new-register-interchain-account,channel-upgrade,authz
           - package: wasmd
             command: wasmd
             account_prefix: wasm
@@ -84,7 +84,7 @@ jobs:
             command: provenanced
             account_prefix: pb
             native_token: nhash
-            features: fee-grant,async-icq
+            features: fee-grant,async-icq,authz
           - package: migaloo
             command: migalood
             account_prefix: migaloo
