@@ -2567,8 +2567,8 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let grpc_address = chain.grpc_addr.to_string();
     let rpc_address = chain.config.rpc_addr.to_string();
 
-    if !chain.config.excluded_sequences.is_empty() {
-        for (channel_id, seqs) in chain.config.excluded_sequences.iter() {
+    if !chain.config.excluded_sequences.map.is_empty() {
+        for (channel_id, seqs) in chain.config.excluded_sequences.map.iter() {
             if !seqs.is_empty() {
                 warn!(
                     "chain '{chain_id}' will not clear packets on channel '{channel_id}' with sequences: {}. \

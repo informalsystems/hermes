@@ -5,6 +5,7 @@ pub mod collate;
 pub mod compat_mode;
 pub mod debug_section;
 pub mod diff;
+pub mod excluded_sequences;
 pub mod iter;
 pub mod lock;
 pub mod pretty;
