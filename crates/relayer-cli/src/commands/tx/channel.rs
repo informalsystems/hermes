@@ -186,7 +186,7 @@ impl Runnable for TxChanOpenInitCmd {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
             for connection_id in connnection_ids.as_slice().iter() {
                 // Retrieve the ChainId of the chain to which the last hop pointed to
-                let chain_id = &b_side_hops.last().unwrap().dst_chain_id;
+                let chain_id = &b_side_hops.last().expect("b_side_hops is never empty").dst_chain_id;
 
                 // Spawn a handle for the chain pointed to by the previous hop
                 let chain_handle = match spawn_chain_runtime(&config, chain_id) {
