@@ -186,7 +186,10 @@ impl Runnable for TxChanOpenInitCmd {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
             for connection_id in connnection_ids.as_slice().iter() {
                 // Retrieve the ChainId of the chain to which the last hop pointed to
-                let chain_id = &b_side_hops.last().expect("b_side_hops is never empty").dst_chain_id;
+                let chain_id = &b_side_hops
+                    .last()
+                    .expect("b_side_hops is never empty")
+                    .dst_chain_id;
 
                 // Spawn a handle for the chain pointed to by the previous hop
                 let chain_handle = match spawn_chain_runtime(&config, chain_id) {
@@ -226,16 +229,16 @@ impl Runnable for TxChanOpenInitCmd {
             }
         }
 
+        let last_hop = &b_side_hops.last().expect("b_side_hops is never empty");
+
         // Ensure that the channel path leads to the chain passed to --src-chain
-        if let Some(last_hop) = &b_side_hops.last() {
-            if last_hop.dst_chain_id != chains.src.id() {
-                Output::error(Error::ics33_hops_destination_mismatch(
-                    chains.src.id(),
-                    chains.dst.id(),
-                    last_hop.dst_chain_id.clone(),
-                ))
-                .exit()
-            }
+        if last_hop.dst_chain_id != chains.src.id() {
+            Output::error(Error::ics33_hops_destination_mismatch(
+                chains.src.id(),
+                chains.dst.id(),
+                last_hop.dst_chain_id.clone(),
+            ))
+            .exit()
         }
 
         // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
