@@ -13,7 +13,7 @@ use ibc_relayer_types::core::ics24_host::identifier::ChannelId;
 
 use crate::chain::cosmos::config::error::Error as ConfigError;
 
-#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Eq, PartialEq, Serialize, Deserialize)]
 pub struct ExcludedSequences {
     #[serde(
         deserialize_with = "deserialize_excluded_sequences",
