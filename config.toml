@@ -453,6 +453,13 @@ memo_prefix = ''
 # Default: No filter
 # excluded_sequences = []
 
+# Enable or disable relaying of ICS31 Cross Chain Query packets.
+# If this configuration is set to false, Hermes will skip ICS31
+# Cross Chain Query packets.
+#
+# Default: true
+# allow_ccq = true
+
 [[chains]]
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
