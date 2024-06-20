@@ -75,7 +75,6 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
             let ack_fee = random_u128_range(200, 300);
             let timeout_fee = random_u128_range(100, 200);
 
-            // Before ibc-go v8.1.0 the amount escrowed for ICS29 fees is the sum of recv, ack and timeout fees
             let balance_a2 = balance_a1.clone() - send_amount;
 
             chain_driver_a.ibc_token_transfer_with_fee(
@@ -223,7 +222,6 @@ impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
         let ack_fee = random_u128_range(200, 300);
         let timeout_fee = random_u128_range(100, 200);
 
-        // Before ibc-go v8.1.0 the amount escrowed for ICS29 fees is the sum of recv, ack and timeout fees
         let balance_a2 = balance_a1.clone() - send_amount;
 
         let denom_b = derive_ibc_denom(
