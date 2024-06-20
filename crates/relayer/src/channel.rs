@@ -1813,7 +1813,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             let dst_msgs = if channel.a_side.connection_hops.is_some() {
                 channel.build_multihop_chan_open_ack()?
             } else {
-                channel.build_chan_open_try()?
+                channel.build_chan_open_ack()?
             };
 
             let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenAck");
