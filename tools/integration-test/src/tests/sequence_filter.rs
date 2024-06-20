@@ -18,6 +18,7 @@
 use std::collections::BTreeMap;
 
 use ibc_relayer::config::ChainConfig;
+use ibc_relayer::util::excluded_sequences::ExcludedSequences;
 use ibc_test_framework::{
     prelude::*,
     relayer::channel::{assert_eventually_channel_established, init_channel},
@@ -52,7 +53,7 @@ impl TestOverrides for FilterClearOnStartTest {
         let chain_a = &mut config.chains[0];
         match chain_a {
             ChainConfig::CosmosSdk(chain_config) => {
-                chain_config.excluded_sequences = excluded_sequences;
+                chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
         }
         config.mode.channels.enabled = true;
@@ -89,7 +90,7 @@ impl TestOverrides for FilterClearIntervalTest {
         let chain_a = &mut config.chains[0];
         match chain_a {
             ChainConfig::CosmosSdk(chain_config) => {
-                chain_config.excluded_sequences = excluded_sequences;
+                chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
         }
         config.mode.channels.enabled = true;
@@ -248,7 +249,7 @@ impl TestOverrides for StandardRelayingNoFilterTest {
         let chain_a = &mut config.chains[0];
         match chain_a {
             ChainConfig::CosmosSdk(chain_config) => {
-                chain_config.excluded_sequences = excluded_sequences;
+                chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
         }
         config.mode.packets.clear_on_start = true;
