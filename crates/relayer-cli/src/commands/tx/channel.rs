@@ -1058,35 +1058,269 @@ pub struct TxChanOpenConfirmCmd {
 
 impl Runnable for TxChanOpenConfirmCmd {
     fn run(&self) {
-        tx_chan_cmd!(
-            "ChanOpenConfirm",
-            build_chan_open_confirm_and_send,
-            self,
-            |chains: ChainHandlePair, dst_connection: ConnectionEnd| {
-                Channel {
-                    connection_delay: Default::default(),
-                    ordering: Ordering::default(),
-                    a_side: ChannelSide::new(
-                        chains.src,
-                        ClientId::default(),
-                        ConnectionId::default(),
-                        None,
-                        self.src_port_id.clone(),
-                        Some(self.src_chan_id.clone()),
-                        None,
+        let config = app_config();
+
+        // Set a global registry to retrieve or spawn chain handles
+        set_global_registry(SharedRegistry::new((*app_config()).clone()));
+
+        let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
+            Ok(chains) => chains,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        // Attempt to retrieve --dst-connection
+        let dst_connection = match chains.dst.query_connection(
+            QueryConnectionRequest {
+                connection_id: self.dst_conn_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((connection, _)) => connection,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        // Retrieve the ChannelEnd in OPEN state (--src-channel) from --src-chain
+        let open_channel = match chains.src.query_channel(
+            QueryChannelRequest {
+                port_id: self.src_port_id.clone(),
+                channel_id: self.src_chan_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::No,
+        ) {
+            Ok((channel, _)) => channel,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        let mut a_side_hops = Vec::new(); // Hops from --src-chain towards --dst-chain
+        let mut b_side_hops = Vec::new(); // Hops from --dst-chain towards --src-chain
+
+        // Determine if the channel is a multihop channel, i.e, connection_hops > 1
+        if open_channel.connection_hops().len() > 1 {
+            let mut chain_id = chains.src.id().clone();
+
+            for a_side_connection_id in open_channel.connection_hops() {
+                let chain_handle = match spawn_chain_runtime(&config, &chain_id) {
+                    Ok(handle) => handle,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                let a_side_hop_connection = match chain_handle.query_connection(
+                    QueryConnectionRequest {
+                        connection_id: a_side_connection_id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((connection, _)) => connection,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                let a_side_hop_conn_client_state = match chain_handle.query_client_state(
+                    QueryClientStateRequest {
+                        client_id: a_side_hop_connection.client_id().clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((client_state, _)) => client_state,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                // Obtain the counterparty ConnectionId and ChainId for the current connection hop
+                // towards b_side/destination
+                let counterparty_conn_id = a_side_hop_connection
+                    .counterparty()
+                    .connection_id()
+                    .unwrap_or_else(|| {
+                        Output::error(ConnectionError::missing_counterparty_connection_id()).exit()
+                    });
+
+                let counterparty_chain_id = a_side_hop_conn_client_state.chain_id().clone();
+
+                let counterparty_handle = match spawn_chain_runtime(&config, &counterparty_chain_id)
+                {
+                    Ok(handle) => handle,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                // Retrieve the counterparty connection
+                let counterparty_connection = match counterparty_handle.query_connection(
+                    QueryConnectionRequest {
+                        connection_id: counterparty_conn_id.clone(),
+                        height: QueryHeight::Latest,
+                    },
+                    IncludeProof::No,
+                ) {
+                    Ok((connection, _)) => connection,
+                    Err(e) => Output::error(e).exit(),
+                };
+
+                a_side_hops.push(ConnectionHop {
+                    connection: IdentifiedConnectionEnd::new(
+                        a_side_connection_id.clone(),
+                        a_side_hop_connection.clone(),
                     ),
-                    b_side: ChannelSide::new(
-                        chains.dst,
-                        dst_connection.client_id().clone(),
-                        self.dst_conn_id.clone(),
-                        None,
-                        self.dst_port_id.clone(),
-                        Some(self.dst_chan_id.clone()),
-                        None,
+                    src_chain_id: chain_id.clone(),
+                    dst_chain_id: a_side_hop_conn_client_state.chain_id(),
+                });
+
+                // Build the current hop from the opposite direction
+                b_side_hops.push(ConnectionHop {
+                    connection: IdentifiedConnectionEnd::new(
+                        counterparty_conn_id.clone(),
+                        counterparty_connection,
                     ),
-                }
+                    src_chain_id: a_side_hop_conn_client_state.chain_id(),
+                    dst_chain_id: chain_id.clone(),
+                });
+
+                // Update chain_id to point to the next chain in the channel path
+                // from a_side towards b_side
+                chain_id = a_side_hop_conn_client_state.chain_id().clone();
             }
-        );
+        } else {
+            // Get the single ConnectionId from a_side (--src-chain) to b_side (--dst-chain)
+            // from the connection_hops field of the ChannelEnd in OPEN state
+            let a_side_connection_id =
+                open_channel.connection_hops().first().unwrap_or_else(|| {
+                    Output::error(ChannelError::missing_connection_hops(
+                        self.src_chan_id.clone(),
+                        self.src_chain_id.clone(),
+                    ))
+                    .exit()
+                });
+
+            let a_side_hop_connection = match chains.src.query_connection(
+                QueryConnectionRequest {
+                    connection_id: a_side_connection_id.clone().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((connection, _)) => connection,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            let a_side_hop_conn_client_state = match chains.src.query_client_state(
+                QueryClientStateRequest {
+                    client_id: a_side_hop_connection.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((client_state, _)) => client_state,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            a_side_hops.push(ConnectionHop {
+                connection: IdentifiedConnectionEnd::new(
+                    a_side_connection_id.clone(),
+                    a_side_hop_connection,
+                ),
+                src_chain_id: chains.src.id(),
+                dst_chain_id: a_side_hop_conn_client_state.chain_id(),
+            });
+
+            let b_side_hop_connection = match chains.dst.query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_conn_id.clone().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((connection, _)) => connection,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            // Retrieve the state of the client underlying the hop connection
+            let b_side_hop_conn_client_state = match chains.dst.query_client_state(
+                QueryClientStateRequest {
+                    client_id: b_side_hop_connection.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((client_state, _)) => client_state,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            // Build the single hop from --dst-chain to --src-chain
+            b_side_hops.push(ConnectionHop {
+                connection: IdentifiedConnectionEnd::new(
+                    self.dst_conn_id.clone(),
+                    b_side_hop_connection.clone(),
+                ),
+                src_chain_id: chains.dst.id(),
+                dst_chain_id: b_side_hop_conn_client_state.chain_id().clone(),
+            });
+        }
+
+        b_side_hops.reverse();
+
+        if let Some(last_hop) = &b_side_hops.last() {
+            if last_hop.dst_chain_id != chains.src.id() {
+                Output::error(Error::ics33_hops_destination_mismatch(
+                    chains.src.id(),
+                    chains.dst.id(),
+                    last_hop.dst_chain_id.clone(),
+                ))
+                .exit()
+            }
+        }
+
+        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
+        // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
+        // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
+        let a_side_hops = match a_side_hops.len() {
+            0 => Output::error("At least one connection hop is required for opening a channel.")
+                .exit(),
+            1 => None,
+            _ => Some(ConnectionHops::new(a_side_hops)),
+        };
+
+        let b_side_hops = match b_side_hops.len() {
+            0 => Output::error("At least one connection hop is required for opening a channel.")
+                .exit(),
+            1 => None,
+            _ => Some(ConnectionHops::new(b_side_hops)),
+        };
+
+        let channel = Channel {
+            ordering: Ordering::default(),
+            a_side: ChannelSide::new(
+                chains.src,
+                ClientId::default(),
+                ConnectionId::default(),
+                a_side_hops,
+                self.src_port_id.clone(),
+                Some(self.src_chan_id.clone()),
+                None,
+            ),
+            b_side: ChannelSide::new(
+                chains.dst,
+                dst_connection.client_id().clone(),
+                self.dst_conn_id.clone(),
+                b_side_hops,
+                self.dst_port_id.clone(),
+                Some(self.dst_chan_id.clone()),
+                None,
+            ),
+            connection_delay: Default::default(),
+        };
+
+        info!("message {}: {}", "ChanOpenConfirm", channel);
+
+        let res: Result<IbcEvent, Error> = channel
+            .build_chan_open_confirm_and_send()
+            .map_err(Error::channel);
+
+        match res {
+            Ok(receipt) => Output::success(receipt).exit(),
+            Err(e) => Output::error(e).exit(),
+        }
     }
 }
 
