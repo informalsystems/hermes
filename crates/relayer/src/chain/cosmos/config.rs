@@ -149,6 +149,9 @@ pub struct CosmosSdkConfig {
     pub clear_interval: Option<u64>,
     #[serde(default)]
     pub excluded_sequences: ExcludedSequences,
+
+    #[serde(default = "default::allow_ccq")]
+    pub allow_ccq: bool,
 }
 
 impl CosmosSdkConfig {

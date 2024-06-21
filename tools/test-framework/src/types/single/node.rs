@@ -200,6 +200,7 @@ impl FullNode {
             compat_mode,
             clear_interval: None,
             excluded_sequences: ExcludedSequences::new(BTreeMap::new()),
+            allow_ccq: true,
         }))
     }
 

@@ -246,6 +246,10 @@ pub mod default {
     pub fn ics20_max_receiver_size() -> Ics20FieldSizeLimit {
         Ics20FieldSizeLimit::new(true, Byte::from_bytes(2048))
     }
+
+    pub fn allow_ccq() -> bool {
+        true
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -723,6 +727,12 @@ impl ChainConfig {
                 .get(channel_id)
                 .map(|seqs| Cow::Borrowed(seqs.as_slice()))
                 .unwrap_or_else(|| Cow::Owned(Vec::new())),
+        }
+    }
+
+    pub fn allow_ccq(&self) -> bool {
+        match self {
+            Self::CosmosSdk(config) => config.allow_ccq,
         }
     }
 }
