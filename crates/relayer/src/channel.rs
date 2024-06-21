@@ -1002,8 +1002,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-        // If there is a channel present on the destination chain,
-        // the counterparty should look like this:
+        // If there is a channel end on the destination chain, the channel end's
+        // counterparty should match the specified source chain, i.e, the following:
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
@@ -1015,16 +1015,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             _ => State::Uninitialized,
         };
 
+        // The configuration of the channel end in the destination chain should match the following
         let dst_expected_channel = ChannelEnd::new(
             highest_state,
             self.ordering,
             counterparty,
-            vec![self.dst_connection_id().clone()],
+            // FIXME: This is a temporary workaround while --connection-hops has not yet replaced
+            // --dst-connection in the tx CLI. If connection_hops are 'None' pass '--dst-connection'
+            // to the field 'ChannelEnd.connection_hops' for now.
+            self.b_side
+                .connection_hops
+                .as_ref()
+                .map(|hops| hops.connection_ids())
+                .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
             Version::empty(),
             0,
         );
 
-        // Retrieve existing channel
+        // Retrieve existing channel from the destination
         let (dst_channel, _) = self
             .dst_chain()
             .query_channel(
@@ -1037,8 +1045,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
-        // Check if a channel is expected to exist on destination chain
-        // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
+        // Require the channel end to exist, i.e, require the state to differ from State::Uninitialized.
+        // A channel end must exist on the destination for Ack and Confirm Txs to succeed.
         if dst_channel.state_matches(&State::Uninitialized) {
             return Err(ChannelError::missing_channel_on_destination());
         }
@@ -1382,10 +1390,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // The channel end in src_chain must be in 'Init' state
+        // The channel end in src_chain must be in 'INIT' state to send a 'MsgChannelOpenTry'
         if !src_channel.state_matches(&State::Init) {
             return Err(ChannelError::unexpected_channel_state(
                 src_channel_id.clone(),
+                self.src_chain().id().clone(),
                 State::Init,
                 *src_channel.state(),
             ));
@@ -1514,10 +1523,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // The channel end in src_chain must be in `Init` state
+        // The channel end in src_chain must be in 'INIT' state to send a 'MsgChannelOpenTry'
         if !src_channel.state_matches(&State::Init) {
             return Err(ChannelError::unexpected_channel_state(
                 src_channel_id.clone(),
+                self.src_chain().id().clone(),
                 State::Init,
                 *src_channel.state(),
             ));
@@ -1633,7 +1643,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
-    pub fn build_chan_open_ack(&self) -> Result<Vec<Any>, ChannelError> {
+    pub fn build_multihop_chan_open_ack(&self) -> Result<Vec<Any>, ChannelError> {
         // Source and destination channel IDs must be specified
         let src_channel_id = self
             .src_channel_id()
@@ -1641,9 +1651,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let dst_channel_id = self
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
-
-        // Check that the destination chain will accept the Ack message
-        self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Channel must exist on source
         let (src_channel, _) = self
@@ -1657,6 +1664,103 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 IncludeProof::No,
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // Check that the destination chain will accept the MsgChannelOpenAck
+        self.validated_expected_channel(ChannelMsgType::OpenAck)?;
+
+        self.dst_chain()
+            .query_connection(
+                QueryConnectionRequest {
+                    connection_id: self.dst_connection_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
+
+        // Update the clients along the channel path and store the heights necessary for querying
+        // multihop proofs. 'proof_heights' contains the height at which proofs should be queried,
+        // ordered from the sending chain to the penultimate chain in the channel path. In order to
+        // verify proofs queried at the height 'proof_query_height' stored in 'proof_heights', the
+        // client on the chain that receives the proof must possess the consensus state corresponding
+        // to height 'proof_query_height + 1' of the chain on which the proofs were queried.
+        let proof_heights = self.update_channel_path_clients()?;
+
+        // Get the proof heights for the last hop in the channel path, which connects the penultimate
+        // chain to the destination.
+        let last_hop_heights =
+            proof_heights
+                .last()
+                .ok_or(ChannelError::missing_multihop_proof_heights(
+                    src_channel_id.clone(),
+                    self.src_chain().id(),
+                ))?;
+
+        // Build the message to update the client on the channel path's destination chain. Because
+        // proofs are queried at height 'last_hop_heights.proof_query_height' in the penultimate chain,
+        // update the client that tracks the penultimate chain in the destination using height
+        // 'last_hop_heights.proof_query_height' + 1 to allow for proof verification.
+        let mut msgs =
+            self.build_update_client_on_last_hop(last_hop_heights.proof_query_height.increment())?;
+
+        let multihop_proofs = self.build_multihop_channel_proofs(&proof_heights)?;
+
+        let multihop_proof_bytes = prost::Message::encode_to_vec(&multihop_proofs);
+
+        let proofs = ibc_relayer_types::proofs::Proofs::new(
+            CommitmentProofBytes::try_from(multihop_proof_bytes).unwrap(),
+            None,
+            None,
+            None,
+            None,
+            last_hop_heights.proof_query_height.increment(),
+        )
+        .map_err(ChannelError::malformed_proof)?;
+
+        // Get signer
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelOpenAck {
+            port_id: self.dst_port_id().clone(),
+            channel_id: dst_channel_id.clone(),
+            counterparty_channel_id: src_channel_id.clone(),
+            counterparty_version: src_channel.version().clone(),
+            proofs,
+            signer,
+        };
+
+        msgs.push(new_msg.to_any());
+        Ok(msgs)
+    }
+
+    pub fn build_chan_open_ack(&self) -> Result<Vec<Any>, ChannelError> {
+        // Source and destination channel IDs must be specified
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        // Channel must exist on source
+        let (src_channel, _) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: self.src_port_id().clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // Check that the destination chain will accept the MsgChannelOpenAck
+        self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Connection must exist on destination
         self.dst_chain()
@@ -1706,7 +1810,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         fn do_build_chan_open_ack_and_send<ChainA: ChainHandle, ChainB: ChainHandle>(
             channel: &Channel<ChainA, ChainB>,
         ) -> Result<IbcEvent, ChannelError> {
-            let dst_msgs = channel.build_chan_open_ack()?;
+            let dst_msgs = if channel.a_side.connection_hops.is_some() {
+                channel.build_multihop_chan_open_ack()?
+            } else {
+                channel.build_chan_open_ack()?
+            };
 
             let tm = TrackedMsgs::new_static(dst_msgs, "ChannelOpenAck");
 
