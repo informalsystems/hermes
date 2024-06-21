@@ -782,7 +782,7 @@ impl Runnable for TxChanOpenAckCmd {
                 };
 
                 // Obtain the counterparty ConnectionId and ChainId for the current connection hop
-                // towards b_side
+                // towards b_side/destination
                 let counterparty_conn_id = a_side_hop_connection
                     .counterparty()
                     .connection_id()
@@ -916,7 +916,7 @@ impl Runnable for TxChanOpenAckCmd {
             });
         }
 
-        // The connection hops were assembled while traversing from --src-chain towards --dst-chain.
+        // The connection hops were assembled while traversing from --src-chain(a_side) --dst-chain(b_side).
         // Reverse them to obtain the path from --dst-chain to --src-chain. Single hops remain unchanged
         // when reversed.
         b_side_hops.reverse();

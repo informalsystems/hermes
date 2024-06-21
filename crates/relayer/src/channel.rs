@@ -1003,7 +1003,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
         // If there is a channel end on the destination chain, the channel end's
-        // counterparty should match this:
+        // counterparty should match the specified source chain, i.e, the following:
         let counterparty =
             Counterparty::new(self.src_port_id().clone(), self.src_channel_id().cloned());
 
@@ -1015,12 +1015,19 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             _ => State::Uninitialized,
         };
 
-        // The channel configuration as it should be in the destination
+        // The configuration of the channel end in the destination chain should match the following
         let dst_expected_channel = ChannelEnd::new(
             highest_state,
             self.ordering,
             counterparty,
-            vec![self.dst_connection_id().clone()],
+            // FIXME: This is a temporary workaround while --connection-hops has not yet replaced
+            // --dst-connection in the tx CLI. If connection_hops are 'None' pass '--dst-connection'
+            // to the field 'ChannelEnd.connection_hops' for now.
+            self.b_side
+                .connection_hops
+                .as_ref()
+                .map(|hops| hops.connection_ids())
+                .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
             Version::empty(),
             0,
         );
@@ -1383,10 +1390,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // The channel end in src_chain must be in 'Init' state
+        // The channel end in src_chain must be in 'INIT' state to send a 'MsgChannelOpenTry'
         if !src_channel.state_matches(&State::Init) {
             return Err(ChannelError::unexpected_channel_state(
                 src_channel_id.clone(),
+                self.src_chain().id().clone(),
                 State::Init,
                 *src_channel.state(),
             ));
@@ -1515,10 +1523,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // The channel end in src_chain must be in `Init` state
+        // The channel end in src_chain must be in 'INIT' state to send a 'MsgChannelOpenTry'
         if !src_channel.state_matches(&State::Init) {
             return Err(ChannelError::unexpected_channel_state(
                 src_channel_id.clone(),
+                self.src_chain().id().clone(),
                 State::Init,
                 *src_channel.state(),
             ));
@@ -1643,9 +1652,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-        // Check that the destination chain will accept the Ack message
-        // self.validated_expected_channel(ChannelMsgType::OpenAck)?;
-
         // Channel must exist on source
         let (src_channel, _) = self
             .src_chain()
@@ -1659,14 +1665,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
 
-        // // The channel end in src_chain must be in 'Init' state
-        // if !src_channel.state_matches(&State::Init) {
-        //     return Err(ChannelError::unexpected_channel_state(
-        //         src_channel_id.clone(),
-        //         State::Init,
-        //         *src_channel.state(),
-        //     ));
-        // }
+        // Check that the destination chain will accept the MsgChannelOpenAck
+        self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         self.dst_chain()
             .query_connection(
@@ -1746,9 +1746,6 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .dst_channel_id()
             .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
 
-        // Check that the destination chain will accept the Ack message
-        self.validated_expected_channel(ChannelMsgType::OpenAck)?;
-
         // Channel must exist on source
         let (src_channel, _) = self
             .src_chain()
@@ -1761,6 +1758,9 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 IncludeProof::No,
             )
             .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // Check that the destination chain will accept the MsgChannelOpenAck
+        self.validated_expected_channel(ChannelMsgType::OpenAck)?;
 
         // Connection must exist on destination
         self.dst_chain()

@@ -136,10 +136,11 @@ define_error! {
 
         UnexpectedChannelState
             { channel_id: ChannelId,
+              chain_id: ChainId,
               expected_state: State,
               channel_state: State,
             }
-            | e | { format_args!("expected state of channel '{}' to be '{}', but found '{}'", e.channel_id, e.expected_state, e.channel_state) },
+            | e | { format_args!("expected state of channel '{}' on chain '{}' to be '{}', but found '{}'", e.channel_id, e.chain_id, e.expected_state, e.channel_state) },
 
         MalformedProof
             [ ProofError ]
