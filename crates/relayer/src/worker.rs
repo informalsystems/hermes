@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 use tracing::error;
 
-use crate::config::ChainConfig;
 use crate::foreign_client::ForeignClient;
 use crate::link::{Link, LinkParameters, Resubmit};
 use crate::{
@@ -210,11 +209,11 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
 
         Object::CrossChainQuery(cross_chain_query) => {
-            if config.chains.iter().any(|chain| match chain {
-                ChainConfig::CosmosSdk(c) => {
-                    (c.id == cross_chain_query.dst_chain_id) && c.allow_ccq
-                }
-            }) {
+            if config
+                .chains
+                .iter()
+                .any(|chain| chain.id() == &cross_chain_query.dst_chain_id && chain.allow_ccq())
+            {
                 let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
                 let cross_chain_query_task = cross_chain_query::spawn_cross_chain_query_worker(
                     chains.a.clone(),

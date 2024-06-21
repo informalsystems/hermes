@@ -728,6 +728,12 @@ impl ChainConfig {
                 .unwrap_or_else(|| Cow::Owned(Vec::new())),
         }
     }
+
+    pub fn allow_ccq(&self) -> bool {
+        match self {
+            Self::CosmosSdk(config) => config.allow_ccq,
+        }
+    }
 }
 
 // /!\ Update me when adding a new chain type!
