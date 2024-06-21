@@ -1,5 +1,83 @@
 # CHANGELOG
 
+## v1.10.0
+
+*June 21st, 2024*
+
+This release enhances filter configurations and includes the following updates:
+
+1. `excluded_sequences` supports sequence ranges in addition to exact values,
+   e.g. `[1, 2, "5-10", 13]` is now valid.
+2. `packet_filter` now ignores unintended whitespace.
+3. A new `allow_ccq` per-chain configuration has been added to skip the relaying of
+   ICS31 Cross Chain Queries.
+
+Additionally, various improvements to testing and bug fixes have been implemented.
+
+### BUG FIXES
+
+- General
+  - Fix a bug where in some cases, Hermes would drop all events in a
+    batch that came after an event rejected by the filtering policy
+    ([\#4034](https://github.com/informalsystems/hermes/issues/4034))
+- [Relayer Library](relayer)
+  - Discard CrossChain queries intended for unconfigured chains.
+    ([\#4021](https://github.com/informalsystems/hermes/issues/4021))
+
+### FEATURES
+
+- [Integration Test Framework](tools/test-framework)
+  - Add tests to ensure that Hermes correctly relays transfer messages
+    from a grantee address with granted authorisation using `authz` module.
+    ([\#4046](https://github.com/informalsystems/hermes/issues/4046))
+- [Relayer Library](relayer)
+  - Add a new per-chain configuration `allow_ccq` to enable or disable
+    relaying of ICS31 Cross Chain Query packets.
+    ([\#4040](https://github.com/informalsystems/hermes/issues/4040))
+
+### IMPROVEMENTS
+
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Gaia running the integration tests in the CI from `v15.2.0`
+    to `v17.2.0` ([\#4023](https://github.com/informalsystems/hermes/issues/4023))
+  - Update the version of Osmosis running the integration tests in the CI from `v24.0.1`
+    to `v25.0.0` ([\#4024](https://github.com/informalsystems/hermes/issues/4024))
+  - Update the version of Juno running the integration tests in the CI from `v21.0.0`
+    to `v22.0.0` ([\#4025](https://github.com/informalsystems/hermes/issues/4025))
+  - Update the version of Neutron running the integration tests in the CI from `v3.0.2`
+    to `v3.0.5` ([\#4026](https://github.com/informalsystems/hermes/issues/4026))
+  - Update the version of Celestia app running the integration tests in the CI from `v1.4.0`
+    to `v1.11.0` ([\#4027](https://github.com/informalsystems/hermes/issues/4027))
+  - Update the version of `wasmd` running the integration tests in the CI from `v0.50.0`
+    to `v0.51.0` ([\#4029](https://github.com/informalsystems/hermes/issues/4029))
+  - Reduce run time for ICS29 tests by immediately verifying if either
+    the legacy fees, `recv_fee + ack_fee + timeout_fee` or current
+    fees, `max(recv_fee + ack_fee, timeout_fee)` have been escrowed.
+    ([\#4053](https://github.com/informalsystems/hermes/issues/4053))
+  - Refactored the test-framework bootstrapping for n-ary chain tests
+    to utilize the specified topology.
+  * Currently, only linear, cyclic and fully connected topologies are supported.
+    ([\#4038](https://github.com/informalsystems/hermes/issues/4038))
+- [Relayer Library](relayer)
+  - Use custom User-Agent for Hermes queries
+    ([\#3979](https://github.com/informalsystems/hermes/issues/3979))
+  - Updated the channel and port filter parsing to ignore whitespaces.
+    This will prevent unintended channel scanning due to accidental
+    whitespaces when exact matches are specified in the `packet_filter`
+    configuration.
+    ([\#4045](https://github.com/informalsystems/hermes/issues/4045))
+  - Improve the `excluded_sequences` configuration so that it now accepts
+    ranges of sequence values in addition to exact values.
+    Accepted format:
+  * Exact sequence, e.g. [1, 2, 3]
+  * "-" separator, e.g. ["1-3"]
+
+    These can be combined making the following configurations equivalent:
+  * `excluded_sequences = { 'channel-0' = [1, "3-5", 7, "9-12"] }`
+  * `excluded_sequences = { 'channel-0' = [1, 3, 4, 5, 7, 9, 10, 11, 12] }`
+
+    ([\#4047](https://github.com/informalsystems/hermes/issues/4047))
+
 ## v1.9.0
 
 *May 30th, 2024*
