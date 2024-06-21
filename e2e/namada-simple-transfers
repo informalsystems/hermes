@@ -4,7 +4,7 @@
 # `make build` and `make build-wasm-scripts` on Namada directory in advance
 # Run with `namada-simple-transfers ${namada_dir}`
 
-set -ex
+set -e
 
 NAMADA_DIR=$1
 if [ -z "${NAMADA_DIR}" ]
@@ -45,10 +45,34 @@ function init_relayer_balance() {
     --node ${ledger_addr}
 }
 
+function wait_for_relaying() {
+  local chain_id=$1
+
+  for i in {1..20}
+  do
+    result=$(cargo run --bin hermes -- --config config_for_namada.toml \
+      query packet pending \
+      --chain ${chain_id} \
+      --channel channel-0 \
+      --port transfer)
+
+    echo ${result}
+    if [[ "${result}" =~ "=" ]];
+    then
+      echo "Waiting for packet relaying..."
+      sleep 5
+    else
+      echo "All packets have been relayed!"
+      break
+    fi
+  done
+}
+
 # ==== main ====
 
 # Run 2 Namada chains
 ${HERMES_DIR}/scripts/setup-namada ${NAMADA_DIR}
+sleep 5
 
 cd ${HERMES_DIR}
 ids=$(grep "id" config_for_namada.toml | awk -F"'" '/^id/ {print $2}')
@@ -238,8 +262,7 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_B}
 
-# wait for relaying
-sleep 15
+wait_for_relaying ${chain_a}
 
 echo "==== Balances on chain A ===="
 balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
@@ -295,8 +318,7 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --gas-payer relayer \
   --node ${LEDGER_ADDR_A}
 
-# wait for relaying
-sleep 40
+wait_for_relaying ${chain_a}
 
 echo "==== Balance of shielded_a on chain A ===="
 ${NAMADAC} --base-dir ${base_dir_a} shielded-sync \
@@ -373,8 +395,7 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_B}
 
-# wait for relaying
-sleep 40
+wait_for_relaying ${chain_a}
 
 echo "==== Balances of shielded_a on chain A ===="
 ${NAMADAC} --base-dir ${base_dir_a} shielded-sync \

@@ -21,6 +21,10 @@ define_error! {
         BorshDecode
             [ TraceError<std::io::Error> ]
             |_| { "borsh decoding failed" },
+
+        DryRun
+            { tx_result: namada_sdk::tx::data::TxResult<String> }
+            |e| { format!("Dry run to simulate a transaction failed: {}", e.tx_result) },
     }
 }
 

@@ -22,12 +22,15 @@ use namada_sdk::ibc::core::channel::types::msgs::{
 use namada_sdk::ibc::core::host::types::identifiers::{ChannelId, PortId};
 use namada_sdk::masp::{PaymentAddress, TransferTarget};
 use namada_sdk::masp_primitives::transaction::Transaction as MaspTransaction;
+use namada_sdk::tx::{prepare_tx, ProcessTxResponse};
 use namada_sdk::{signing, tx, Namada};
 use namada_token::ShieldingTransfer;
 use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tracing::{debug, debug_span, trace};
+use tracing::{debug, debug_span, trace, warn};
 
+use crate::chain::cosmos::gas::{adjust_estimated_gas, AdjustGas};
+use crate::chain::cosmos::types::gas::default_gas_from_config;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::all_tx_results_found;
 use crate::chain::endpoint::ChainEndpoint;
@@ -44,9 +47,11 @@ impl NamadaChain {
             return Err(Error::send_tx("No message to be batched".to_string()));
         }
 
-        let tx_args = self.make_tx_args()?;
+        let mut tx_args = self.make_tx_args()?;
 
-        let relayer_addr = self.get_key()?.address;
+        let relayer_key = self.get_key()?;
+        let relayer_addr = relayer_key.address;
+
         let rt = self.rt.clone();
         rt.block_on(self.submit_reveal_aux(&tx_args, &relayer_addr))?;
 
@@ -57,7 +62,6 @@ impl NamadaChain {
             serialized_tx: None,
             owner: relayer_addr.clone(),
         };
-
         let mut txs = Vec::new();
         for msg in msgs {
             let (mut tx, signing_data) = rt
@@ -67,17 +71,46 @@ impl NamadaChain {
             txs.push((tx, signing_data));
         }
         let (mut tx, signing_data) = tx::build_batch(txs).map_err(NamadaError::namada)?;
+        let signing_data = signing_data.first().expect("SigningData should exist");
+
+        // Estimate the fee with dry-run
+        if let Some((fee_token, gas_limit, fee_amount)) =
+            self.estimate_fee(tx.clone(), &tx_args, signing_data)?
+        {
+            // Set the estimated fee
+            tx_args = tx_args
+                .fee_token(fee_token)
+                .gas_limit(gas_limit.into())
+                .fee_amount(
+                    fee_amount
+                        .to_string()
+                        .parse()
+                        .expect("Fee should be parsable"),
+                );
+            let fee_amount = rt
+                .block_on(signing::validate_fee(&self.ctx, &tx_args))
+                .map_err(NamadaError::namada)?;
+            rt.block_on(prepare_tx(
+                &tx_args,
+                &mut tx,
+                fee_amount,
+                relayer_key.secret_key.to_public(),
+            ))
+            .map_err(NamadaError::namada)?;
+        }
+
         rt.block_on(self.ctx.sign(
             &mut tx,
-            &args.tx,
-            signing_data.first().unwrap().clone(),
+            &tx_args,
+            signing_data.clone(),
             signing::default_sign,
             (),
         ))
         .map_err(NamadaError::namada)?;
+
         let tx_header_hash = tx.header_hash().to_string();
         let response = rt
-            .block_on(self.ctx.submit(tx, &args.tx))
+            .block_on(self.ctx.submit(tx, &tx_args))
             .map_err(NamadaError::namada)?;
 
         match response {
@@ -282,6 +315,87 @@ impl NamadaChain {
         } else {
             Ok(None)
         }
+    }
+
+    fn estimate_fee(
+        &self,
+        mut tx: tx::Tx,
+        args: &TxArgs,
+        signing_data: &signing::SigningTxData,
+    ) -> Result<Option<(Address, u64, f64)>, Error> {
+        let chain_id = self.config().id.clone();
+
+        let args = args.clone().dry_run_wrapper(true);
+        self.rt
+            .block_on(self.ctx.sign(
+                &mut tx,
+                &args,
+                signing_data.clone(),
+                signing::default_sign,
+                (),
+            ))
+            .map_err(NamadaError::namada)?;
+
+        let response = match self.rt.block_on(self.ctx.submit(tx, &args)) {
+            Ok(resp) => resp,
+            Err(_) => {
+                warn!(
+                    id = %chain_id,
+                    "send_tx: gas estimation failed, using the default gas limit"
+                );
+                return Ok(None);
+            }
+        };
+        let estimated_gas = match response {
+            ProcessTxResponse::DryRun(result) => {
+                if result
+                    .batch_results
+                    .0
+                    .iter()
+                    .all(|(_, r)| matches!(&r, Ok(result) if result.is_accepted()))
+                {
+                    // Convert with the decimal scale of Gas units
+                    u64::from_str(&result.gas_used.to_string()).expect("Gas should be parsable")
+                } else {
+                    return Err(Error::namada(NamadaError::dry_run(result)));
+                }
+            }
+            _ => unreachable!("Unexpected response"),
+        };
+        let max_gas = default_gas_from_config(self.config());
+        if estimated_gas > max_gas {
+            debug!(
+                id = %chain_id, estimated = ?estimated_gas, max_gas,
+                "send_tx: estimated gas is higher than max gas"
+            );
+
+            return Err(Error::tx_simulate_gas_estimate_exceeded(
+                chain_id,
+                estimated_gas,
+                max_gas,
+            ));
+        }
+
+        let fee_token_str = self.config().gas_price.denom.clone();
+        let fee_token = Address::from_str(&fee_token_str)
+            .map_err(|_| NamadaError::address_decode(fee_token_str.clone()))?;
+        let gas_price = self.config().gas_price.price;
+        let gas_multiplier = self.config().gas_multiplier.unwrap_or_default().to_f64();
+
+        let adjusted_gas = adjust_estimated_gas(AdjustGas {
+            gas_multiplier,
+            max_gas,
+            gas_amount: estimated_gas,
+        });
+
+        debug!(
+            id = %chain_id,
+            "send_tx: using {} gas, gas_price {:?}",
+            estimated_gas,
+            gas_price,
+        );
+
+        Ok(Some((fee_token, adjusted_gas, gas_price)))
     }
 
     pub fn wait_for_block_commits(

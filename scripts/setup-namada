@@ -32,7 +32,7 @@ LEDGER_ADDR_B="http://127.0.0.1:28657"
 
 HERMES_CONFIG_TEMPLATE="
 [global]
-log_level = 'info'
+log_level = 'debug'
 
 [mode]
 
@@ -67,7 +67,7 @@ event_source = { mode = 'push', url = 'ws://127.0.0.1:27657/websocket', batch_de
 account_prefix = ''
 key_name = 'relayer'
 store_prefix = 'ibc'
-gas_price = { price = 0.001, denom = '_FEE_TOKEN_A_' }
+gas_price = { price = 0.000001, denom = '_FEE_TOKEN_A_' }
 
 [[chains]]
 id = '_CHAIN_ID_B_'
@@ -78,7 +78,7 @@ event_source = { mode = 'push', url = 'ws://127.0.0.1:28657/websocket', batch_de
 account_prefix = ''
 key_name = 'relayer'
 store_prefix = 'ibc'
-gas_price = { price = 0.001, denom = '_FEE_TOKEN_B_' }
+gas_price = { price = 0.000001, denom = '_FEE_TOKEN_B_' }
 "
 
 function make_genesis() {
