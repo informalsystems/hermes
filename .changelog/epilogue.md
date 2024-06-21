@@ -504,7 +504,7 @@ This release also finalizes the initial implementation of all the ICS 004 handle
   - Fix for chains that don't have `cosmos` account prefix ([#416])
   - Fix for building the `trusted_validator_set` for the header used in client updates ([#770])
   - Don't send `MsgAcknowledgment` if channel is closed ([#675])
-  - Fix a bug where the keys addresses had their account prefix overriden by the prefix in the configuration ([#751])
+  - Fix a bug where the keys addresses had their account prefix overridden by the prefix in the configuration ([#751])
 
 - [ibc-relayer-cli]
   - Hermes guide: improved installation guideline ([#672])
@@ -642,7 +642,7 @@ Noteworthy changes in this release include:
 
 ### FEATURES
 
-- Continous Integration (CI) end-to-end (e2e) testing with gaia v4 ([#32], [#582], [#602])
+- Continuous Integration (CI) end-to-end (e2e) testing with gaia v4 ([#32], [#582], [#602])
 - Add support for streamlining releases ([#507])
 
 - [ibc-relayer-cli]
@@ -799,7 +799,7 @@ Special thanks to external contributors for this release: @CharlyCst ([#347], [#
     - CLI for client update message ([#277])
     - Implement the relayer CLI for connection handshake messages ([#358], [#359], [#360])
     - Implement the relayer CLI for channel handshake messages ([#371], [#372], [#373], [#374])
-    - Added basic client, connection, and channel lifecyle in relayer v0 ([#376], [#377], [#378])
+    - Added basic client, connection, and channel lifecycle in relayer v0 ([#376], [#377], [#378])
     - Implement commands to add and list keys for a chain ([#363])
     - Allow overriding of peer_id, height and hash in light add command ([#428])
 - [proto-compiler]
