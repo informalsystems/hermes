@@ -97,18 +97,7 @@ fn parse_sequence_range(value: &toml::Value) -> Result<Vec<Sequence>, ConfigErro
 }
 
 fn get_start_and_end(value: &str) -> Result<(u64, u64), ConfigError> {
-    let separator = if value.contains("..=") {
-        "..="
-    } else if value.contains("..") {
-        ".."
-    } else if value.contains('-') {
-        "-"
-    } else {
-        return Err(ConfigError::invalid_excluded_sequences_separator(
-            value.to_string(),
-        ));
-    };
-    let split: Vec<&str> = value.split(separator).collect();
+    let split: Vec<&str> = value.split('-').collect();
     let start: u64 = split
         .first()
         .ok_or_else(|| ConfigError::missing_start_excluded_sequence(value.to_string()))?

@@ -66,4 +66,3 @@ clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
-excluded_sequences = { 'channel-0' = [1, 2, "3..7", 9, 11] }
