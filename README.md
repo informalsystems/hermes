@@ -118,7 +118,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 
 [build-image]: https://github.com/informalsystems/hermes/workflows/Rust/badge.svg
 [build-link]: https://github.com/informalsystems/hermes/actions?query=workflow%3ARust
-[test-image]: https://github.com/informalsystems/hermes/actions/workflows/integration.yaml/badge.svg
+[test-image]: https://github.com/informalsystems/hermes/actions/workflows/integration.yaml/badge.svg?branch=master
 [test-link]: https://github.com/informalsystems/hermes/actions?query=workflow%3A%22Integration%22
 [license-image]: https://img.shields.io/badge/license-Apache_2.0-blue.svg
 [license-link]: https://github.com/informalsystems/hermes/blob/master/LICENSE
