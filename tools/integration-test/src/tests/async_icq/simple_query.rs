@@ -53,7 +53,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let port_a = DualTagged::new(PortId::oracle());
         let port_b = DualTagged::new(PortId::icqhost());
         let (channel_id_b, channel_id_a) = init_channel_version(
