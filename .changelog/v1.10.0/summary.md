@@ -1,4 +1,4 @@
-*June 21st, 2024*
+*June 24th, 2024*
 
 This release enhances filter configurations and includes the following updates:
 
