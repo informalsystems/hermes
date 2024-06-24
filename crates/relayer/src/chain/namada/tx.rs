@@ -30,13 +30,13 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, debug_span, trace, warn};
 
 use crate::chain::cosmos::gas::{adjust_estimated_gas, AdjustGas};
-use crate::chain::cosmos::types::gas::default_gas_from_config;
+use crate::chain::cosmos::types::gas::max_gas_from_config;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::all_tx_results_found;
 use crate::chain::endpoint::ChainEndpoint;
-use crate::error::Error;
+use crate::error::{Error, ErrorDetail};
 
-use super::error::Error as NamadaError;
+use super::error::{Error as NamadaError, ErrorDetail as NamadaErrorDetail};
 use super::NamadaChain;
 
 const WAIT_BACKOFF: Duration = Duration::from_millis(300);
@@ -47,7 +47,7 @@ impl NamadaChain {
             return Err(Error::send_tx("No message to be batched".to_string()));
         }
 
-        let mut tx_args = self.make_tx_args()?;
+        let tx_args = self.make_tx_args()?;
 
         let relayer_key = self.get_key()?;
         let relayer_addr = relayer_key.address;
@@ -74,29 +74,36 @@ impl NamadaChain {
         let signing_data = signing_data.first().expect("SigningData should exist");
 
         // Estimate the fee with dry-run
-        if let Some((fee_token, gas_limit, fee_amount)) =
-            self.estimate_fee(tx.clone(), &tx_args, signing_data)?
-        {
+        match self.estimate_fee(tx.clone(), &tx_args, signing_data) {
             // Set the estimated fee
-            tx_args = tx_args
-                .fee_token(fee_token)
-                .gas_limit(gas_limit.into())
-                .fee_amount(
-                    fee_amount
-                        .to_string()
-                        .parse()
-                        .expect("Fee should be parsable"),
-                );
-            let fee_amount = rt
-                .block_on(signing::validate_fee(&self.ctx, &tx_args))
-                .map_err(NamadaError::namada)?;
-            rt.block_on(prepare_tx(
-                &tx_args,
-                &mut tx,
-                fee_amount,
-                relayer_key.secret_key.to_public(),
-            ))
-            .map_err(NamadaError::namada)?;
+            Ok(Some((fee_token, gas_limit, fee_amount))) => {
+                self.prepare_tx_with_gas(&mut tx, &tx_args, &fee_token, gas_limit, fee_amount)?
+            }
+            Ok(None) => {
+                // the default gas limit will be used
+            }
+            Err(err) => match err.detail() {
+                ErrorDetail::Namada(namada_err) => {
+                    match namada_err.source {
+                        NamadaErrorDetail::DryRun(ref tx_results) => {
+                            // Simulation failed. Return the failure response to avoid the actual request.
+                            // The response will be converted to `TxSyncResult`.
+                            let response = Response {
+                                codespace: Default::default(),
+                                // the code value isn't used, but it should be non-zero to
+                                // recognize the transaction failed
+                                code: 1.into(),
+                                data: Default::default(),
+                                log: format!("Simulation failed: Results {tx_results}"),
+                                hash: Default::default(),
+                            };
+                            return Ok(response);
+                        }
+                        _ => return Err(err),
+                    }
+                }
+                _ => return Err(err),
+            },
         }
 
         rt.block_on(self.ctx.sign(
@@ -324,8 +331,16 @@ impl NamadaChain {
         signing_data: &signing::SigningTxData,
     ) -> Result<Option<(Address, u64, f64)>, Error> {
         let chain_id = self.config().id.clone();
+        let fee_token_str = self.config().gas_price.denom.clone();
+        let fee_token = Address::from_str(&fee_token_str)
+            .map_err(|_| NamadaError::address_decode(fee_token_str.clone()))?;
+        let max_gas = max_gas_from_config(self.config());
+        let gas_price = self.config().gas_price.price;
 
         let args = args.clone().dry_run_wrapper(true);
+        // Set the max gas to the gas limit for the simulation
+        self.prepare_tx_with_gas(&mut tx, &args, &fee_token, max_gas, gas_price)?;
+
         self.rt
             .block_on(self.ctx.sign(
                 &mut tx,
@@ -357,12 +372,12 @@ impl NamadaChain {
                     // Convert with the decimal scale of Gas units
                     u64::from_str(&result.gas_used.to_string()).expect("Gas should be parsable")
                 } else {
-                    return Err(Error::namada(NamadaError::dry_run(result)));
+                    // All or some of requests will fail
+                    return Err(NamadaError::dry_run(result.batch_results).into());
                 }
             }
             _ => unreachable!("Unexpected response"),
         };
-        let max_gas = default_gas_from_config(self.config());
         if estimated_gas > max_gas {
             debug!(
                 id = %chain_id, estimated = ?estimated_gas, max_gas,
@@ -376,10 +391,6 @@ impl NamadaChain {
             ));
         }
 
-        let fee_token_str = self.config().gas_price.denom.clone();
-        let fee_token = Address::from_str(&fee_token_str)
-            .map_err(|_| NamadaError::address_decode(fee_token_str.clone()))?;
-        let gas_price = self.config().gas_price.price;
         let gas_multiplier = self.config().gas_multiplier.unwrap_or_default().to_f64();
 
         let adjusted_gas = adjust_estimated_gas(AdjustGas {
@@ -396,6 +407,38 @@ impl NamadaChain {
         );
 
         Ok(Some((fee_token, adjusted_gas, gas_price)))
+    }
+
+    fn prepare_tx_with_gas(
+        &self,
+        tx: &mut tx::Tx,
+        args: &TxArgs,
+        fee_token: &Address,
+        gas_limit: u64,
+        fee_amount: f64,
+    ) -> Result<(), Error> {
+        let relayer_key = self.get_key()?;
+        let relayer_public_key = relayer_key.secret_key.to_public();
+
+        let args = args
+            .clone()
+            .fee_token(fee_token.clone())
+            .gas_limit(gas_limit.into())
+            .fee_amount(
+                fee_amount
+                    .to_string()
+                    .parse()
+                    .expect("Fee should be parsable"),
+            );
+        let fee_amount = self
+            .rt
+            .block_on(signing::validate_fee(&self.ctx, &args))
+            .map_err(NamadaError::namada)?;
+        self.rt
+            .block_on(prepare_tx(&args, tx, fee_amount, relayer_public_key))
+            .map_err(NamadaError::namada)?;
+
+        Ok(())
     }
 
     pub fn wait_for_block_commits(

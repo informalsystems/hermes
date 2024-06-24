@@ -11,7 +11,8 @@ use namada_sdk::events::Event as NamadaEvent;
 use namada_sdk::queries::{Client as SdkClient, RPC};
 use namada_sdk::rpc;
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
-use namada_sdk::tx::event::Batch as BatchAttr;
+use namada_sdk::tx::data::ResultCode;
+use namada_sdk::tx::event::{Batch as BatchAttr, Code as CodeAttr};
 use namada_sdk::Namada;
 use tendermint::block::Height as TmHeight;
 use tendermint::Hash as TmHash;
@@ -124,6 +125,17 @@ impl NamadaChain {
                 let tx_result = applied
                     .read_attribute::<BatchAttr<'_>>()
                     .expect("The batch attribute should exist");
+                let code = applied
+                    .read_attribute::<CodeAttr>()
+                    .expect("The code attribute should exist");
+                if code != ResultCode::Ok {
+                    return Ok(vec![IbcEventWithHeight::new(
+                        IbcEvent::ChainError(format!(
+                            "The transaction was invalid: TxResult {tx_result}",
+                        )),
+                        height,
+                    )]);
+                }
                 let events = tx_result.batch_results.0.into_iter().filter_map(|(_, r)| {
                     r.map(|batched_tx_result| {
                         // Get IBC events when the transaction was accepted
