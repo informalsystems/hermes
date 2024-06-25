@@ -94,7 +94,7 @@ jobs:
             command: injectived
             account_prefix: inj
             native_token: stake
-            features: forward-packet,fee-grant,ics29-fee
+            features: forward-packet,fee-grant
 
     steps:
       - uses: actions/checkout@v4
