@@ -35,7 +35,7 @@ impl BinaryChannelTest for AuthzTest {
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
         let a_to_b_amount = 12345u64;
@@ -120,7 +120,7 @@ impl BinaryChannelTest for NoAuthzTest {
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
         let a_to_b_amount = 12345u64;

@@ -13,6 +13,7 @@ pub fn local_transfer_token(
     sender: &str,
     recipient: &str,
     token: &str,
+    fees: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -32,6 +33,8 @@ pub fn local_transfer_token(
             home_path,
             "--keyring-backend",
             "test",
+            "--fees",
+            fees,
             "--yes",
         ],
     )?;

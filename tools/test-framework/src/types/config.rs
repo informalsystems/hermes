@@ -63,3 +63,9 @@ pub struct TestConfig {
 
     pub bootstrap_with_random_ids: bool,
 }
+
+impl TestConfig {
+    pub fn native_token(&self, id: usize) -> &String {
+        &self.native_tokens[id % self.native_tokens.len()]
+    }
+}

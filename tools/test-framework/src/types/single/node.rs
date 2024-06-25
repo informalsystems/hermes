@@ -132,7 +132,6 @@ impl FullNode {
         test_config: &TestConfig,
         chain_number: usize,
     ) -> Result<config::ChainConfig, Error> {
-        let native_token_number = chain_number % test_config.native_tokens.len();
         let hermes_keystore_dir = test_config
             .chain_store_dir
             .join("hermes_keyring")
@@ -147,14 +146,10 @@ impl FullNode {
 
         // Provenance requires a very high gas price
         let gas_price = match chain_type {
-            TestedChainType::Provenance => config::GasPrice::new(
-                5000.0,
-                test_config.native_tokens[native_token_number].clone(),
-            ),
-            _ => config::GasPrice::new(
-                0.003,
-                test_config.native_tokens[native_token_number].clone(),
-            ),
+            TestedChainType::Provenance => {
+                config::GasPrice::new(5000.0, test_config.native_token(chain_number).clone())
+            }
+            _ => config::GasPrice::new(0.003, test_config.native_token(chain_number).clone()),
         };
 
         Ok(config::ChainConfig::CosmosSdk(CosmosSdkConfig {

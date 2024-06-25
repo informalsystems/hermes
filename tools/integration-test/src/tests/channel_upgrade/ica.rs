@@ -85,11 +85,13 @@ impl TestOverrides for ChannelUpgradeICACloseChannel {
 impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
     fn run<Controller: ChainHandle, Host: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
+        let fee_denom_host: MonoTagged<Host, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(1)));
         let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
 
         // Run the block with supervisor in order to open and then upgrade the ICA channel
@@ -219,6 +221,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
+            &fee_denom_host.with_amount(1200u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
@@ -335,11 +338,13 @@ impl TestOverrides for ChannelUpgradeICAUnordered {
 impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
     fn run<Controller: ChainHandle, Host: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         _relayer: RelayerDriver,
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
+        let fee_denom_host: MonoTagged<Host, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(1)));
         let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
 
         info!("Will register interchain account...");
@@ -377,6 +382,7 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
+            &fee_denom_host.with_amount(1200u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(

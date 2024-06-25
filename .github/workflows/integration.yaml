@@ -74,7 +74,7 @@ jobs:
             command: osmosisd
             account_prefix: osmo
             native_token: stake
-            features: dynamic-gas-fee
+            features: dynamic-gas-fee,forward-packet,ica
           - package: juno
             command: junod
             account_prefix: juno

@@ -83,7 +83,7 @@ impl BinaryChainTest for ClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         // Create and send an chain upgrade proposal
@@ -242,7 +242,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         // Create and send an chain upgrade proposal
@@ -340,7 +340,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         let opts = create_upgrade_plan(config, &chains, &upgraded_chain_id)?;
@@ -433,7 +433,7 @@ fn create_upgrade_plan<ChainA: ChainHandle, ChainB: ChainHandle>(
     upgraded_chain_id: &ChainId,
 ) -> Result<UpgradePlanOptions, Error> {
     let fee_denom_a: MonoTagged<ChainA, Denom> =
-        MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        MonoTagged::new(Denom::base(config.native_token(0)));
     let foreign_clients = chains.clone().foreign_clients;
 
     let src_client_id = foreign_clients.client_id_b().0.clone();
