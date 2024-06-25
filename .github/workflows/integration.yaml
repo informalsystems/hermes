@@ -79,7 +79,7 @@ jobs:
             command: junod
             account_prefix: juno
             native_token: stake
-            features: juno,forward-packet,ica
+            features: juno,forward-packet,ica,ics29-fee
           - package: provenance
             command: provenanced
             account_prefix: pb
@@ -89,12 +89,12 @@ jobs:
             command: migalood
             account_prefix: migaloo
             native_token: stake
-            features: ''
+            features: ics29-fee
           - package: injective
             command: injectived
             account_prefix: inj
             native_token: stake
-            features: forward-packet,fee-grant
+            features: forward-packet,fee-grant,ics29-fee
 
     steps:
       - uses: actions/checkout@v4
