@@ -89,7 +89,7 @@ jobs:
             command: migalood
             account_prefix: migaloo
             native_token: stake
-            features: ''
+            features: ics29-fee
           - package: injective
             command: injectived
             account_prefix: inj
