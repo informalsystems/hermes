@@ -7,10 +7,11 @@ use tendermint_rpc::{event::Event as RpcEvent, event::EventData as RpcEventData}
 use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::core::ics02_client::{events as ClientEvents, height::Height};
 use ibc_relayer_types::core::ics04_channel::events as ChannelEvents;
+use ibc_relayer_types::core::ics03_connection::events as ConnectionEvents;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::IbcEvent;
 
-use crate::chain::cosmos::types::events::channel::RawObject;
+use crate::chain::cosmos::types::events::raw_object::RawObject;
 use crate::event::source::queries;
 use crate::telemetry;
 
@@ -300,6 +301,26 @@ fn extract_block_events(
     }
 
     let mut events: Vec<IbcEventWithHeight> = vec![];
+    append_events::<ConnectionEvents::OpenInit>(
+        &mut events,
+        extract_events(height, block_events, "connection_open_init", "connection_id"),
+        height,
+    );
+    append_events::<ConnectionEvents::OpenTry>(
+        &mut events,
+        extract_events(height, block_events, "connection_open_try", "connection_id"),
+        height,
+    );
+    append_events::<ConnectionEvents::OpenAck>(
+        &mut events,
+        extract_events(height, block_events, "connection_open_ack", "connection_id"),
+        height,
+    );
+    append_events::<ConnectionEvents::OpenConfirm>(
+        &mut events,
+        extract_events(height, block_events, "connection_open_confirm", "connection_id"),
+        height,
+    );
     append_events::<ChannelEvents::OpenInit>(
         &mut events,
         extract_events(height, block_events, "channel_open_init", "channel_id"),
