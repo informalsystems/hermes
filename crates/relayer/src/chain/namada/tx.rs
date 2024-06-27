@@ -86,7 +86,8 @@ impl NamadaChain {
                 ErrorDetail::Namada(namada_err) => {
                     match namada_err.source {
                         NamadaErrorDetail::DryRun(ref tx_results) => {
-                            // Simulation failed. Return the failure response to avoid the actual request.
+                            warn!("Simulation failed: {tx_results}");
+                            // Return the failure response to avoid the actual request.
                             // The response will be converted to `TxSyncResult`.
                             let response = Response {
                                 codespace: Default::default(),

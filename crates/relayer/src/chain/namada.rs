@@ -389,7 +389,11 @@ impl ChainEndpoint for NamadaChain {
         let msg_chunks = proto_msgs.chunks(max_msg_num);
         let mut responses = vec![];
         for msg_chunk in msg_chunks {
-            responses.push(self.batch_txs(msg_chunk)?);
+            let response = self.batch_txs(msg_chunk)?;
+            if response.code.is_err() {
+                return Err(Error::send_tx(response.log));
+            }
+            responses.push(response);
         }
 
         Ok(responses)
