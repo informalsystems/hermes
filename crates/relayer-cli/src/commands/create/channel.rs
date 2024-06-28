@@ -21,7 +21,7 @@ use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::core::ics24_host::identifier::{
     ChainId, ConnectionId, ConnectionIds, PortId,
 };
-use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHop;
+use ibc_relayer_types::core::ics33_multihop::channel_path::{ConnectionHop, ConnectionHops};
 
 static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
 static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-connection <CONNECTION-A-ID>\n\nto reuse a pre-existing connection.";
@@ -46,15 +46,23 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 /// chain A and chain B might refer to the connection with different names, they are actually referring
 /// to the same connection.
 #[derive(Clone, Command, Debug, Parser, PartialEq, Eq)]
-#[clap(override_usage = "
-    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
-
-    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --connection-hops <CONNECTION_HOP_IDS> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+#[clap(
+    override_usage = "hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
 
     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
 
-    NOTE: The `--new-client-connection` option does not support connection hops. To open a multi-hop channel, please provide existing connections or initialize them manually before invoking this command.
-    ")]
+    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --connection-hops <CONNECTION_HOP_IDS> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+
+    NOTE: The `--new-client-connection` option does not support connection hops. To open a multi-hop channel, please provide existing connections or initialize them manually before invoking this command."
+)]
+// #[clap(override_usage = "
+//     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+
+//     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
+//     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --connection-hops <CONNECTION_HOP_IDS> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+
+//     NOTE: The `--new-client-connection` option does not support connection hops. To open a multi-hop channel, please provide existing connections or initialize them manually before invoking this command.
+//     ")]
 pub struct CreateChannelCommand {
     #[clap(
         long = "a-chain",
@@ -151,8 +159,7 @@ pub struct CreateChannelCommand {
     #[clap(
         long = "connection-hops",
         visible_alias = "conn-hops",
-        value_name = "CONNECTION_HOP_IDS",
-        required = true,
+        value_name = "CONNECTION_IDS",
         requires = "connection-a",
         conflicts_with_all = &["new-client-connection", "chain-b"],
         help_heading = "FLAGS",
@@ -315,11 +322,11 @@ impl CreateChannelCommand {
     ) {
         let config = app_config();
 
-        let mut a_side_hops = Vec::new(); // Hops from --a-side towards --b-side
-        let mut b_side_hops = Vec::new(); // Hops from --b-side towards --a-side
+        let mut a_side_hops = Vec::new(); // Hops from --a-chain's channel side towards --b-chain
+        let mut b_side_hops = Vec::new(); // Hops from --b-chain's channel side towards --a-chain
 
         // Join `connection_a` and `connection_hops` to create a Vec containing the identifiers
-        // of the connections that form the channel path from `--a-side` to `--b-side`
+        // of the connections that form the channel path from `--a-chain to `--b-chain`
         let mut conn_hop_ids = connection_hops.clone().into_vec();
         conn_hop_ids.insert(0, connection_a.clone());
 
@@ -357,7 +364,7 @@ impl CreateChannelCommand {
             };
 
             // Obtain the counterparty ConnectionId and ChainId for the current connection hop
-            // towards b_side
+            // towards `--b-chain`
             let counterparty_conn_id = a_side_hop_connection
                 .counterparty()
                 .connection_id()
@@ -404,7 +411,7 @@ impl CreateChannelCommand {
             });
 
             // Update chain_id to point to the next chain in the channel path
-            // from a_side towards b_side
+            // from `--a-chain` towards `--b-chain`
             chain_id = a_side_hop_conn_client_state.chain_id().clone();
         }
 
@@ -432,19 +439,22 @@ impl CreateChannelCommand {
         // Reverse b_side_hops to to obtain the correct path from --b-chain to --a-chain.
         b_side_hops.reverse();
 
-        // The first connection from a_side towards b_side
+        // The first connection from `--a-chain` towards `--b-chain`
         let a_side_connection = a_side_hops
             .first()
             .expect("a_side hops is never empty")
             .connection
             .clone();
 
-        // The first connection from b_side towards a_side
+        // The first connection from `--b-chain` towards `--a-chain`
         let b_side_connection = b_side_hops
             .first()
             .expect("b_side hops is never empty")
             .connection
             .clone();
+
+        let a_side_hops = Some(ConnectionHops::new(a_side_hops));
+        let b_side_hops = Some(ConnectionHops::new(b_side_hops));
 
         let channel = Channel::new_multihop(
             a_chain,
@@ -454,8 +464,8 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
-            None, // FIXME: Unsure about what to add here ('None' for now)
-            None, // FIXME: Unsure about what to add here ('None' for now)
+            a_side_hops, // FIXME: Unsure about what to add here ('None' for now)
+            b_side_hops, // FIXME: Unsure about what to add here ('None' for now)
             self.version.clone(),
             core::time::Duration::from_secs(0), // FIXME: We need to figure out how to determine the connection delay for multi-hop channels
         )
