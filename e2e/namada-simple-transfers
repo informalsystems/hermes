@@ -185,7 +185,7 @@ balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_B})
 echo ${balance}
-if [ "${balance}" != "${IBC_TOKEN}: 100" ]; then
+if [ "${balance}" != "${IBC_TOKEN}: 100000000" ]; then
   echo "The balance on chain B is wrong"
   exit 1
 fi
@@ -195,7 +195,7 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --source relayer \
   --receiver ${receiver_a} \
   --token ${IBC_TOKEN} \
-  --amount 50 \
+  --amount 50000000 \
   --signing-keys relayer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_B}
@@ -233,7 +233,7 @@ balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_B})
 echo ${balance}
-if [ "${balance}" != "${IBC_TOKEN}: 50" ]; then
+if [ "${balance}" != "${IBC_TOKEN}: 50000000" ]; then
   echo "The balance on chain B is wrong"
   exit 1
 fi
@@ -280,7 +280,7 @@ balance=$(${NAMADAC} --base-dir ${base_dir_a} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_A})
 echo ${balance}
-if [ "${balance}" != "${IBC_TOKEN}: 300" ]; then
+if [ "${balance}" != "${IBC_TOKEN}: 300000000" ]; then
   echo "The balance on chain A is wrong"
   exit 1
 fi
@@ -301,12 +301,23 @@ balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner relayer \
   --node ${LEDGER_ADDR_B})
 echo ${balance}
-if [ "${balance}" != "${IBC_TOKEN}: 250" ]; then
+if [ "${balance}" != "${IBC_TOKEN}: 250000000" ]; then
   echo "The balance on chain B is wrong"
   exit 1
 fi
 
 echo "==== Shielded transfer tests ===="
+
+echo "~~ Generate the proof from chain_b for the following transfer ~~"
+resp=$(${NAMADAC} --base-dir ${base_dir_b} ibc-gen-shielding \
+  --output-folder-path ${base_dir_b} \
+  --target ${payment_addr_b} \
+  --token apfel \
+  --amount 100000000 \
+  --port-id transfer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_B})
+memo_path=$(echo $resp | awk '{print $8}')
 
 echo "~~ Shielded transfer 100 apfel from chain A to chain B ~~"
 ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
@@ -315,6 +326,7 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --token apfel \
   --amount 100 \
   --channel-id channel-0 \
+  --memo-path ${memo_path} \
   --gas-payer relayer \
   --node ${LEDGER_ADDR_A}
 
@@ -343,7 +355,7 @@ balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner ${SHIELDED_ALIAS_B} \
   --node ${LEDGER_ADDR_B})
 echo "${balance}"
-if [[ "${balance}" != *"${IBC_TOKEN}: 100" ]]; then
+if [[ "${balance}" != *"${IBC_TOKEN}: 100000000" ]]; then
   echo "The balance of shielded_b on chain B is wrong"
   exit 1
 fi
@@ -353,7 +365,7 @@ ${NAMADAC} --base-dir ${base_dir_b} transfer \
   --source ${SHIELDED_ALIAS_B} \
   --target ${payment_addr_b_2} \
   --token ${IBC_TOKEN} \
-  --amount 50 \
+  --amount 50000000 \
   --signing-keys relayer \
   --node ${LEDGER_ADDR_B}
 
@@ -366,7 +378,7 @@ balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner ${SHIELDED_ALIAS_B} \
   --node ${LEDGER_ADDR_B})
 echo "${balance}"
-if [[ "${balance}" != *"${IBC_TOKEN}: 50" ]]; then
+if [[ "${balance}" != *"${IBC_TOKEN}: 50000000" ]]; then
   echo "The balance of shielded_b on chain B is wrong"
   exit 1
 fi
@@ -380,19 +392,31 @@ balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner ${SHIELDED_ALIAS_B_2} \
   --node ${LEDGER_ADDR_B})
 echo "${balance}"
-if [[ "${balance}" != *"${IBC_TOKEN}: 50" ]]; then
+if [[ "${balance}" != *"${IBC_TOKEN}: 50000000" ]]; then
   echo "The balance of shielded_b_2 on chain B is wrong"
   exit 1
 fi
+
+echo "~~ Generate the proof from chain A for the following transfer ~~"
+resp=$(${NAMADAC} --base-dir ${base_dir_a} ibc-gen-shielding \
+  --output-folder-path ${base_dir_a} \
+  --target ${payment_addr_a} \
+  --token ${IBC_TOKEN} \
+  --amount 50000000 \
+  --port-id transfer \
+  --channel-id channel-0 \
+  --node ${LEDGER_ADDR_A})
+memo_path=$(echo $resp | awk '{print $8}')
 
 echo "~~ Transfer back 50 apfel from shielded_b_2 on chain B to chain A ~~"
 ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --source ${SHIELDED_ALIAS_B_2} \
   --receiver ${payment_addr_a} \
   --token ${IBC_TOKEN} \
-  --amount 50 \
+  --amount 50000000 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --memo-path ${memo_path} \
   --node ${LEDGER_ADDR_B}
 
 wait_for_relaying ${chain_a}
@@ -417,7 +441,7 @@ balance=$(${NAMADAC} --base-dir ${base_dir_b} balance \
   --owner ${SHIELDED_ALIAS_B} \
   --node ${LEDGER_ADDR_B})
 echo "${balance}"
-if [[ "${balance}" != *"${IBC_TOKEN}: 50" ]]; then
+if [[ "${balance}" != *"${IBC_TOKEN}: 50000000" ]]; then
   echo "The balance of shielded_b on chain B is wrong"
   exit 1
 fi

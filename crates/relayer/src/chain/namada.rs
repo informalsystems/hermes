@@ -40,7 +40,6 @@ use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::io::NullIo;
 use namada_sdk::masp::fs::FsShieldedUtils;
-use namada_sdk::masp::DefaultLogger;
 use namada_sdk::proof_of_stake::storage_key as pos_storage_key;
 use namada_sdk::proof_of_stake::OwnedPosParams;
 use namada_sdk::queries::Client as SdkClient;
@@ -171,24 +170,6 @@ impl NamadaChain {
             .to_string()
             .parse()
             .unwrap())
-    }
-
-    async fn shielded_sync(&self) -> Result<(), Error> {
-        let mut shielded = self.ctx.shielded_mut().await;
-        let _ = shielded.load().await;
-        shielded
-            .fetch(
-                self.ctx.client(),
-                &DefaultLogger::new(self.ctx.io()),
-                None,
-                None,
-                1,
-                &[],
-                &[],
-            )
-            .await
-            .map_err(NamadaError::namada)?;
-        shielded.save().await.map_err(Error::io)
     }
 }
 

@@ -6,26 +6,12 @@ use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
-use namada_ibc::{MsgAcknowledgement, MsgRecvPacket, MsgTimeout};
 use namada_sdk::address::{Address, ImplicitAddress};
-use namada_sdk::args::{self, TxBuilder};
-use namada_sdk::args::{InputAmount, Tx as TxArgs, TxCustom};
-use namada_sdk::borsh::BorshSerializeExt;
+use namada_sdk::args::TxBuilder;
+use namada_sdk::args::{Tx as TxArgs, TxCustom};
 use namada_sdk::chain::ChainId;
-use namada_sdk::ibc::apps::nft_transfer::types::packet::PacketData as NftPacketData;
-use namada_sdk::ibc::apps::transfer::types::packet::PacketData;
-use namada_sdk::ibc::core::channel::types::acknowledgement::AcknowledgementStatus;
-use namada_sdk::ibc::core::channel::types::msgs::{
-    MsgAcknowledgement as IbcMsgAcknowledgement, MsgRecvPacket as IbcMsgRecvPacket,
-    MsgTimeout as IbcMsgTimeout, ACKNOWLEDGEMENT_TYPE_URL, RECV_PACKET_TYPE_URL, TIMEOUT_TYPE_URL,
-};
-use namada_sdk::ibc::core::host::types::identifiers::{ChannelId, PortId};
-use namada_sdk::masp::{PaymentAddress, TransferTarget};
-use namada_sdk::masp_primitives::transaction::Transaction as MaspTransaction;
 use namada_sdk::tx::{prepare_tx, ProcessTxResponse};
 use namada_sdk::{signing, tx, Namada};
-use namada_token::ShieldingTransfer;
-use tendermint_proto::Protobuf;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, debug_span, trace, warn};
 
@@ -161,168 +147,11 @@ impl NamadaChain {
     }
 
     fn set_tx_data(&self, tx: &mut tx::Tx, proto_msg: &Any) -> Result<(), Error> {
-        // Make a new message with Namada shielded transfer
-        // if receiving or refunding to a shielded address
-        let data = match proto_msg.type_url.as_ref() {
-            RECV_PACKET_TYPE_URL => {
-                let message: IbcMsgRecvPacket =
-                    Protobuf::decode_vec(&proto_msg.value).map_err(Error::decode)?;
-                self.get_shielded_transfer(
-                    &message.packet.port_id_on_b,
-                    &message.packet.chan_id_on_b,
-                    &message.packet.data,
-                    false,
-                )?
-                .map(|(transfer, masp_tx)| {
-                    (
-                        MsgRecvPacket {
-                            message,
-                            transfer: Some(transfer),
-                        }
-                        .serialize_to_vec(),
-                        masp_tx,
-                    )
-                })
-            }
-            ACKNOWLEDGEMENT_TYPE_URL => {
-                let message: IbcMsgAcknowledgement =
-                    Protobuf::decode_vec(&proto_msg.value).map_err(Error::decode)?;
-                let acknowledgement: AcknowledgementStatus =
-                    serde_json::from_slice(message.acknowledgement.as_ref()).map_err(|e| {
-                        Error::send_tx(format!("Decoding acknowledment failed: {e}"))
-                    })?;
-                if acknowledgement.is_successful() {
-                    None
-                } else {
-                    // Need to refund
-                    self.get_shielded_transfer(
-                        &message.packet.port_id_on_b,
-                        &message.packet.chan_id_on_a,
-                        &message.packet.data,
-                        true,
-                    )?
-                    .map(|(transfer, masp_tx)| {
-                        (
-                            MsgAcknowledgement {
-                                message,
-                                transfer: Some(transfer),
-                            }
-                            .serialize_to_vec(),
-                            masp_tx,
-                        )
-                    })
-                }
-            }
-            TIMEOUT_TYPE_URL => {
-                let message: IbcMsgTimeout =
-                    Protobuf::decode_vec(&proto_msg.value).map_err(Error::decode)?;
-                self.get_shielded_transfer(
-                    &message.packet.port_id_on_b,
-                    &message.packet.chan_id_on_a,
-                    &message.packet.data,
-                    true,
-                )?
-                .map(|(transfer, masp_tx)| {
-                    (
-                        MsgTimeout {
-                            message,
-                            transfer: Some(transfer),
-                        }
-                        .serialize_to_vec(),
-                        masp_tx,
-                    )
-                })
-            }
-            _ => None,
-        };
-
-        if let Some((tx_data, masp_tx)) = data {
-            tx.add_serialized_data(tx_data);
-            tx.add_masp_tx_section(masp_tx);
-        } else {
-            let mut tx_data = vec![];
-            prost::Message::encode(proto_msg, &mut tx_data).map_err(|e| {
-                Error::protobuf_encode(String::from("Encoding the message failed"), e)
-            })?;
-            tx.add_serialized_data(tx_data);
-        }
+        let mut tx_data = vec![];
+        prost::Message::encode(proto_msg, &mut tx_data)
+            .map_err(|e| Error::protobuf_encode(String::from("Encoding the message failed"), e))?;
+        tx.add_serialized_data(tx_data);
         Ok(())
-    }
-
-    fn get_shielded_transfer(
-        &self,
-        port_id: &PortId,
-        channel_id: &ChannelId,
-        packet_data: &[u8],
-        is_refund: bool,
-    ) -> Result<Option<(ShieldingTransfer, MaspTransaction)>, Error> {
-        let transfer = serde_json::from_slice::<PacketData>(packet_data)
-            .ok()
-            .and_then(|data| {
-                let target = if is_refund {
-                    data.sender.as_ref()
-                } else {
-                    data.receiver.as_ref()
-                };
-                PaymentAddress::from_str(target)
-                    .map(|payment_addr| {
-                        (
-                            payment_addr,
-                            data.token.denom.to_string(),
-                            data.token.amount.to_string(),
-                        )
-                    })
-                    .ok()
-            })
-            .or(serde_json::from_slice::<NftPacketData>(packet_data)
-                .ok()
-                .and_then(|data| {
-                    let target = if is_refund {
-                        data.sender.as_ref()
-                    } else {
-                        data.receiver.as_ref()
-                    };
-                    PaymentAddress::from_str(target)
-                        .map(|payment_addr| {
-                            let ibc_token = format!(
-                                "{}/{}",
-                                data.class_id,
-                                data.token_ids
-                                    .0
-                                    .first()
-                                    .expect("at least 1 token ID should exist")
-                            );
-                            (payment_addr, ibc_token, "1".to_string())
-                        })
-                        .ok()
-                }));
-
-        if let Some((receiver, token, amount)) = transfer {
-            self.rt.block_on(self.shielded_sync())?;
-            let amount = InputAmount::Unvalidated(
-                amount
-                    .parse()
-                    .map_err(|e| Error::send_tx(format!("invalid amount: {e}")))?,
-            );
-            let args = args::GenIbcShieldedTransfer {
-                query: args::Query {
-                    ledger_address: self.config().rpc_addr.clone(),
-                },
-                output_folder: None,
-                target: TransferTarget::PaymentAddress(receiver),
-                token: token.clone(),
-                amount,
-                port_id: port_id.clone(),
-                channel_id: channel_id.clone(),
-                refund: is_refund,
-            };
-            Ok(self
-                .rt
-                .block_on(tx::gen_ibc_shielding_transfer(&self.ctx, args))
-                .map_err(NamadaError::namada)?)
-        } else {
-            Ok(None)
-        }
     }
 
     fn estimate_fee(
