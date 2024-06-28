@@ -15,6 +15,7 @@ use ibc_relayer::channel::Channel;
 use ibc_relayer::config::default::connection_delay;
 use ibc_relayer::connection::{Connection, ConnectionError};
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
@@ -322,6 +323,9 @@ impl CreateChannelCommand {
     ) {
         let config = app_config();
 
+        // Set global registry to get or spawn chain handles
+        set_global_registry(SharedRegistry::new((*app_config()).clone()));
+
         let mut a_side_hops = Vec::new(); // Hops from --a-chain's channel side towards --b-chain
         let mut b_side_hops = Vec::new(); // Hops from --b-chain's channel side towards --a-chain
 
@@ -484,7 +488,9 @@ mod tests {
 
     use ibc_relayer_types::core::ics04_channel::channel::Ordering;
     use ibc_relayer_types::core::ics04_channel::version::Version;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId, ConnectionId, ConnectionIds, PortId,
+    };
 
     #[test]
     fn test_create_channel_a_conn_required() {
@@ -829,6 +835,107 @@ mod tests {
             "port_id_a",
             "--b-port",
             "port_id_b"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops() {
+        assert_eq!(
+            CreateChannelCommand::parse_from([
+                "test",
+                "--a-chain",
+                "chain_a",
+                "--a-connection",
+                "connection_a",
+                "--a-port",
+                "port_id_a",
+                "--b-port",
+                "port_id_b",
+                "--connection-hops",
+                "connection_a/connection_b",
+            ]),
+            CreateChannelCommand {
+                chain_a: ChainId::from_string("chain_a"),
+                chain_b: None,
+                connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                port_a: PortId::from_str("port_id_a").unwrap(),
+                port_b: PortId::from_str("port_id_b").unwrap(),
+                connection_hops: Some(
+                    ConnectionIds::from_str("connection_a/connection_b").unwrap()
+                ),
+                order: Ordering::Unordered,
+                version: None,
+                new_client_connection: false,
+                yes: false
+            },
+        )
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops_alias() {
+        assert_eq!(
+            CreateChannelCommand::parse_from([
+                "test",
+                "--a-chain",
+                "chain_a",
+                "--a-connection",
+                "connection_a",
+                "--a-port",
+                "port_id_a",
+                "--b-port",
+                "port_id_b",
+                "--conn-hops",
+                "connection_a/connection_b",
+            ]),
+            CreateChannelCommand {
+                chain_a: ChainId::from_string("chain_a"),
+                chain_b: None,
+                connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                port_a: PortId::from_str("port_id_a").unwrap(),
+                port_b: PortId::from_str("port_id_b").unwrap(),
+                connection_hops: Some(
+                    ConnectionIds::from_str("connection_a/connection_b").unwrap()
+                ),
+                order: Ordering::Unordered,
+                version: None,
+                new_client_connection: false,
+                yes: false
+            },
+        )
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops_without_a_conn() {
+        assert!(CreateChannelCommand::try_parse_from([
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--a-port",
+            "port_id_a",
+            "--b-port",
+            "port_id_b",
+            "--connection-hops",
+            "connection_a/connection_b",
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops_with_new_client_conn() {
+        assert!(CreateChannelCommand::try_parse_from([
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--b-chain",
+            "chain_b",
+            "--a-port",
+            "port_id_a",
+            "--b-port",
+            "port_id_b",
+            "--new-client-connection",
+            "--connection-hops",
+            "connection_a/connection_b",
         ])
         .is_err())
     }

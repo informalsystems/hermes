@@ -138,7 +138,7 @@ define_error! {
                 src_chain: ChainId,
             }
             | e | {
-                format_args!("the connection hops '{}' create a channel path that returns to chain '{}'", e.channel_path, e.src_chain)
+                format_args!("the connection hops '{}' form a channel path that starts and ends on the same chain ('{}')", e.channel_path, e.src_chain)
             },
     }
 }
