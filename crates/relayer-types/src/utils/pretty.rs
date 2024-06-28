@@ -82,7 +82,7 @@ pub struct PrettyBoundedSlice<'a, T>(pub &'a [T]);
 impl<'a, T: Display> Display for PrettyBoundedSlice<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "[ ")?;
-        if self.0.len() > 50 {
+        if self.0.len() > 20 {
             let first = self.0.first().unwrap();
             let last = self.0.last().unwrap();
             write!(f, "{first}, ..., {last}")?;
