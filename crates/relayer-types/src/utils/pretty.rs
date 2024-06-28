@@ -77,6 +77,29 @@ impl<'a, T: Display> Display for PrettySlice<'a, T> {
     }
 }
 
+pub struct PrettyBoundedSlice<'a, T>(pub &'a [T]);
+
+impl<'a, T: Display> Display for PrettyBoundedSlice<'a, T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
+        write!(f, "[ ")?;
+        if self.0.len() > 50 {
+            let first = self.0.first().unwrap();
+            let last = self.0.last().unwrap();
+            write!(f, "{first}, ..., {last}")?;
+        } else {
+            let mut vec_iterator = self.0.iter().peekable();
+            while let Some(element) = vec_iterator.next() {
+                write!(f, "{element}")?;
+                // If it is not the last element, add separator.
+                if vec_iterator.peek().is_some() {
+                    write!(f, ", ")?;
+                }
+            }
+        }
+        write!(f, " ]")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
