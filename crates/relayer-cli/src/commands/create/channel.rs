@@ -3,22 +3,26 @@ use abscissa_core::clap::Parser;
 use console::style;
 use dialoguer::Confirm;
 
+use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
+use crate::conclude::{exit_with_unrecoverable_error, Output};
+use crate::error::Error;
+use crate::prelude::*;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::chain::requests::{
     IncludeProof, QueryClientStateRequest, QueryConnectionRequest, QueryHeight,
 };
 use ibc_relayer::channel::Channel;
 use ibc_relayer::config::default::connection_delay;
-use ibc_relayer::connection::Connection;
+use ibc_relayer::connection::{Connection, ConnectionError};
 use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
-
-use crate::cli_utils::{spawn_chain_runtime, ChainHandlePair};
-use crate::conclude::{exit_with_unrecoverable_error, Output};
-use crate::prelude::*;
+use ibc_relayer_types::core::ics24_host::identifier::{
+    ChainId, ConnectionId, ConnectionIds, PortId,
+};
+use ibc_relayer_types::core::ics33_multihop::channel_path::{ConnectionHop, ConnectionHops};
 
 static PROMPT: &str = "Are you sure you want a new connection & clients to be created? Hermes will use default security parameters.";
 static HINT: &str = "Consider using the default invocation\n\nhermes create channel --a-port <PORT-ID> --b-port <PORT-ID> --a-chain <CHAIN-A-ID> --a-connection <CONNECTION-A-ID>\n\nto reuse a pre-existing connection.";
@@ -46,8 +50,20 @@ static HINT: &str = "Consider using the default invocation\n\nhermes create chan
 #[clap(
     override_usage = "hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
 
-    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection"
+    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
+
+    hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --connection-hops <CONNECTION_HOP_IDS> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+
+    NOTE: The `--new-client-connection` option does not support connection hops. To open a multi-hop channel, please provide existing connections or initialize them manually before invoking this command."
 )]
+// #[clap(override_usage = "
+//     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+
+//     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --b-chain <B_CHAIN_ID> --a-port <A_PORT_ID> --b-port <B_PORT_ID> --new-client-connection
+//     hermes create channel [OPTIONS] --a-chain <A_CHAIN_ID> --a-connection <A_CONNECTION_ID> --connection-hops <CONNECTION_HOP_IDS> --a-port <A_PORT_ID> --b-port <B_PORT_ID>
+
+//     NOTE: The `--new-client-connection` option does not support connection hops. To open a multi-hop channel, please provide existing connections or initialize them manually before invoking this command.
+//     ")]
 pub struct CreateChannelCommand {
     #[clap(
         long = "a-chain",
@@ -129,12 +145,42 @@ pub struct CreateChannelCommand {
         help = "Skip new_client_connection confirmation"
     )]
     yes: bool,
+
+    // --connection-hops receives a list of ConnectionId of intermediate connections between two chains
+    // if they are to be connected via a multihop channel. The list of connection identifiers passed to
+    // `--connection-hops` starts with the identifier of the connection that comes after `--a-connection`
+    // in the channel path from `--a-chain` towards `--b-chain`. For example, given the following
+    // channel path, where `--a-chain` is Chain-A and `--b-chain` is Chain-D:
+    //
+    //  +---------+    connection-1   +---------+    connection-2   +---------+    connection-3   +---------+
+    //  | Chain-A | ----------------> | Chain-B | ----------------> | Chain-C | ----------------> | Chain-D |
+    //  +---------+                   +---------+                   +---------+                   +---------+
+    //
+    // The --connection-hops parameter should receive 'connection-2/connection-3' as argument.
+    #[clap(
+        long = "connection-hops",
+        visible_alias = "conn-hops",
+        value_name = "CONNECTION_IDS",
+        requires = "connection-a",
+        conflicts_with_all = &["new-client-connection", "chain-b"],
+        help_heading = "FLAGS",
+        help = "A list of identifiers of the intermediate connections between \
+        side `a` and side `b` for a multi-hop channel, separated by slashes, \
+        e.g, 'connection-1/connection-0' (optional)."
+    )]
+    connection_hops: Option<ConnectionIds>,
 }
 
 impl Runnable for CreateChannelCommand {
     fn run(&self) {
         match &self.connection_a {
-            Some(conn) => self.run_reusing_connection(conn),
+            Some(conn) => {
+                if let Some(conn_hops) = &self.connection_hops {
+                    self.run_multihop_reusing_connection(conn, conn_hops);
+                } else {
+                    self.run_reusing_connection(conn);
+                }
+            }
             None => {
                 if let Some(chain_b) = &self.chain_b {
                     if self.new_client_connection {
@@ -200,8 +246,8 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
-            None, // FIXME: Unsure about what to add here ('None' for now)
-            None, // FIXME: Unsure about what to add here ('None' for now)
+            None,
+            None,
             self.version.clone(),
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
@@ -260,9 +306,172 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
-            None, // FIXME: Unsure about what to add here ('None' for now)
-            None, // FIXME: Unsure about what to add here ('None' for now)
+            None,
+            None,
             self.version.clone(),
+        )
+        .unwrap_or_else(exit_with_unrecoverable_error);
+
+        Output::success(channel).exit();
+    }
+
+    /// Creates a new multi-hop channel, reusing existing connections as the channel path.
+    fn run_multihop_reusing_connection(
+        &self,
+        connection_a: &ConnectionId,
+        connection_hops: &ConnectionIds,
+    ) {
+        let config = app_config();
+
+        // Set global registry to get or spawn chain handles
+        set_global_registry(SharedRegistry::new((*app_config()).clone()));
+
+        let mut a_side_hops = Vec::new(); // Hops from --a-chain's channel side towards --b-chain
+        let mut b_side_hops = Vec::new(); // Hops from --b-chain's channel side towards --a-chain
+
+        // Join `connection_a` and `connection_hops` to create a Vec containing the identifiers
+        // of the connections that form the channel path from `--a-chain to `--b-chain`
+        let mut conn_hop_ids = connection_hops.clone().into_vec();
+        conn_hop_ids.insert(0, connection_a.clone());
+
+        // The identifier of the chain from which we will start constructing the connection hops.
+        let mut chain_id = self.chain_a.clone();
+
+        // Iterate through the list of connection hop identifiers that constitute the
+        // channel path from `--a-chain` towards `--b-chain`.
+        for a_side_connection_id in conn_hop_ids.iter() {
+            let chain_handle = match spawn_chain_runtime(&config, &chain_id) {
+                Ok(handle) => handle,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            let a_side_hop_connection = match chain_handle.query_connection(
+                QueryConnectionRequest {
+                    connection_id: a_side_connection_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((connection, _)) => connection,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            let a_side_hop_conn_client_state = match chain_handle.query_client_state(
+                QueryClientStateRequest {
+                    client_id: a_side_hop_connection.client_id().clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((client_state, _)) => client_state,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            // Obtain the counterparty ConnectionId and ChainId for the current connection hop
+            // towards `--b-chain`
+            let counterparty_conn_id = a_side_hop_connection
+                .counterparty()
+                .connection_id()
+                .unwrap_or_else(|| {
+                    Output::error(ConnectionError::missing_counterparty_connection_id()).exit()
+                });
+
+            let counterparty_chain_id = a_side_hop_conn_client_state.chain_id().clone();
+
+            let counterparty_handle = match spawn_chain_runtime(&config, &counterparty_chain_id) {
+                Ok(handle) => handle,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            // Retrieve the counterparty connection
+            let counterparty_connection = match counterparty_handle.query_connection(
+                QueryConnectionRequest {
+                    connection_id: counterparty_conn_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            ) {
+                Ok((connection, _)) => connection,
+                Err(e) => Output::error(e).exit(),
+            };
+
+            a_side_hops.push(ConnectionHop {
+                connection: IdentifiedConnectionEnd::new(
+                    a_side_connection_id.clone(),
+                    a_side_hop_connection.clone(),
+                ),
+                src_chain_id: chain_id.clone(),
+                dst_chain_id: a_side_hop_conn_client_state.chain_id(),
+            });
+
+            // Build the current hop from the opposite direction
+            b_side_hops.push(ConnectionHop {
+                connection: IdentifiedConnectionEnd::new(
+                    counterparty_conn_id.clone(),
+                    counterparty_connection,
+                ),
+                src_chain_id: a_side_hop_conn_client_state.chain_id(),
+                dst_chain_id: chain_id.clone(),
+            });
+
+            // Update chain_id to point to the next chain in the channel path
+            // from `--a-chain` towards `--b-chain`
+            chain_id = a_side_hop_conn_client_state.chain_id().clone();
+        }
+
+        // Ensure that the final chain in the path, stored in chain_id, is not the same chain as
+        // `--a-chain`, i.e, check that the connection hops do not lead back to `--a-chain`.
+        if chain_id == self.chain_a {
+            Output::error(Error::ics33_hops_return_to_source(
+                connection_hops.clone(),
+                self.chain_a.clone(),
+            ))
+            .exit()
+        }
+
+        let a_chain = match spawn_chain_runtime(&config, &self.chain_a) {
+            Ok(handle) => handle,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        let b_chain = match spawn_chain_runtime(&config, &chain_id) {
+            Ok(handle) => handle,
+            Err(e) => Output::error(e).exit(),
+        };
+
+        // The connection hops were assembled while traversing from --a-chain towards --b-chain.
+        // Reverse b_side_hops to to obtain the correct path from --b-chain to --a-chain.
+        b_side_hops.reverse();
+
+        // The first connection from `--a-chain` towards `--b-chain`
+        let a_side_connection = a_side_hops
+            .first()
+            .expect("a_side hops is never empty")
+            .connection
+            .clone();
+
+        // The first connection from `--b-chain` towards `--a-chain`
+        let b_side_connection = b_side_hops
+            .first()
+            .expect("b_side hops is never empty")
+            .connection
+            .clone();
+
+        let a_side_hops = Some(ConnectionHops::new(a_side_hops));
+        let b_side_hops = Some(ConnectionHops::new(b_side_hops));
+
+        let channel = Channel::new_multihop(
+            a_chain,
+            b_chain,
+            a_side_connection,
+            b_side_connection,
+            self.order,
+            self.port_a.clone(),
+            self.port_b.clone(),
+            a_side_hops, // FIXME: Unsure about what to add here ('None' for now)
+            b_side_hops, // FIXME: Unsure about what to add here ('None' for now)
+            self.version.clone(),
+            core::time::Duration::from_secs(0), // FIXME: We need to figure out how to determine the connection delay for multi-hop channels
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 
@@ -279,7 +488,9 @@ mod tests {
 
     use ibc_relayer_types::core::ics04_channel::channel::Ordering;
     use ibc_relayer_types::core::ics04_channel::version::Version;
-    use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId, PortId};
+    use ibc_relayer_types::core::ics24_host::identifier::{
+        ChainId, ConnectionId, ConnectionIds, PortId,
+    };
 
     #[test]
     fn test_create_channel_a_conn_required() {
@@ -288,6 +499,7 @@ mod tests {
                 chain_a: ChainId::from_string("chain_a"),
                 chain_b: None,
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                connection_hops: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
                 order: Ordering::Unordered,
@@ -316,6 +528,7 @@ mod tests {
                 chain_a: ChainId::from_string("chain_a"),
                 chain_b: None,
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                connection_hops: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
                 order: Ordering::Unordered,
@@ -346,6 +559,7 @@ mod tests {
                 chain_a: ChainId::from_string("chain_a"),
                 chain_b: None,
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                connection_hops: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
                 order: Ordering::Ordered,
@@ -376,6 +590,7 @@ mod tests {
                 chain_a: ChainId::from_string("chain_a"),
                 chain_b: None,
                 connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                connection_hops: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
                 order: Ordering::Unordered,
@@ -462,6 +677,7 @@ mod tests {
                 chain_a: ChainId::from_string("chain_a"),
                 chain_b: Some(ChainId::from_string("chain_b")),
                 connection_a: None,
+                connection_hops: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
                 order: Ordering::Unordered,
@@ -491,6 +707,7 @@ mod tests {
                 chain_a: ChainId::from_string("chain_a"),
                 chain_b: Some(ChainId::from_string("chain_b")),
                 connection_a: None,
+                connection_hops: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
                 order: Ordering::Unordered,
@@ -521,6 +738,7 @@ mod tests {
                 chain_a: ChainId::from_string("chain_a"),
                 chain_b: Some(ChainId::from_string("chain_b")),
                 connection_a: None,
+                connection_hops: None,
                 port_a: PortId::from_str("port_id_a").unwrap(),
                 port_b: PortId::from_str("port_id_b").unwrap(),
                 order: Ordering::Unordered,
@@ -617,6 +835,107 @@ mod tests {
             "port_id_a",
             "--b-port",
             "port_id_b"
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops() {
+        assert_eq!(
+            CreateChannelCommand::parse_from([
+                "test",
+                "--a-chain",
+                "chain_a",
+                "--a-connection",
+                "connection_a",
+                "--a-port",
+                "port_id_a",
+                "--b-port",
+                "port_id_b",
+                "--connection-hops",
+                "connection_a/connection_b",
+            ]),
+            CreateChannelCommand {
+                chain_a: ChainId::from_string("chain_a"),
+                chain_b: None,
+                connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                port_a: PortId::from_str("port_id_a").unwrap(),
+                port_b: PortId::from_str("port_id_b").unwrap(),
+                connection_hops: Some(
+                    ConnectionIds::from_str("connection_a/connection_b").unwrap()
+                ),
+                order: Ordering::Unordered,
+                version: None,
+                new_client_connection: false,
+                yes: false
+            },
+        )
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops_alias() {
+        assert_eq!(
+            CreateChannelCommand::parse_from([
+                "test",
+                "--a-chain",
+                "chain_a",
+                "--a-connection",
+                "connection_a",
+                "--a-port",
+                "port_id_a",
+                "--b-port",
+                "port_id_b",
+                "--conn-hops",
+                "connection_a/connection_b",
+            ]),
+            CreateChannelCommand {
+                chain_a: ChainId::from_string("chain_a"),
+                chain_b: None,
+                connection_a: Some(ConnectionId::from_str("connection_a").unwrap()),
+                port_a: PortId::from_str("port_id_a").unwrap(),
+                port_b: PortId::from_str("port_id_b").unwrap(),
+                connection_hops: Some(
+                    ConnectionIds::from_str("connection_a/connection_b").unwrap()
+                ),
+                order: Ordering::Unordered,
+                version: None,
+                new_client_connection: false,
+                yes: false
+            },
+        )
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops_without_a_conn() {
+        assert!(CreateChannelCommand::try_parse_from([
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--a-port",
+            "port_id_a",
+            "--b-port",
+            "port_id_b",
+            "--connection-hops",
+            "connection_a/connection_b",
+        ])
+        .is_err())
+    }
+
+    #[test]
+    fn test_create_channel_conn_hops_with_new_client_conn() {
+        assert!(CreateChannelCommand::try_parse_from([
+            "test",
+            "--a-chain",
+            "chain_a",
+            "--b-chain",
+            "chain_b",
+            "--a-port",
+            "port_id_a",
+            "--b-port",
+            "port_id_b",
+            "--new-client-connection",
+            "--connection-hops",
+            "connection_a/connection_b",
         ])
         .is_err())
     }

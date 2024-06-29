@@ -5,6 +5,7 @@ pub use error::ChannelError;
 use ibc_proto::google::protobuf::Any;
 use ibc_proto::ibc::core::channel::v1::{MsgMultihopProofs, MultihopProof};
 use ibc_proto::Protobuf;
+use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
 };
@@ -225,7 +226,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             a_side: ChannelSide::new(
                 connection.src_chain(),
                 connection.src_client_id().clone(),
-                src_connection_id.clone(),
+                src_connection_id.clone(), // FIXME: We may want to remove this in favor of using only a_side_hops
                 a_side_hops,
                 a_port,
                 Default::default(),
@@ -234,13 +235,54 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             b_side: ChannelSide::new(
                 connection.dst_chain(),
                 connection.dst_client_id().clone(),
-                dst_connection_id.clone(),
+                dst_connection_id.clone(), // FIXME: We may want to remove this in favor of using only b_side_hops
                 b_side_hops,
                 b_port,
                 Default::default(),
                 version,
             ),
             connection_delay: connection.delay_period,
+        };
+
+        channel.handshake()?;
+
+        Ok(channel)
+    }
+
+    pub fn new_multihop(
+        a_chain: ChainA,
+        b_chain: ChainB,
+        a_side_connection: IdentifiedConnectionEnd,
+        b_side_connection: IdentifiedConnectionEnd,
+        ordering: Ordering,
+        a_port: PortId,
+        b_port: PortId,
+        a_side_hops: Option<ConnectionHops>,
+        b_side_hops: Option<ConnectionHops>,
+        version: Option<Version>,
+        connection_delay: Duration,
+    ) -> Result<Self, ChannelError> {
+        let mut channel = Self {
+            ordering,
+            a_side: ChannelSide::new(
+                a_chain,
+                a_side_connection.end().client_id().clone(),
+                a_side_connection.id().clone(), // FIXME: We may want to remove this in favor of using only a_side_hops
+                a_side_hops,
+                a_port,
+                Default::default(),
+                version.clone(),
+            ),
+            b_side: ChannelSide::new(
+                b_chain,
+                b_side_connection.end().client_id().clone(),
+                b_side_connection.id().clone(), // FIXME: We may want to remove this in favor of using only b_side_hops
+                b_side_hops,
+                b_port,
+                Default::default(),
+                version,
+            ),
+            connection_delay,
         };
 
         channel.handshake()?;

@@ -116,6 +116,17 @@ pub struct TxChanOpenInitCmd {
     )]
     order: Ordering,
 
+    // --connection-hops receives a list of ConnectionId of intermediate connections between two chains
+    // if they are to be connected via a multihop channel. The list of connection identifiers passed to
+    // `--connection-hops` starts with the identifier of the connection that comes after `--dst-connection`
+    // in the channel path from `--dst-chain` towards `--src-chain`. For example, given the following
+    // channel path, where `--src-chain` is Chain-A and `--dst-chain` is Chain-D:
+    //
+    //  +---------+    connection-3   +---------+    connection-2   +---------+    connection-1   +---------+
+    //  | Chain-A | <---------------- | Chain-B | <---------------- | Chain-C | <---------------- | Chain-D |
+    //  +---------+                   +---------+                   +---------+                   +---------+
+    //
+    // The --connection-hops parameter should receive 'connection-2/connection-3' as argument.
     #[clap(
         long = "connection-hops",
         value_name = "CONNECTION_HOPS",
@@ -182,9 +193,9 @@ impl Runnable for TxChanOpenInitCmd {
         // possible ramifications.
 
         // Check if connection IDs were provided via --connection-hops, indicating a multi-hop channel
-        if let Some(connnection_ids) = &self.conn_hop_ids {
+        if let Some(connection_ids) = &self.conn_hop_ids {
             // Retrieve information for each of the remaining hops until the other end of the channel is reached
-            for connection_id in connnection_ids.as_slice().iter() {
+            for connection_id in connection_ids.as_slice().iter() {
                 // Retrieve the ChainId of the chain to which the last hop pointed to
                 let chain_id = &b_side_hops
                     .last()

@@ -7,7 +7,7 @@ use tendermint::Error as TendermintError;
 
 use ibc_relayer_types::applications::ics29_fee::error::Error as FeeError;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
-use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionIds};
 use ibc_relayer_types::signer::SignerError;
 
 use ibc_relayer::channel::ChannelError;
@@ -130,6 +130,15 @@ define_error! {
                 format_args!("expected a channel path from chain '{}' to chain '{}', \
                  but the received connection identifier(s) lead to chain '{}' ", e.dst_chain, e.src_chain,
                  e.reference_chain)
+            },
+
+        Ics33HopsReturnToSource
+            {
+                channel_path: ConnectionIds,
+                src_chain: ChainId,
+            }
+            | e | {
+                format_args!("the connection hops '{}' form a channel path that starts and ends on the same chain ('{}')", e.channel_path, e.src_chain)
             },
     }
 }
