@@ -227,10 +227,21 @@ echo "==== Balances on Gaia ===="
 balance=$(gaiad query bank balances ${gaia_user})
 echo "${balance}"
 balance=$(echo "${balance}" | grep ibc -B 1 | tr -d '\n')
-if [[ "${balance}" != *"- amount: \"200\"  denom: ibc/"* ]]; then
+if [[ "${balance}" != *"- amount: \"200000000\"  denom: ibc/"* ]]; then
   echo "The balance on Gaia is wrong"
   exit 1
 fi
+
+echo "~~ Generate the proof from Namada for the following transfer ~~"
+resp=$(${NAMADAC} --base-dir ${base_dir} ibc-gen-shielding \
+  --output-folder-path ${base_dir} \
+  --target ${payment_addr_a} \
+  --token samoleans \
+  --amount 10 \
+  --port-id transfer \
+  --channel-id channel-0 \
+  --node ${NAMADA_LEDGER_ADDR})
+memo_path=$(echo $resp | awk '{print $8}')
 
 echo "~~ Shielding transfer 10 samoleans from Gaia to Namada ~~"
 cargo run --bin hermes -- --config config_for_namada.toml \
@@ -243,6 +254,7 @@ cargo run --bin hermes -- --config config_for_namada.toml \
   --receiver ${payment_addr_a} \
   --denom samoleans \
   --timeout-height-offset 1000 \
+  --memo $(cat ${memo_path})
 
 # wait for relaying
 sleep 40

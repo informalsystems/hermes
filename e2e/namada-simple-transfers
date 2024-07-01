@@ -309,10 +309,11 @@ fi
 echo "==== Shielded transfer tests ===="
 
 echo "~~ Generate the proof from chain_b for the following transfer ~~"
+apfel_addr=$(${NAMADAW} --base-dir ${base_dir_a} find --alias apfel | awk '/"apfel":/{print $3}')
 resp=$(${NAMADAC} --base-dir ${base_dir_b} ibc-gen-shielding \
   --output-folder-path ${base_dir_b} \
   --target ${payment_addr_b} \
-  --token apfel \
+  --token ${apfel_addr} \
   --amount 100000000 \
   --port-id transfer \
   --channel-id channel-0 \
@@ -398,11 +399,12 @@ if [[ "${balance}" != *"${IBC_TOKEN}: 50000000" ]]; then
 fi
 
 echo "~~ Generate the proof from chain A for the following transfer ~~"
+ibc_token="transfer/channel-0/${apfel_addr}"
 resp=$(${NAMADAC} --base-dir ${base_dir_a} ibc-gen-shielding \
   --output-folder-path ${base_dir_a} \
   --target ${payment_addr_a} \
-  --token ${IBC_TOKEN} \
-  --amount 50000000 \
+  --token ${ibc_token} \
+  --amount 50 \
   --port-id transfer \
   --channel-id channel-0 \
   --node ${LEDGER_ADDR_A})
