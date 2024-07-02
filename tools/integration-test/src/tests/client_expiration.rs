@@ -167,6 +167,8 @@ impl BinaryChainTest for ChannelExpirationTest {
                             &connection.connection_id_b.as_ref(),
                             &port_a.as_ref(),
                             &port_b.as_ref(),
+                            None,
+                            None,
                         )?;
 
 
@@ -254,6 +256,8 @@ impl BinaryChainTest for ChannelExpirationTest {
                     &connection_id_b.as_ref(),
                     &port_a.as_ref(),
                     &port_b.as_ref(),
+                    None,
+                    None,
                 )?;
 
                 // At this point the misbehavior task may raise error, because it

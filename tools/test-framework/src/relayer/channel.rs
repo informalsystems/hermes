@@ -9,6 +9,7 @@ use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
 use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer_types::core::ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd, Ordering};
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
+use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
 
 use crate::error::Error;
 use crate::types::id::{
@@ -45,6 +46,8 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     connection_id_b: &TaggedConnectionIdRef<ChainB, ChainA>,
     src_port_id: &TaggedPortIdRef<ChainA, ChainB>,
     dst_port_id: &TaggedPortIdRef<ChainB, ChainA>,
+    src_connection_hops: Option<ConnectionHops>,
+    dst_connection_hops: Option<ConnectionHops>,
 ) -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
     let channel = Channel {
         connection_delay: Default::default(),
@@ -53,7 +56,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_a.clone(),
             client_id_a.cloned_value(),
             connection_id_a.cloned_value(),
-            None,
+            src_connection_hops,
             src_port_id.cloned_value(),
             None,
             None,
@@ -62,7 +65,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_b.clone(),
             client_id_b.cloned_value(),
             connection_id_b.cloned_value(),
-            None,
+            dst_connection_hops,
             dst_port_id.cloned_value(),
             None,
             None,

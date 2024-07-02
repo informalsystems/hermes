@@ -322,6 +322,8 @@ impl BinaryConnectionTest for ChannelOpenHandshake {
             &connection.connection_id_b.as_ref(),
             &port_a.as_ref(),
             &port_b.as_ref(),
+            None,
+            None,
         )?;
 
         relayer.with_supervisor(|| {
@@ -388,6 +390,8 @@ impl BinaryConnectionTest for ChannelTryHandshake {
             &connection.connection_id_b.as_ref(),
             &port_a.as_ref(),
             &port_b.as_ref(),
+            None,
+            None,
         )?;
 
         let (channel_id_on_a, _channel_to_b_on_a) =
@@ -457,6 +461,8 @@ impl BinaryConnectionTest for ChannelAckHandshake {
             &connection.connection_id_b.as_ref(),
             &port_a.as_ref(),
             &port_b.as_ref(),
+            None,
+            None,
         )?;
 
         let (_channel_id_on_a, channel_to_b_on_a) =

@@ -123,6 +123,8 @@ impl BinaryChannelTest for CleanChannelWorkersTest {
             &channel.connection.connection_id_b.as_ref(),
             &channel.port_a.as_ref(),
             &channel.port_b.as_ref(),
+            None,
+            None,
         )?;
 
         // Assert that idle packet workers are eventually removed
