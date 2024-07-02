@@ -158,12 +158,19 @@ impl SigningKeyPair for Ed25519KeyPair {
                 bs58::encode(&self.signing_key.verifying_key()).into_string()
             }
             Ed25519AddressType::Astria => {
-                hex::encode(astria_core::sequencer::v1::Address::from_verification_key(
-                    ed25519_consensus::VerificationKey::try_from(
-                        self.signing_key.verifying_key().to_bytes(),
-                    )
-                    .expect("can convert between ed25519 keys"),
-                ))
+                use astria_core::{
+                    crypto::VerificationKey,
+                    primitive::v1::Address,
+                };
+                let verification_key =
+                    VerificationKey::try_from(self.signing_key.verifying_key().to_bytes())
+                        .expect("can convert ed25519 public key bytes to astria verification key");
+                let address = Address::builder()
+                    .array(verification_key.address_bytes())
+                    .prefix("astria")
+                    .try_build()
+                    .expect("can build astria address from ed25519 public key");
+                address.to_string()
             }
         }
     }
@@ -174,5 +181,20 @@ impl SigningKeyPair for Ed25519KeyPair {
 
     fn as_any(&self) -> &dyn Any {
         self
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn ed25519_keypair_astria_account() {
+        let signing_key = ed25519_dalek::SigningKey::from_bytes(&[99u8; 32]);
+        let keypair = Ed25519KeyPair {
+            signing_key,
+            address_type: Ed25519AddressType::Astria,
+        };
+        let _address = keypair.account();
     }
 }

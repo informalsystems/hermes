@@ -195,21 +195,33 @@ fn build_transfer_message_astria(
     timeout_height: TimeoutHeight,
     timeout_timestamp: Timestamp,
 ) -> Any {
-    use astria_core::sequencer::v1::asset::default_native_asset_id;
+    use astria_core::primitive::v1::{
+        asset::Denom,
+        Address,
+    };
+
+    let sender: Address = sender
+        .as_ref()
+        .parse()
+        .expect("can parse astria bech32m sender address");
 
     let timeout_height = match timeout_height {
         // TODO: update astria IbcHeight to support optional?
-        TimeoutHeight::At(height) => astria_core::generated::sequencer::v1::IbcHeight {
-            revision_number: height.revision_number(),
-            revision_height: height.revision_height(),
-        },
-        TimeoutHeight::Never => astria_core::generated::sequencer::v1::IbcHeight {
-            revision_number: 0,
-            revision_height: u64::MAX,
-        },
+        TimeoutHeight::At(height) => {
+            astria_core::generated::protocol::transaction::v1alpha1::IbcHeight {
+                revision_number: height.revision_number(),
+                revision_height: height.revision_height(),
+            }
+        }
+        TimeoutHeight::Never => {
+            astria_core::generated::protocol::transaction::v1alpha1::IbcHeight {
+                revision_number: 0,
+                revision_height: u64::MAX,
+            }
+        }
     };
 
-    let msg = astria_core::generated::sequencer::v1::Ics20Withdrawal {
+    let msg = astria_core::generated::protocol::transaction::v1alpha1::Ics20Withdrawal {
         source_channel: src_channel_id.to_string(),
         denom: denom,
         amount: Some(
@@ -218,10 +230,16 @@ fn build_transfer_message_astria(
                 .into(),
         ),
         destination_chain_address: receiver.to_string(),
-        return_address: hex::decode(sender.to_string()).expect("sender address is hex"),
+        return_address: Some(sender.to_raw()),
         timeout_height: Some(timeout_height),
         timeout_time: timeout_timestamp.nanoseconds(),
-        fee_asset_id: default_native_asset_id().as_ref().to_vec(),
+        // TODO: make this configurable
+        fee_asset: "nria"
+            .parse::<Denom>()
+            .expect("nria is a valid denom")
+            .to_string(),
+        memo: String::new(),
+        bridge_address: None,
     };
 
     Any {

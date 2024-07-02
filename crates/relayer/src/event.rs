@@ -503,6 +503,8 @@ mod tests {
         timestamp::Timestamp,
     };
 
+    use super::*;
+
     #[test]
     fn extract_header() {
         let header = get_dummy_ics07_header();

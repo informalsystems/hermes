@@ -231,13 +231,16 @@ impl AstriaEndpoint {
 
     async fn broadcast_messages(&mut self, tracked_msgs: TrackedMsgs) -> Result<TxResponse, Error> {
         use astria_core::{
-            generated::sequencer::v1::Ics20Withdrawal as RawIcs20Withdrawal,
-            sequencer::v1::{
-                transaction::{
-                    action::Ics20Withdrawal,
-                    Action,
-                },
-                Address,
+            crypto::{
+                SigningKey,
+                VerificationKey,
+            },
+            generated::protocol::transaction::v1alpha1::Ics20Withdrawal as RawIcs20Withdrawal,
+            primitive::v1::Address,
+            protocol::transaction::v1alpha1::{
+                action::Ics20Withdrawal,
+                Action,
+                TransactionParams,
                 UnsignedTransaction,
             },
         };
@@ -270,7 +273,13 @@ impl AstriaEndpoint {
 
         let signing_key: ed25519_consensus::SigningKey =
             (*self.get_key()?.signing_key().as_bytes()).into(); // TODO cache this
-        let address = Address::from_verification_key(signing_key.verification_key());
+        let verification_key = VerificationKey::try_from(signing_key.verification_key().to_bytes())
+            .map_err(|e| Error::other(e.into()))?;
+        let address = Address::builder()
+            .verification_key(&verification_key)
+            .prefix("astria")
+            .try_build()
+            .map_err(|e| Error::other(e.into()))?;
         let nonce = self
             .sequencer_client
             .get_latest_nonce(address)
@@ -278,11 +287,14 @@ impl AstriaEndpoint {
             .map_err(|e| Error::other(Box::new(e)))?;
 
         let unsigned_tx = UnsignedTransaction {
-            nonce: nonce.nonce,
+            params: TransactionParams::builder()
+                .nonce(nonce.nonce)
+                .chain_id(self.id().to_string())
+                .build(),
             actions,
         };
 
-        let signed_tx = unsigned_tx.into_signed(&signing_key);
+        let signed_tx = unsigned_tx.into_signed(&SigningKey::from(signing_key.to_bytes()));
         let tx_bytes = signed_tx.into_raw().encode_to_vec();
 
         let resp = self
@@ -586,7 +598,10 @@ impl ChainEndpoint for AstriaEndpoint {
         _key_name: Option<&str>,
         denom: Option<&str>,
     ) -> Result<Balance, Error> {
-        use astria_core::sequencer::v1::account::AssetBalance;
+        use astria_core::{
+            crypto::VerificationKey,
+            protocol::account::v1alpha1::AssetBalance,
+        };
         use astria_sequencer_client::{
             Address,
             SequencerClientExt as _,
@@ -594,12 +609,19 @@ impl ChainEndpoint for AstriaEndpoint {
 
         let signing_key: ed25519_consensus::SigningKey =
             (*self.get_key()?.signing_key().as_bytes()).into(); // TODO cache this
-        let address = Address::from_verification_key(signing_key.verification_key());
+        let verification_key = VerificationKey::try_from(signing_key.verification_key().to_bytes())
+            .map_err(|e| Error::other(e.into()))?;
+        let address = Address::builder()
+            .verification_key(&verification_key)
+            .prefix("astria")
+            .try_build()
+            .map_err(|e| Error::other(e.into()))?;
         let balance = self
             .block_on(self.sequencer_client.get_latest_balance(address))
             .map_err(|e| Error::other(Box::new(e)))?;
 
-        let denom = denom.unwrap_or(astria_core::sequencer::v1::asset::DEFAULT_NATIVE_ASSET_DENOM);
+        // TODO: set this via the config
+        let denom = denom.unwrap_or("nria");
 
         let balance: Vec<AssetBalance> = balance
             .balances
