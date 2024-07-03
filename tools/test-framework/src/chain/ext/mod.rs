@@ -1,4 +1,5 @@
 pub mod async_icq;
+pub mod authz;
 pub mod bootstrap;
 pub mod crosschainquery;
 pub mod fee;

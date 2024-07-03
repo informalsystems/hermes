@@ -9,9 +9,7 @@ use crate::tx_msg::Msg;
 
 pub const TYPE_URL: &str = "/ibc.core.channel.v1.MsgChannelCloseInit";
 
-///
 /// Message definition for the first step in the channel close handshake (`ChanCloseInit` datagram).
-///
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct MsgChannelCloseInit {
     pub port_id: PortId,

@@ -83,7 +83,7 @@ impl BinaryChainTest for ClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         // Create and send an chain upgrade proposal
@@ -122,7 +122,7 @@ impl BinaryChainTest for ClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string(), "1")?;
 
         info!("Assert that the chain upgrade proposal is eventually passed");
 
@@ -242,7 +242,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         // Create and send an chain upgrade proposal
@@ -281,7 +281,7 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string(), "1")?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height.increment();
@@ -340,7 +340,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         let opts = create_upgrade_plan(config, &chains, &upgraded_chain_id)?;
@@ -378,7 +378,7 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         .map_err(handle_generic_error)?;
 
         // Vote on the proposal so the chain will upgrade
-        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string())?;
+        driver.vote_proposal(&fee_denom_a.with_amount(381000000u64).to_string(), "1")?;
 
         // The application height reports a height of 1 less than the height according to Tendermint
         client_upgrade_height
@@ -433,7 +433,7 @@ fn create_upgrade_plan<ChainA: ChainHandle, ChainB: ChainHandle>(
     upgraded_chain_id: &ChainId,
 ) -> Result<UpgradePlanOptions, Error> {
     let fee_denom_a: MonoTagged<ChainA, Denom> =
-        MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        MonoTagged::new(Denom::base(config.native_token(0)));
     let foreign_clients = chains.clone().foreign_clients;
 
     let src_client_id = foreign_clients.client_id_b().0.clone();

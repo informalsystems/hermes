@@ -15,11 +15,20 @@ define_error! {
                 min: usize,
                 max: usize,
             }
-            | e | { format_args!("identifier {0} has invalid length {1} must be between {2}-{3} characters", e.id, e.length, e.min, e.max) },
+            | e | {
+                format_args!(
+                    "identifier {0} has invalid length {1} must be between {2}-{3} characters",
+                    e.id, e.length, e.min, e.max
+                )
+            },
 
         InvalidCharacter
             { id: String }
-            | e | { format_args!("identifier {0} must only contain alphanumeric characters or `.`, `_`, `+`, `-`, `#`, - `[`, `]`, `<`, `>`", e.id) },
+            | e | {
+                format_args!(
+                    "identifier {0} must only contain alphanumeric characters or `.`, `_`, `+`, `-`, `#`, - `[`, `]`, `<`, `>`", e.id
+                )
+            },
 
         Empty
             | _ | { "identifier cannot be empty" },
@@ -29,9 +38,17 @@ define_error! {
             | e | { format_args!("chain identifiers are expected to be in epoch format {0}", e.id) },
 
         InvalidCounterpartyChannelId
-            |_| { "Invalid channel id in counterparty" },
+            |_| { "invalid channel id in counterparty" },
 
         EmptyConnectionHops
-        |_| { "cannot parse an empty list of connection IDs into connection hops" },
+            |_| { "cannot parse an empty list of connection IDs into connection hops" },
     }
 }
+
+impl PartialEq for ValidationError {
+    fn eq(&self, other: &Self) -> bool {
+        self.0 == other.0
+    }
+}
+
+impl Eq for ValidationError {}

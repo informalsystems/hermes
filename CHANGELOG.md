@@ -1,5 +1,158 @@
 # CHANGELOG
 
+## v1.10.0
+
+*June 24th, 2024*
+
+This release enhances filter configurations and includes the following updates:
+
+1. `excluded_sequences` supports sequence ranges in addition to exact values,
+   e.g. `[1, 2, "5-10", 13]` is now valid.
+2. `packet_filter` now ignores unintended whitespace.
+3. A new `allow_ccq` per-chain configuration has been added to skip the relaying of
+   ICS31 Cross Chain Queries.
+
+Additionally, various improvements to testing and bug fixes have been implemented.
+
+### BUG FIXES
+
+- General
+  - Fix a bug where in some cases, Hermes would drop all events in a
+    batch that came after an event rejected by the filtering policy
+    ([\#4034](https://github.com/informalsystems/hermes/issues/4034))
+- [Relayer Library](relayer)
+  - Discard CrossChain queries intended for unconfigured chains.
+    ([\#4021](https://github.com/informalsystems/hermes/issues/4021))
+
+### FEATURES
+
+- [Integration Test Framework](tools/test-framework)
+  - Add tests to ensure that Hermes correctly relays transfer messages
+    from a grantee address with granted authorisation using `authz` module.
+    ([\#4046](https://github.com/informalsystems/hermes/issues/4046))
+- [Relayer Library](relayer)
+  - Add a new per-chain configuration `allow_ccq` to enable or disable
+    relaying of ICS31 Cross Chain Query packets.
+    ([\#4040](https://github.com/informalsystems/hermes/issues/4040))
+
+### IMPROVEMENTS
+
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Gaia running the integration tests in the CI from `v15.2.0`
+    to `v17.2.0` ([\#4023](https://github.com/informalsystems/hermes/issues/4023))
+  - Update the version of Osmosis running the integration tests in the CI from `v24.0.1`
+    to `v25.0.0` ([\#4024](https://github.com/informalsystems/hermes/issues/4024))
+  - Update the version of Juno running the integration tests in the CI from `v21.0.0`
+    to `v22.0.0` ([\#4025](https://github.com/informalsystems/hermes/issues/4025))
+  - Update the version of Neutron running the integration tests in the CI from `v3.0.2`
+    to `v3.0.5` ([\#4026](https://github.com/informalsystems/hermes/issues/4026))
+  - Update the version of Celestia app running the integration tests in the CI from `v1.4.0`
+    to `v1.11.0` ([\#4027](https://github.com/informalsystems/hermes/issues/4027))
+  - Update the version of `wasmd` running the integration tests in the CI from `v0.50.0`
+    to `v0.51.0` ([\#4029](https://github.com/informalsystems/hermes/issues/4029))
+  - Reduce run time for ICS29 tests by immediately verifying if either
+    the legacy fees, `recv_fee + ack_fee + timeout_fee` or current
+    fees, `max(recv_fee + ack_fee, timeout_fee)` have been escrowed.
+    ([\#4053](https://github.com/informalsystems/hermes/issues/4053))
+  - Refactored the test-framework bootstrapping for n-ary chain tests
+    to utilize the specified topology.
+  * Currently, only linear, cyclic and fully connected topologies are supported.
+    ([\#4038](https://github.com/informalsystems/hermes/issues/4038))
+- [Relayer Library](relayer)
+  - Use custom User-Agent for Hermes queries
+    ([\#3979](https://github.com/informalsystems/hermes/issues/3979))
+  - Updated the channel and port filter parsing to ignore whitespaces.
+    This will prevent unintended channel scanning due to accidental
+    whitespaces when exact matches are specified in the `packet_filter`
+    configuration.
+    ([\#4045](https://github.com/informalsystems/hermes/issues/4045))
+  - Improve the `excluded_sequences` configuration so that it now accepts
+    ranges of sequence values in addition to exact values.
+    Accepted format:
+  * Exact sequence, e.g. [1, 2, 3]
+  * "-" separator, e.g. ["1-3"]
+
+    These can be combined making the following configurations equivalent:
+  * `excluded_sequences = { 'channel-0' = [1, "3-5", 7, "9-12"] }`
+  * `excluded_sequences = { 'channel-0' = [1, 3, 4, 5, 7, 9, 10, 11, 12] }`
+
+    ([\#4047](https://github.com/informalsystems/hermes/issues/4047))
+
+## v1.9.0
+
+*May 30th, 2024*
+
+This v1.9.0 release introduces new features and improvements to Hermes.
+
+**Major Features**:
+
+1. **Channel Upgrades:** Hermes now handles [channel upgrade](https://www.ibcprotocol.dev/blog/introducing-ibc-channel-upgradability) events introduced in ibc-go v8, helping chains opting-in to new functionality on existing channels.
+2. **Dynamic Gas Fees Compatibility:** Hermes is now compatible with Skip's `x/feemarket` module for dynamic gas fees, in addition to Osmosis' implementation, providing more flexibility in gas fee management.
+
+Additionally, this release includes various bug fixes enhancing the stability and performance of Hermes. These fixes address issues with channel and connection creation on older ibc-go versions, event extraction, health-check messages, and more.
+
+### BREAKING CHANGES
+
+- [Telemetry & Metrics](telemetry)
+  - Remove the `telemetry` and `rest-server` feature flags, ensuring Hermes is always built with telemetry and REST support.
+    Both servers can still be disabled in the configuration file, by setting `telemetry.enabled = false` and `rest.enabled = false`, respectively.
+    ([\#3878](https://github.com/informalsystems/hermes/pull/3878))
+
+### FEATURES
+
+- [Relayer Library](relayer)
+  - Add support for upgrading channels, as per the [ICS 004 specification](https://github.com/cosmos/ibc/blob/main/spec/core/ics-004-channel-and-packet-semantics/UPGRADES.md) ([#3228](https://github.com/informalsystems/hermes/issues/2547))
+    This feature allows chains to upgrade an existing channel to take advantage of new features without having to create a new channel, thus preserving all existing packet state processed on the channel. For example, a channel could now be upgraded to enable the [ICS 029 fee middleware](https://ibc.cosmos.network/main/middleware/ics29-fee/overview), allowing relayer operators on that channel to receive fees each time they relay an incentivized packet.
+  - Improve reliability of event source in `pull` mode by proceeding to next block even if Hermes cannot parse the current block.
+    Add new configuration option to `event_source` setting: `max_retries` defines how many times Hermes should attempt to pull a block over RPC.
+    ```toml
+    event_source = { mode = 'pull', interval = '1s', max_retries = 4 }
+    ```
+    ([\#3894](https://github.com/informalsystems/hermes/issues/3894))
+
+### IMPROVEMENTS
+
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Juno running the integration tests in the CI from `v17.1.1`
+    to `v21.0.0` ([\#3959](https://github.com/informalsystems/hermes/issues/3959))
+  - Update the version of Migaloo Chain running the
+    integration tests in the CI from `v3.0.2` to `v4.1.3`
+    ([\#3960](https://github.com/informalsystems/hermes/issues/3960))
+  - Update the version of `wasmd` running the
+    integration tests in the CI from `v0.30.0` to `v0.50.0`
+    ([\#3961](https://github.com/informalsystems/hermes/issues/3961))
+  - Update the version of ibc-go simapp running the
+    integration tests in the CI from `v8.2.0` to `v8.3.1`
+    ([\#4009](https://github.com/informalsystems/hermes/issues/4009))
+- [Relayer Library](relayer)
+  - Update to tendermint-rs v0.35.0
+    ([\#3895](https://github.com/informalsystems/hermes/issues/3895))
+  - Use `packet_ack_hex` event attribute instead of deprecated `packet_ack` attribute to decode `WriteAck` event
+    ([\#3921](https://github.com/informalsystems/hermes/issues/3921))
+  - Update to tendermint-rs v0.36.0
+    ([\#3966](https://github.com/informalsystems/hermes/issues/3966))
+  - Add support for dynamic gas fee for chains using Skip's [`x/feemarket`](https://github.com/skip-mev/feemarket) module, while keeping compatibility with Osmosis' bespoke implementation
+    ([\#4000](https://github.com/informalsystems/hermes/issues/4000))
+- [Relayer CLI](relayer-cli)
+  - Use RPC (pull) event source instead of WebSocket (push) when generating configuration with `hermes config auto`
+    ([\#3913](https://github.com/informalsystems/hermes/issues/3913))
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fix creation of channels and connection on chains
+    using an unsupported version of ibc-go, eg. Sei
+    ([\#3817](https://github.com/informalsystems/hermes/issues/3817))
+  - Fix a bug where Hermes would only ever extract the first emitted ICS 031 CrossChain Query event, which would cause it to miss the other CCQ events.
+    ([\#3954](https://github.com/informalsystems/hermes/issues/3954))
+- [Relayer CLI](relayer-cli)
+  - Fixed `minimum-gas-prices` health-check messages and make it more verbose and legible
+    ([\#3893](https://github.com/informalsystems/hermes/issues/3893))
+  - Set `compat_mode` for pull mode in `hermes listen` command
+    ([\#3910](https://github.com/informalsystems/hermes/issues/3910))
+  - Fixed the trusted height consensus state query when submitting the double vote evidence
+    ([\#3999](https://github.com/informalsystems/hermes/issues/3999))
+
 ## v1.8.3
 
 *May 28th, 2024*

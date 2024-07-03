@@ -1,13 +1,24 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::time::Duration;
 
-pub use error::ChannelError;
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::core::channel::v1::{MsgMultihopProofs, MultihopProof};
+use serde::Serialize;
+use tracing::{debug, error, info, warn};
+
+use ibc_proto::ibc::core::channel::v1::{
+    MsgMultihopProofs, MultihopProof, QueryUpgradeErrorRequest, QueryUpgradeRequest,
+};
 use ibc_proto::Protobuf;
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_ack::MsgChannelUpgradeAck;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_cancel::MsgChannelUpgradeCancel;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_confirm::MsgChannelUpgradeConfirm;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_open::MsgChannelUpgradeOpen;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_timeout::MsgChannelUpgradeTimeout;
+use ibc_relayer_types::core::ics04_channel::packet::Sequence;
+
 use ibc_relayer_types::core::ics04_channel::channel::{
-    ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State,
+    ChannelEnd, Counterparty, IdentifiedChannelEnd, Ordering, State, UpgradeState,
 };
 use ibc_relayer_types::core::ics04_channel::msgs::chan_close_confirm::MsgChannelCloseConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_close_init::MsgChannelCloseInit;
@@ -15,6 +26,7 @@ use ibc_relayer_types::core::ics04_channel::msgs::chan_open_ack::MsgChannelOpenA
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_confirm::MsgChannelOpenConfirm;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_init::MsgChannelOpenInit;
 use ibc_relayer_types::core::ics04_channel::msgs::chan_open_try::MsgChannelOpenTry;
+use ibc_relayer_types::core::ics04_channel::msgs::chan_upgrade_try::MsgChannelUpgradeTry;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentProofBytes;
 use ibc_relayer_types::core::ics23_commitment::merkle::apply_prefix;
 use ibc_relayer_types::core::ics24_host::identifier::{
@@ -28,8 +40,6 @@ use ibc_relayer_types::core::ics33_multihop::proofs::MultihopProofHeights;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
-use serde::Serialize;
-use tracing::{debug, error, info, warn};
 
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
@@ -48,9 +58,11 @@ use crate::util::retry::retry_with_index;
 use crate::util::retry::RetryResult;
 use crate::util::task::Next;
 
-pub mod error;
 pub mod version;
 use version::Version;
+
+pub mod error;
+pub use error::ChannelError;
 
 pub mod channel_handshake_retry {
     //! Provides utility methods and constants to configure the retry behavior
@@ -359,16 +371,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         chain: ChainA,
         counterparty_chain: ChainB,
         channel: WorkerChannelObject,
-        height: Height,
+        height: QueryHeight,
     ) -> Result<(Channel<ChainA, ChainB>, State), ChannelError> {
         let (a_channel, _) = chain
             .query_channel(
                 QueryChannelRequest {
                     port_id: channel.src_port_id.clone(),
                     channel_id: channel.src_channel_id.clone(),
-                    height: QueryHeight::Specific(height),
+                    height,
                 },
-                IncludeProof::No,
+                // IncludeProof::Yes forces a new query when the CachingChainHandle
+                // is used.
+                // TODO: Pass the BaseChainHandle instead of the CachingChainHandle
+                // to the channel worker to avoid querying for a Proof .
+                IncludeProof::Yes,
             )
             .map_err(ChannelError::relayer)?;
 
@@ -518,7 +534,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                         channel_id: id.clone(),
                         height: QueryHeight::Latest,
                     },
-                    IncludeProof::No,
+                    IncludeProof::Yes,
                 )
                 .map(|(channel_end, _)| channel_end)
                 .map_err(|e| ChannelError::chain_query(self.a_chain().id(), e))
@@ -682,7 +698,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         );
 
         match (a_state, b_state) {
-            // send the Init message to chain a (source)
+            // send the Init message to chain A (source)
             (State::Uninitialized, State::Uninitialized) => {
                 let event = self
                     .flipped()
@@ -695,7 +711,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.a_side.channel_id = Some(channel_id.clone());
             }
 
-            // send the Try message to chain a (source)
+            // send the Try message to chain A (source)
             (State::Uninitialized, State::Init) | (State::Init, State::Init) => {
                 let event = self.flipped().build_chan_open_try_and_send().map_err(|e| {
                     error!("failed ChanOpenTry {}: {}", self.a_side, e);
@@ -706,7 +722,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.a_side.channel_id = Some(channel_id.clone());
             }
 
-            // send the Try message to chain b (destination)
+            // send the Try message to chain B (destination)
             (State::Init, State::Uninitialized) => {
                 let event = self.build_chan_open_try_and_send().map_err(|e| {
                     error!("failed ChanOpenTry {}: {}", self.b_side, e);
@@ -717,7 +733,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 self.b_side.channel_id = Some(channel_id.clone());
             }
 
-            // send the Ack message to chain a (source)
+            // send the Ack message to chain A (source)
             (State::Init, State::TryOpen) | (State::TryOpen, State::TryOpen) => {
                 self.flipped().build_chan_open_ack_and_send().map_err(|e| {
                     error!("failed ChanOpenAck {}: {}", self.a_side, e);
@@ -725,7 +741,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 })?;
             }
 
-            // send the Ack message to chain b (destination)
+            // send the Ack message to chain B (destination)
             (State::TryOpen, State::Init) => {
                 self.build_chan_open_ack_and_send().map_err(|e| {
                     error!("failed ChanOpenAck {}: {}", self.b_side, e);
@@ -733,16 +749,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 })?;
             }
 
-            // send the Confirm message to chain b (destination)
-            (State::Open, State::TryOpen) => {
+            // send the Confirm message to chain B (destination)
+            (State::Open(UpgradeState::NotUpgrading), State::TryOpen) => {
                 self.build_chan_open_confirm_and_send().map_err(|e| {
                     error!("failed ChanOpenConfirm {}: {}", self.b_side, e);
                     e
                 })?;
             }
 
-            // send the Confirm message to chain a (source)
-            (State::TryOpen, State::Open) => {
+            // send the Confirm message to chain A (source)
+            (State::TryOpen, State::Open(UpgradeState::NotUpgrading)) => {
                 self.flipped()
                     .build_chan_open_confirm_and_send()
                     .map_err(|e| {
@@ -751,7 +767,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                     })?;
             }
 
-            (State::Open, State::Open) => {
+            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::NotUpgrading)) => {
                 info!("channel handshake already finished for {}", self);
                 return Ok(());
             }
@@ -828,16 +844,57 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             (State::Init, State::Init) => Some(self.build_chan_open_try_and_send()?),
             (State::TryOpen, State::Init) => Some(self.build_chan_open_ack_and_send()?),
             (State::TryOpen, State::TryOpen) => Some(self.build_chan_open_ack_and_send()?),
-            (State::Open, State::TryOpen) => Some(self.build_chan_open_confirm_and_send()?),
-            (State::Open, State::Open) => return Ok((None, Next::Abort)),
+            (State::Open(UpgradeState::NotUpgrading), State::TryOpen) => {
+                Some(self.build_chan_open_confirm_and_send()?)
+            }
+            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::NotUpgrading)) => {
+                return Ok((None, Next::Abort))
+            }
 
             // If the counterparty state is already Open but current state is TryOpen,
             // return anyway as the final step is to be done by the counterparty worker.
-            (State::TryOpen, State::Open) => return Ok((None, Next::Abort)),
+            (State::TryOpen, State::Open(UpgradeState::NotUpgrading)) => {
+                return Ok((None, Next::Abort))
+            }
 
             // Close handshake steps
             (State::Closed, State::Closed) => return Ok((None, Next::Abort)),
             (State::Closed, _) => Some(self.build_chan_close_confirm_and_send()?),
+
+            // Channel Upgrade handshake steps
+            (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::NotUpgrading)) => {
+                Some(self.build_chan_upgrade_try_and_send()?)
+            }
+            (State::Open(UpgradeState::Upgrading), State::Open(UpgradeState::Upgrading)) => {
+                Some(self.build_chan_upgrade_try_and_send()?)
+            }
+            (State::Open(UpgradeState::NotUpgrading), State::Open(UpgradeState::Upgrading)) => {
+                Some(self.build_chan_upgrade_try_and_send()?)
+            }
+            (State::Flushing, State::Open(UpgradeState::Upgrading)) => {
+                Some(self.build_chan_upgrade_ack_and_send()?)
+            }
+            (State::Flushing, State::Flushing) => Some(self.build_chan_upgrade_ack_and_send()?),
+            (State::FlushComplete, State::Flushing) => {
+                Some(self.build_chan_upgrade_confirm_and_send()?)
+            }
+
+            (State::Flushing, State::Open(UpgradeState::NotUpgrading)) => {
+                Some(self.flipped().build_chan_upgrade_cancel_and_send()?)
+            }
+            (State::Open(UpgradeState::NotUpgrading), State::Flushing) => {
+                Some(self.build_chan_upgrade_cancel_and_send()?)
+            }
+
+            (State::FlushComplete, State::FlushComplete) => {
+                Some(self.build_chan_upgrade_open_and_send()?)
+            }
+            (State::FlushComplete, State::Open(UpgradeState::NotUpgrading)) => self
+                .flipped()
+                .build_chan_upgrade_open_or_cancel_and_send()?,
+            (State::Open(UpgradeState::NotUpgrading), State::FlushComplete) => {
+                self.build_chan_upgrade_open_or_cancel_and_send()?
+            }
 
             _ => None,
         };
@@ -847,7 +904,10 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         match event {
             Some(IbcEvent::OpenConfirmChannel(_))
             | Some(IbcEvent::OpenAckChannel(_))
-            | Some(IbcEvent::CloseConfirmChannel(_)) => Ok((event, Next::Abort)),
+            | Some(IbcEvent::CloseConfirmChannel(_))
+            | Some(IbcEvent::UpgradeConfirmChannel(_))
+            | Some(IbcEvent::UpgradeOpenChannel(_))
+            | Some(IbcEvent::UpgradeCancelChannel(_)) => Ok((event, Next::Abort)),
             _ => Ok((event, Next::Continue)),
         }
     }
@@ -878,9 +938,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let state = match event {
             IbcEvent::OpenInitChannel(_) => State::Init,
             IbcEvent::OpenTryChannel(_) => State::TryOpen,
-            IbcEvent::OpenAckChannel(_) => State::Open,
-            IbcEvent::OpenConfirmChannel(_) => State::Open,
+            IbcEvent::OpenAckChannel(_) => State::Open(UpgradeState::NotUpgrading),
+            IbcEvent::OpenConfirmChannel(_) => State::Open(UpgradeState::NotUpgrading),
             IbcEvent::CloseInitChannel(_) => State::Closed,
+            IbcEvent::UpgradeInitChannel(_) => State::Open(UpgradeState::Upgrading),
+            IbcEvent::UpgradeTryChannel(_) => State::Flushing,
+            IbcEvent::UpgradeAckChannel(_) => State::FlushComplete,
+            IbcEvent::UpgradeConfirmChannel(_) => State::FlushComplete,
+            IbcEvent::UpgradeOpenChannel(_) => State::Open(UpgradeState::NotUpgrading),
             _ => State::Uninitialized,
         };
 
@@ -983,7 +1048,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map(|hops| hops.connection_ids())
                 .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
             version,
-            0,
+            Sequence::from(0),
         );
 
         // Build the domain type message
@@ -1028,7 +1093,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
     }
 
     /// Retrieves the channel from destination and compares it
-    /// against the expected channel. built from the message type [`ChannelMsgType`].
+    /// against the expected channel. Built from the message type [`ChannelMsgType`].
     ///
     /// If the expected and the destination channels are compatible,
     /// returns the expected channel
@@ -1053,7 +1118,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let highest_state = match msg_type {
             ChannelMsgType::OpenAck => State::TryOpen,
             ChannelMsgType::OpenConfirm => State::TryOpen,
-            ChannelMsgType::CloseConfirm => State::Open,
+            ChannelMsgType::CloseConfirm => State::Open(UpgradeState::NotUpgrading),
             _ => State::Uninitialized,
         };
 
@@ -1071,7 +1136,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map(|hops| hops.connection_ids())
                 .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
             Version::empty(),
-            0,
+            Sequence::from(0),
         );
 
         // Retrieve existing channel from the destination
@@ -1087,8 +1152,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             )
             .map_err(|e| ChannelError::query(self.dst_chain().id(), e))?;
 
-        // Require the channel end to exist, i.e, require the state to differ from State::Uninitialized.
-        // A channel end must exist on the destination for Ack and Confirm Txs to succeed.
+        // Check if a channel is expected to exist on destination chain
+        // A channel must exist on destination chain for Ack and Confirm Tx-es to succeed
         if dst_channel.state_matches(&State::Uninitialized) {
             return Err(ChannelError::missing_channel_on_destination());
         }
@@ -1517,7 +1582,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 .map(|hops| hops.connection_ids())
                 .unwrap_or_else(|| vec![self.dst_connection_id().clone()]),
             version,
-            0,
+            Sequence::from(0),
         );
 
         // Get signer
@@ -1621,7 +1686,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             counterparty,
             vec![self.dst_connection_id().clone()],
             version,
-            0,
+            Sequence::from(0),
         );
 
         // Get signer
@@ -2173,7 +2238,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         self.validated_expected_channel(ChannelMsgType::CloseConfirm)?;
 
         // Channel must exist on source
-        self.src_chain()
+        let (src_channel_end, _) = self
+            .src_chain()
             .query_channel(
                 QueryChannelRequest {
                     port_id: self.src_port_id().clone(),
@@ -2205,6 +2271,8 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .build_channel_proofs(self.src_port_id(), src_channel_id, query_height)
             .map_err(ChannelError::channel_proof)?;
 
+        let counterparty_upgrade_sequence = src_channel_end.upgrade_sequence;
+
         // Build message(s) to update client on destination
         let mut msgs = self.build_update_client_on_dst(proofs.height())?;
 
@@ -2220,7 +2288,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_id: dst_channel_id.clone(),
             proofs,
             signer,
-            counterparty_upgrade_sequence: 0,
+            counterparty_upgrade_sequence,
         };
 
         msgs.push(new_msg.to_any());
@@ -2258,6 +2326,679 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         }
     }
 
+    pub fn build_chan_upgrade_try(&self) -> Result<Vec<Any>, ChannelError> {
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+        let src_port_id = self.src_port_id();
+        let src_latest_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_local_channel_id)?;
+        let dst_port_id = self.dst_port_id();
+
+        // Fetch the src channel end that will be upgraded by the upgrade handshake
+        // Querying for the Channel End now includes the upgrade sequence number
+        let (channel_end, _) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: src_port_id.clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Specific(src_latest_height),
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // Building the channel proof at the queried height
+        let src_proof = self
+            .src_chain()
+            .build_channel_proofs(
+                &src_port_id.clone(),
+                &src_channel_id.clone(),
+                src_latest_height,
+            )
+            .map_err(ChannelError::channel_proof)?;
+
+        let (dst_channel_end, _) = self
+            .dst_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: dst_port_id.clone(),
+                    channel_id: dst_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        let (upgrade, maybe_upgrade_proof) = self
+            .src_chain()
+            .query_upgrade(
+                QueryUpgradeRequest {
+                    port_id: self.src_port_id().to_string(),
+                    channel_id: src_channel_id.to_string(),
+                },
+                src_latest_height,
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let upgrade_proof = maybe_upgrade_proof.ok_or(ChannelError::missing_upgrade_proof())?;
+
+        let proof_upgrade =
+            CommitmentProofBytes::try_from(upgrade_proof).map_err(ChannelError::malformed_proof)?;
+
+        if !matches!(channel_end.state, State::Open(_)) {
+            return Err(ChannelError::invalid_channel_upgrade_state(
+                State::Open(UpgradeState::NotUpgrading).to_string(),
+                channel_end.state.to_string(),
+            ));
+        }
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeTry {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id.clone(),
+            proposed_upgrade_connection_hops: dst_channel_end.connection_hops,
+            counterparty_upgrade_fields: upgrade.fields,
+            counterparty_upgrade_sequence: channel_end.upgrade_sequence,
+            proof_channel: src_proof.object_proof().clone(),
+            proof_upgrade,
+            proof_height: src_proof.height(),
+            signer,
+        };
+
+        let mut chain_a_msgs = self.build_update_client_on_dst(src_proof.height())?;
+
+        chain_a_msgs.push(new_msg.to_any());
+
+        Ok(chain_a_msgs)
+    }
+
+    pub fn build_chan_upgrade_try_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_try()?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTry");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        // Find the relevant event for channel upgrade try
+        let result = events
+            .into_iter()
+            .find(|events_with_height| {
+                matches!(events_with_height.event, IbcEvent::UpgradeTryChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::UpgradeErrorChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no chan upgrade try or upgrade error event was in the response".to_string(),
+                )
+            })?;
+
+        match result.event {
+            IbcEvent::UpgradeTryChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::UpgradeErrorChannel(ref ev) => {
+                warn!(
+                    "Channel Upgrade Try failed with error: {}",
+                    ev.error_receipt
+                );
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
+    }
+
+    pub fn build_chan_upgrade_ack(&self) -> Result<Vec<Any>, ChannelError> {
+        // Destination channel ID must exist
+
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let src_port_id = self.src_port_id();
+
+        let dst_port_id = self.dst_port_id();
+
+        let src_latest_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let (upgrade, maybe_upgrade_proof) = self
+            .src_chain()
+            .query_upgrade(
+                QueryUpgradeRequest {
+                    port_id: self.src_port_id().to_string(),
+                    channel_id: src_channel_id.to_string(),
+                },
+                src_latest_height,
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let upgrade_proof = maybe_upgrade_proof.ok_or(ChannelError::missing_upgrade_proof())?;
+
+        let proof_upgrade =
+            CommitmentProofBytes::try_from(upgrade_proof).map_err(ChannelError::malformed_proof)?;
+
+        // Building the channel proof at the queried height
+        let proof = self
+            .src_chain()
+            .build_channel_proofs(
+                &src_port_id.clone(),
+                &src_channel_id.clone(),
+                src_latest_height,
+            )
+            .map_err(ChannelError::channel_proof)?;
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeAck {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id.clone(),
+            counterparty_upgrade: upgrade,
+            proof_channel: proof.object_proof().clone(),
+            proof_upgrade,
+            proof_height: proof.height(),
+            signer,
+        };
+
+        let mut chain_a_msgs = self.build_update_client_on_dst(proof.height())?;
+
+        chain_a_msgs.push(new_msg.to_any());
+
+        Ok(chain_a_msgs)
+    }
+
+    pub fn build_chan_upgrade_ack_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_ack()?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeAck");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        // Find the relevant event for channel upgrade ack
+        let result = events
+            .into_iter()
+            .find(|events_with_height| {
+                matches!(events_with_height.event, IbcEvent::UpgradeAckChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::UpgradeErrorChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no chan upgrade ack or upgrade error event was in the response".to_string(),
+                )
+            })?;
+
+        match result.event {
+            IbcEvent::UpgradeAckChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::UpgradeErrorChannel(ref ev) => {
+                warn!(
+                    "Channel Upgrade Ack failed with error: {}",
+                    ev.error_receipt
+                );
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
+    }
+
+    pub fn build_chan_upgrade_confirm(&self) -> Result<Vec<Any>, ChannelError> {
+        // Destination channel ID must exist
+
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let src_port_id = self.src_port_id();
+
+        let dst_port_id = self.dst_port_id();
+
+        let src_latest_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        // Fetch the src channel end that will be upgraded by the upgrade handshake
+        // Querying for the Channel End now includes the upgrade sequence number
+        let (channel_end, _) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: src_port_id.clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Specific(src_latest_height),
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        let (upgrade, maybe_upgrade_proof) = self
+            .src_chain()
+            .query_upgrade(
+                QueryUpgradeRequest {
+                    port_id: self.src_port_id().to_string(),
+                    channel_id: src_channel_id.to_string(),
+                },
+                src_latest_height,
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let upgrade_proof = maybe_upgrade_proof.ok_or(ChannelError::missing_upgrade_proof())?;
+
+        let proof_upgrade =
+            CommitmentProofBytes::try_from(upgrade_proof).map_err(ChannelError::malformed_proof)?;
+
+        // Building the channel proof at the queried height
+        let proof = self
+            .src_chain()
+            .build_channel_proofs(
+                &src_port_id.clone(),
+                &src_channel_id.clone(),
+                src_latest_height,
+            )
+            .map_err(ChannelError::channel_proof)?;
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeConfirm {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id.clone(),
+            counterparty_channel_state: channel_end.state,
+            counterparty_upgrade: upgrade,
+            proof_channel: proof.object_proof().clone(),
+            proof_upgrade,
+            proof_height: proof.height(),
+            signer,
+        };
+
+        let mut chain_a_msgs = self.build_update_client_on_dst(proof.height())?;
+
+        chain_a_msgs.push(new_msg.to_any());
+
+        Ok(chain_a_msgs)
+    }
+
+    pub fn build_chan_upgrade_confirm_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_confirm()?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeConfirm");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        // Find the relevant event for channel upgrade confirm
+        let result = events
+            .into_iter()
+            .find(|events_with_height| {
+                matches!(events_with_height.event, IbcEvent::UpgradeConfirmChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::UpgradeErrorChannel(_))
+                    || matches!(events_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no chan upgrade ack or upgrade error event was in the response".to_string(),
+                )
+            })?;
+
+        match result.event {
+            IbcEvent::UpgradeConfirmChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::UpgradeErrorChannel(ref ev) => {
+                warn!(
+                    "Channel Upgrade Confirm failed with error: {}",
+                    ev.error_receipt
+                );
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
+    }
+
+    pub fn build_chan_upgrade_open(&self) -> Result<Vec<Any>, ChannelError> {
+        // Destination channel ID must exist
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let src_port_id = self.src_port_id();
+
+        let dst_port_id = self.dst_port_id();
+
+        let src_latest_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let (src_channel_end, _) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: src_port_id.clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Specific(src_latest_height),
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        let counterparty_upgrade_sequence = src_channel_end.upgrade_sequence;
+
+        // Building the channel proof at the queried height
+        let proofs = self
+            .src_chain()
+            .build_channel_proofs(
+                &src_port_id.clone(),
+                &src_channel_id.clone(),
+                src_latest_height,
+            )
+            .map_err(ChannelError::channel_proof)?;
+
+        // Build message(s) to update client on destination
+        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeOpen {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id.clone(),
+            counterparty_channel_state: src_channel_end.state,
+            counterparty_upgrade_sequence,
+            proof_channel: proofs.object_proof().clone(),
+            proof_height: proofs.height(),
+            signer,
+        };
+
+        msgs.push(new_msg.to_any());
+        Ok(msgs)
+    }
+
+    pub fn build_chan_upgrade_open_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_open()?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeOpen");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        let result = events
+            .into_iter()
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::UpgradeOpenChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no channel upgrade open event was in the response".to_string(),
+                )
+            })?;
+
+        match &result.event {
+            IbcEvent::UpgradeOpenChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
+    }
+
+    pub fn build_chan_upgrade_cancel(&self) -> Result<Vec<Any>, ChannelError> {
+        // Destination channel ID must exist
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let src_port_id = self.src_port_id();
+
+        let dst_port_id = self.dst_port_id();
+
+        let src_latest_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let (error_receipt, maybe_error_receipt_proof) = self
+            .src_chain()
+            .query_upgrade_error(
+                QueryUpgradeErrorRequest {
+                    port_id: src_port_id.to_string(),
+                    channel_id: src_channel_id.to_string(),
+                },
+                src_latest_height,
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        let error_receipt_proof =
+            maybe_error_receipt_proof.ok_or(ChannelError::missing_upgrade_error_receipt_proof())?;
+
+        let proof_error_receipt = CommitmentProofBytes::try_from(error_receipt_proof)
+            .map_err(ChannelError::malformed_proof)?;
+
+        // Building the channel proof at the queried height
+        let proofs = self
+            .src_chain()
+            .build_channel_proofs(
+                &src_port_id.clone(),
+                &src_channel_id.clone(),
+                src_latest_height,
+            )
+            .map_err(ChannelError::channel_proof)?;
+
+        // Build message(s) to update client on destination
+        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeCancel {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id.clone(),
+            error_receipt,
+            proof_error_receipt,
+            proof_height: proofs.height(),
+            signer,
+        };
+
+        msgs.push(new_msg.to_any());
+        Ok(msgs)
+    }
+
+    pub fn build_chan_upgrade_cancel_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_cancel()?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeCancel");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        let result = events
+            .into_iter()
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::UpgradeCancelChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no channel upgrade cancel event was in the response".to_string(),
+                )
+            })?;
+
+        match &result.event {
+            IbcEvent::UpgradeCancelChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
+    }
+
+    pub fn build_chan_upgrade_timeout(&self) -> Result<Vec<Any>, ChannelError> {
+        // Destination channel ID must exist
+        let src_channel_id = self
+            .src_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let dst_channel_id = self
+            .dst_channel_id()
+            .ok_or_else(ChannelError::missing_counterparty_channel_id)?;
+
+        let src_port_id = self.src_port_id();
+
+        let dst_port_id = self.dst_port_id();
+
+        let src_latest_height = self
+            .src_chain()
+            .query_latest_height()
+            .map_err(|e| ChannelError::chain_query(self.src_chain().id(), e))?;
+
+        // Retrieve counterparty channel
+        let (counterparty_channel, _) = self
+            .src_chain()
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: src_port_id.clone(),
+                    channel_id: src_channel_id.clone(),
+                    height: QueryHeight::Specific(src_latest_height),
+                },
+                IncludeProof::Yes,
+            )
+            .map_err(|e| ChannelError::query(self.src_chain().id(), e))?;
+
+        // Building the channel proof at the queried height
+        let proofs = self
+            .src_chain()
+            .build_channel_proofs(
+                &src_port_id.clone(),
+                &src_channel_id.clone(),
+                src_latest_height,
+            )
+            .map_err(ChannelError::channel_proof)?;
+
+        // Build message(s) to update client on destination
+        let mut msgs = self.build_update_client_on_dst(proofs.height())?;
+
+        let signer = self
+            .dst_chain()
+            .get_signer()
+            .map_err(|e| ChannelError::fetch_signer(self.dst_chain().id(), e))?;
+
+        // Build the domain type message
+        let new_msg = MsgChannelUpgradeTimeout {
+            port_id: dst_port_id.clone(),
+            channel_id: dst_channel_id.clone(),
+            counterparty_channel,
+            proof_channel: proofs.object_proof().clone(),
+            proof_height: proofs.height(),
+            signer,
+        };
+
+        msgs.push(new_msg.to_any());
+        Ok(msgs)
+    }
+
+    pub fn build_chan_upgrade_timeout_and_send(&self) -> Result<IbcEvent, ChannelError> {
+        let dst_msgs = self.build_chan_upgrade_timeout()?;
+
+        let tm = TrackedMsgs::new_static(dst_msgs, "ChannelUpgradeTimeout");
+
+        let events = self
+            .dst_chain()
+            .send_messages_and_wait_commit(tm)
+            .map_err(|e| ChannelError::submit(self.dst_chain().id(), e))?;
+
+        let result = events
+            .into_iter()
+            .find(|event_with_height| {
+                matches!(event_with_height.event, IbcEvent::UpgradeTimeoutChannel(_))
+                    || matches!(event_with_height.event, IbcEvent::ChainError(_))
+            })
+            .ok_or_else(|| {
+                ChannelError::missing_event(
+                    "no channel upgrade timeout event was in the response".to_string(),
+                )
+            })?;
+
+        match &result.event {
+            IbcEvent::UpgradeTimeoutChannel(_) => {
+                info!("👋 {} => {}", self.dst_chain().id(), result);
+                Ok(result.event)
+            }
+            IbcEvent::ChainError(e) => Err(ChannelError::tx_response(e.clone())),
+            _ => Err(ChannelError::invalid_event(result.event)),
+        }
+    }
+
     pub fn map_chain<ChainC: ChainHandle, ChainD: ChainHandle>(
         self,
         mapper_a: impl Fn(ChainA) -> ChainC,
@@ -2270,6 +3011,38 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             connection_delay: self.connection_delay,
         }
     }
+
+    pub fn build_chan_upgrade_open_or_cancel_and_send(
+        &self,
+    ) -> Result<Option<IbcEvent>, ChannelError> {
+        // Check if error query_upgrade_error
+        let height = self.a_chain().query_latest_height().unwrap();
+        let upgrade_error = self
+            .a_chain()
+            .query_upgrade_error(
+                QueryUpgradeErrorRequest {
+                    port_id: self.a_side.port_id.clone().to_string(),
+                    channel_id: self.a_side.channel_id.clone().unwrap().clone().to_string(),
+                },
+                height,
+                IncludeProof::No,
+            )
+            .map_err(|_| ChannelError::missing_upgrade_error_receipt_proof());
+
+        let channel_end = self.b_channel(self.b_channel_id())?;
+
+        if let Ok((upgrade_error, _)) = upgrade_error {
+            if upgrade_error.sequence > 0.into()
+                && upgrade_error.sequence == channel_end.upgrade_sequence
+            {
+                Ok(Some(self.build_chan_upgrade_cancel_and_send()?))
+            } else {
+                Ok(Some(self.build_chan_upgrade_open_and_send()?))
+            }
+        } else {
+            Ok(Some(self.build_chan_upgrade_open_and_send()?))
+        }
+    }
 }
 
 pub fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> {
@@ -2278,6 +3051,7 @@ pub fn extract_channel_id(event: &IbcEvent) -> Result<&ChannelId, ChannelError> 
         IbcEvent::OpenTryChannel(ev) => ev.channel_id(),
         IbcEvent::OpenAckChannel(ev) => ev.channel_id(),
         IbcEvent::OpenConfirmChannel(ev) => ev.channel_id(),
+        IbcEvent::UpgradeInitChannel(ev) => Some(ev.channel_id()),
         _ => None,
     }
     .ok_or_else(|| ChannelError::missing_event("cannot extract channel_id from result".to_string()))
@@ -2301,7 +3075,9 @@ fn check_destination_channel_state(
         existing_channel.connection_hops() == expected_channel.connection_hops();
 
     // TODO: Refactor into a method
-    let good_state = *existing_channel.state() as u32 <= *expected_channel.state() as u32;
+    let good_state = existing_channel
+        .state()
+        .less_or_equal_progress(*expected_channel.state());
     let good_channel_port_ids = existing_channel.counterparty().channel_id().is_none()
         || existing_channel.counterparty().channel_id()
             == expected_channel.counterparty().channel_id()

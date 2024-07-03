@@ -1,4 +1,6 @@
 use flex_error::define_error;
+use flex_error::TraceError;
+
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -27,6 +29,42 @@ define_error! {
                 to get the same behavior, use `gas_multiplier = {2}",
                 e.chain_id, e.gas_adjustment, e.gas_multiplier
             )
+        },
+
+        ExpectedExcludedSequencesArray
+        |_| { "expected excluded_sequences to be an array of values" },
+
+        InvalidExcludedSequencesSeparator
+        { separator: String }
+        |e| {
+            format!("excluded_sequences range `{}` is invalid, only '..', '..=' and '-' are valid separators", e.separator)
+        },
+
+        MissingStartExcludedSequence
+        { entry: String }
+        |e| {
+            format!("missing the excluded sequence value before the separator in the entry `{}`", e.entry)
+        },
+
+        MissingEndExcludedSequence
+        { entry: String }
+        |e| {
+            format!("missing the excluded sequence value after the separator in the entry `{}`", e.entry)
+        },
+
+        ParsingStartExcludedSequenceFailed
+        { entry: String }
+        [ TraceError<std::num::ParseIntError> ]
+        |e| {
+            format!("Error parsing starting sequence as integer in entry `{}`", e.entry)
+        },
+
+
+        ParsingEndExcludedSequenceFailed
+        { entry: String }
+        [ TraceError<std::num::ParseIntError> ]
+        |e| {
+            format!("Error parsing ending sequence as integer in entry `{}`", e.entry)
         },
     }
 }

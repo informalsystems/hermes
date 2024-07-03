@@ -4,18 +4,17 @@
 
 use ibc_relayer::chain::handle::{ChainHandle, DefaultChainHandle};
 use ibc_relayer::config::Config;
-use ibc_relayer::foreign_client::ForeignClient;
 use ibc_relayer::registry::SharedRegistry;
 
 use crate::bootstrap::binary::chain::{
-    add_chain_config, add_keys_to_chain_handle, bootstrap_foreign_client, new_registry,
-    save_relayer_config,
+    add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
 };
 use crate::error::{handle_generic_error, Error};
 use crate::relayer::driver::RelayerDriver;
 use crate::types::config::TestConfig;
 use crate::types::nary::chains::{DynamicConnectedChains, NaryConnectedChains};
 use crate::types::single::node::FullNode;
+use crate::types::topology::{bootstrap_topology, TopologyType};
 
 /**
   Bootstrap a fixed number of chains specified by `SIZE`.
@@ -23,10 +22,15 @@ use crate::types::single::node::FullNode;
 pub fn boostrap_chains_with_nodes<const SIZE: usize>(
     test_config: &TestConfig,
     full_nodes: [FullNode; SIZE],
+    topology_override: Option<TopologyType>,
     config_modifier: impl FnOnce(&mut Config),
 ) -> Result<(RelayerDriver, NaryConnectedChains<impl ChainHandle, SIZE>), Error> {
-    let (relayer, chains) =
-        boostrap_chains_with_any_nodes(test_config, full_nodes.into(), config_modifier)?;
+    let (relayer, chains) = boostrap_chains_with_any_nodes(
+        test_config,
+        full_nodes.into(),
+        topology_override,
+        config_modifier,
+    )?;
 
     Ok((relayer, chains.try_into()?))
 }
@@ -38,11 +42,16 @@ pub fn boostrap_chains_with_nodes<const SIZE: usize>(
 pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
     test_config: &TestConfig,
     full_node: FullNode,
+    topology_override: Option<TopologyType>,
     config_modifier: impl FnOnce(&mut Config),
 ) -> Result<(RelayerDriver, NaryConnectedChains<impl ChainHandle, SIZE>), Error> {
     let full_nodes = vec![full_node; SIZE];
-    let (relayer, chains) =
-        boostrap_chains_with_any_nodes(test_config, full_nodes, config_modifier)?;
+    let (relayer, chains) = boostrap_chains_with_any_nodes(
+        test_config,
+        full_nodes,
+        topology_override,
+        config_modifier,
+    )?;
 
     Ok((relayer, chains.try_into()?))
 }
@@ -50,10 +59,13 @@ pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
 /**
    Bootstrap a dynamic number of chains, according to the number of full nodes
    in the `Vec<FullNode>`.
+   The topology will be retrieved and set in this method,
+   see [`crate::types::topology`] for more information.
 */
 pub fn boostrap_chains_with_any_nodes(
     test_config: &TestConfig,
     full_nodes: Vec<FullNode>,
+    topology_override: Option<TopologyType>,
     config_modifier: impl FnOnce(&mut Config),
 ) -> Result<(RelayerDriver, DynamicConnectedChains<impl ChainHandle>), Error> {
     let mut config = Config::default();
@@ -77,19 +89,24 @@ pub fn boostrap_chains_with_any_nodes(
         chain_handles.push(handle);
     }
 
-    let mut foreign_clients: Vec<Vec<ForeignClient<_, _>>> = Vec::new();
-
-    for handle_a in chain_handles.iter() {
-        let mut foreign_clients_b = Vec::new();
-
-        for handle_b in chain_handles.iter() {
-            let foreign_client = bootstrap_foreign_client(handle_a, handle_b, Default::default())?;
-
-            foreign_clients_b.push(foreign_client);
+    // Retrieve the topology or fallback to the Linear topology
+    let topology_type = if let Some(topology_type) = topology_override {
+        topology_type
+    } else {
+        let topology_str = std::env::var("TOPOLOGY").unwrap_or_else(|_| "linear".to_owned());
+        match topology_str.parse() {
+            Ok(topology_type) => topology_type,
+            Err(_) => {
+                tracing::warn!(
+                    "Failed to parse topology type `{topology_str}`. Will fallback to Linear topology"
+                );
+                TopologyType::Linear
+            }
         }
+    };
+    let topology = bootstrap_topology(topology_type);
 
-        foreign_clients.push(foreign_clients_b);
-    }
+    let foreign_clients = topology.create_topology(&chain_handles)?;
 
     let relayer = RelayerDriver {
         config_path,

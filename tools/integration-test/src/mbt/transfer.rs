@@ -174,11 +174,13 @@ impl TestOverrides for IbcTransferMBT {
 impl BinaryChannelTest for IbcTransferMBT {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(0)));
         // relayer is spawned
         let mut supervisor = Some(relayer.spawn_supervisor()?);
 
@@ -197,7 +199,12 @@ impl BinaryChannelTest for IbcTransferMBT {
                     info!("[LocalTransfer] Init");
                     let node: Tagged<ChainA, _> = get_chain(&chains, *chain_id);
                     super::handlers::local_transfer_handler(
-                        node, *source, *target, *denom, *amount,
+                        node,
+                        *source,
+                        *target,
+                        *denom,
+                        *amount,
+                        &fee_denom_a.with_amount(1200u64).as_ref(),
                     )?;
                     info!("[LocalTransfer] Done");
                 }

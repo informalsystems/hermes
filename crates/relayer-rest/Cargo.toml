@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-rest"
-version      = "0.27.3"
+version      = "0.29.0"
 authors      = ["Informal Systems <hello@informal.systems>"]
 edition      = "2021"
 license      = "Apache-2.0"
@@ -8,7 +8,7 @@ readme       = "README.md"
 keywords     = ["ibc", "rest", "api", "cosmos", "tendermint"]
 homepage     = "https://hermes.informal.systems/"
 repository   = "https://github.com/informalsystems/hermes"
-rust-version = "1.71.1"
+rust-version = "1.76.0"
 description  = """
   Rust implementation of a RESTful API server for Hermes
 """

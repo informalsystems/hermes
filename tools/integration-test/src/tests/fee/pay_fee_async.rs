@@ -18,8 +18,6 @@
 //! Finally, the test initializes the supervisor in order to relay the pending packets so that the
 //! balances on the two chains can be asserted.
 
-use std::cmp::max;
-
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::events::IbcEvent;
 use ibc_test_framework::prelude::*;
@@ -110,23 +108,15 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
             Duration::from_secs(300),
         )?;
 
-        let total_sent = send_amount + receive_fee + ack_fee + timeout_fee;
+        let balance_a2 = balance_a1.clone() - send_amount;
 
-        // Before ibc-go v8.1.0 the amount escrowed for ICS29 fees is the sum of recv, ack and timeout fees
-        let balance_a2_legacy = balance_a1.clone() - total_sent;
-
-        // From ibc-go v8.1+ the amount escrowed for ICS29 fees is the highest value between recv + ack fees or timeout fee
-        let balance_a2 = balance_a1.clone() - send_amount - max(receive_fee + ack_fee, timeout_fee);
-
-        // This double check is required because ibc-go versions previous to v8.1.0 escrow recv, ack and timeout
-        // fees for ICS29. From ibc-go v8.1+ only the highest value between recv+ack and timeout is escrowed.
-        match chain_driver_a
-            .assert_eventual_wallet_amount(&user_a.address(), &balance_a2_legacy.as_ref())
-        {
-            Ok(()) => {}
-            Err(_) => chain_driver_a
-                .assert_eventual_wallet_amount(&user_a.address(), &balance_a2.as_ref())?,
-        }
+        chain_driver_a.assert_eventual_escrowed_amount_ics29(
+            &user_a.address(),
+            &balance_a2.clone().as_ref(),
+            receive_fee,
+            ack_fee,
+            timeout_fee,
+        )?;
 
         let sequence = {
             let send_packet_event = events
@@ -222,23 +212,13 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
             &denom_a.with_amount(timeout_fee_2).as_ref(),
         )?;
 
-        let total_sent_2 = receive_fee_2 + ack_fee_2 + timeout_fee_2;
-
-        // Before ibc-go v8.1.0 the amount escrowed for ICS29 fees is the sum of recv, ack and timeout fees
-        let balance_a3_legacy = balance_a2_legacy - total_sent_2;
-
-        // From ibc-go v8.1+ the amount escrowed for ICS29 fees is the highest value between recv + ack fees or timeout fee
-        let balance_a3 = balance_a2 - max(receive_fee_2 + ack_fee_2, timeout_fee_2);
-
-        // This double check is required because ibc-go versions previous to v8.1.0 escrow recv, ack and timeout
-        // fees for ICS29. From ibc-go v8.1+ only the highest value between recv+ack and timeout is escrowed.
-        match chain_driver_a
-            .assert_eventual_wallet_amount(&user_a.address(), &balance_a3_legacy.as_ref())
-        {
-            Ok(()) => {}
-            Err(_) => chain_driver_a
-                .assert_eventual_wallet_amount(&user_a.address(), &balance_a3.as_ref())?,
-        }
+        chain_driver_a.assert_eventual_escrowed_amount_ics29(
+            &user_a.address(),
+            &balance_a2.as_ref(),
+            receive_fee + receive_fee_2,
+            ack_fee + ack_fee_2,
+            timeout_fee + timeout_fee_2,
+        )?;
 
         {
             let event = events2
