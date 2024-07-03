@@ -13,8 +13,6 @@ const TOTAL_MESSAGES: usize = MESSAGES_PER_BATCH * TOTAL_TRANSACTIONS;
 const BLOCK_TIME_MILLIS: u64 = 1000;
 const BLOCK_TIME: Duration = Duration::from_millis(BLOCK_TIME_MILLIS);
 
-// TODO: Need batching transactions
-#[cfg(not(feature = "namada"))]
 #[test]
 fn test_sequential_commit() -> Result<(), Error> {
     run_binary_channel_test(&SequentialCommitTest)

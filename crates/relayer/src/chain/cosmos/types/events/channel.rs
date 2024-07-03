@@ -16,9 +16,9 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::Error as EventError;
 use ibc_relayer_types::Height;
 
-use crate::chain::cosmos::types::events::raw_object::RawObject;
 use crate::chain::cosmos::types::events::raw_object::extract_attribute;
 use crate::chain::cosmos::types::events::raw_object::maybe_extract_attribute;
+use crate::chain::cosmos::types::events::raw_object::RawObject;
 
 fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
     Ok(Attributes {

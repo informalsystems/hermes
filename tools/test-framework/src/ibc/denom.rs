@@ -25,6 +25,7 @@ pub enum Denom {
         path: String,
         denom: Box<Denom>,
         hashed: String,
+        token_denom: u8,
     },
 }
 
@@ -100,6 +101,7 @@ fn derive_cosmos_ibc_denom<ChainA, ChainB>(
                 path: format!("{port_id}/{channel_id}"),
                 denom: Box::new((*denom.value()).clone()),
                 hashed,
+                token_denom: 0,
             }))
         }
         Denom::Ibc { path, denom, .. } => {
@@ -110,6 +112,7 @@ fn derive_cosmos_ibc_denom<ChainA, ChainB>(
                 path: new_path,
                 denom: denom.clone(),
                 hashed,
+                token_denom: 0,
             }))
         }
     }
@@ -129,6 +132,7 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
                 path,
                 denom: Box::new((*denom.value()).clone()),
                 hashed: ibc_token_addr.to_string(),
+                token_denom: 6,
             }))
         }
         Denom::Ibc { path, denom, .. } => {
@@ -140,6 +144,7 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
                 path: new_path,
                 denom: denom.clone(),
                 hashed: ibc_token_addr.to_string(),
+                token_denom: 6,
             }))
         }
     }
@@ -216,13 +221,15 @@ impl PartialEq for Denom {
                     path: p1,
                     denom: d1,
                     hashed: h1,
+                    token_denom: td1,
                 },
                 Self::Ibc {
                     path: p2,
                     denom: d2,
                     hashed: h2,
+                    token_denom: td2,
                 },
-            ) => p1 == p2 && d1 == d2 && h1 == h2,
+            ) => p1 == p2 && d1 == d2 && h1 == h2 && (td1 == td2),
             _ => self.as_str() == other.as_str(),
         }
     }

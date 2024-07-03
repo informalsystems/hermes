@@ -1,6 +1,7 @@
 use core::ops::{Add, Sub};
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use ibc_relayer_types::applications::transfer::coin::{Coin, RawCoin};
+use ibc_relayer_types::bigint::U256;
 
 use crate::chain::chain_type::ChainType;
 use crate::error::Error;
@@ -84,9 +85,16 @@ impl<'a, Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'a, Chain> {
 
 impl<Chain> TaggedDenomExt<Chain> for TaggedDenom<Chain> {
     fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain> {
+        let amount: Amount = match self.value() {
+            Denom::Base { .. } => amount.into(),
+            Denom::Ibc { token_denom, .. } => {
+                let amount: Amount = amount.into();
+                (amount.0 * U256::from(10).pow(U256::from(*token_denom))).into()
+            }
+        };
         self.map(|denom| Token {
             denom: denom.clone(),
-            amount: amount.into(),
+            amount,
         })
     }
 }
