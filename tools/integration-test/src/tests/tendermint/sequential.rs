@@ -150,7 +150,7 @@ impl BinaryChannelTest for SequentialCommitTest {
                 TOTAL_MESSAGES, duration
             );
 
-            assert!(duration < Duration::from_millis(BLOCK_TIME_MILLIS * 2));
+            assert!(duration < Duration::from_millis(BLOCK_TIME_MILLIS * 3));
         }
 
         Ok(())

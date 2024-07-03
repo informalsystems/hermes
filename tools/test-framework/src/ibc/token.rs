@@ -101,9 +101,16 @@ impl<Chain> TaggedDenomExt<Chain> for TaggedDenom<Chain> {
 
 impl<'a, Chain> TaggedDenomExt<Chain> for TaggedDenomRef<'a, Chain> {
     fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain> {
+        let amount: Amount = match self.value() {
+            Denom::Base { .. } => amount.into(),
+            Denom::Ibc { token_denom, .. } => {
+                let amount: Amount = amount.into();
+                (amount.0 * U256::from(10).pow(U256::from(*token_denom))).into()
+            }
+        };
         self.map(|denom| Token {
             denom: (*denom).clone(),
-            amount: amount.into(),
+            amount,
         })
     }
 }

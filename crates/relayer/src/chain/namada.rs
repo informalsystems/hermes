@@ -319,11 +319,7 @@ impl ChainEndpoint for NamadaChain {
         if proto_msgs.is_empty() {
             return Ok(vec![]);
         }
-        let max_msg_num = if self.config().sequential_batch_tx {
-            1
-        } else {
-            self.config().max_msg_num.to_usize()
-        };
+        let max_msg_num = self.config().max_msg_num.to_usize();
         let msg_chunks = proto_msgs.chunks(max_msg_num);
         let mut tx_sync_results = vec![];
         for msg_chunk in msg_chunks {
@@ -333,9 +329,13 @@ impl ChainEndpoint for NamadaChain {
                 msg_chunk.len(),
                 response,
             ));
+            if self.config().sequential_batch_tx {
+                self.wait_for_block_commits(&mut tx_sync_results)?;
+            }
         }
-
-        self.wait_for_block_commits(&mut tx_sync_results)?;
+        if !self.config().sequential_batch_tx {
+            self.wait_for_block_commits(&mut tx_sync_results)?;
+        }
 
         let events: Vec<IbcEventWithHeight> = tx_sync_results
             .into_iter()
@@ -362,11 +362,7 @@ impl ChainEndpoint for NamadaChain {
             return Ok(vec![]);
         }
 
-        let max_msg_num = if self.config().sequential_batch_tx {
-            1
-        } else {
-            self.config().max_msg_num.to_usize()
-        };
+        let max_msg_num = self.config().max_msg_num.to_usize();
         let msg_chunks = proto_msgs.chunks(max_msg_num);
         let mut responses = vec![];
         for msg_chunk in msg_chunks {

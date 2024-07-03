@@ -193,8 +193,8 @@ impl Denom {
 impl Display for Denom {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         match self {
-            Denom::Base { display_name, .. } => {
-                write!(f, "{display_name}")
+            Denom::Base { raw_address, .. } => {
+                write!(f, "{raw_address}")
             }
             Denom::Ibc { hashed, .. } => {
                 write!(f, "{hashed}")
