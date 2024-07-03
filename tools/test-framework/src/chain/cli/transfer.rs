@@ -13,6 +13,7 @@ pub fn local_transfer_token(
     sender: &str,
     recipient: &str,
     token: &str,
+    fees: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -32,6 +33,8 @@ pub fn local_transfer_token(
             home_path,
             "--keyring-backend",
             "test",
+            "--fees",
+            fees,
             "--yes",
         ],
     )?;
@@ -82,4 +85,43 @@ pub fn transfer_from_chain(
     )?;
 
     Ok(())
+}
+
+pub fn generate_transfer_from_chain_tx(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    sender: &str,
+    src_port: &str,
+    src_channel: &str,
+    recipient: &str,
+    token: &str,
+) -> Result<String, Error> {
+    let output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--node",
+            rpc_listen_address,
+            "tx",
+            "ibc-transfer",
+            "transfer",
+            src_port,
+            src_channel,
+            recipient,
+            token,
+            "--from",
+            sender,
+            "--chain-id",
+            chain_id,
+            "--home",
+            home_path,
+            "--keyring-backend",
+            "test",
+            "--generate-only",
+        ],
+    )?;
+
+    Ok(output.stdout)
 }

@@ -39,7 +39,10 @@ max_tx_size = 1048576
 clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
-address_type = { derivation = 'cosmos' }
+
+[chains.excluded_sequences]
+channel-0 = [1, "3-5", 7, "9-12", 14, "17-19"]
+channel-1 = ["3-6"]
 
 [chains.packet_filter]
 policy = 'allow'
@@ -63,3 +66,4 @@ clock_drift = '5s'
 trusting_period = '14days'
 trust_threshold = { numerator = '1', denominator = '3' }
 address_type = { derivation = 'ethermint', proto_type = { pk_type = '/injective.crypto.v1beta1.ethsecp256k1.PubKey' } }
+excluded_sequences = { 'channel-0' = [1, 3, 4, 5, 7, 9, 10, 11, 12, 14, 17, 18, 19], 'channel-1' = [3, 4, 5, 6] }

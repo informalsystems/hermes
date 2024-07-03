@@ -9,6 +9,7 @@
 //! The test then waits for a Cross-chain Query to be pending and
 //! then processed.
 
+use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::cli::host_zone::register_host_zone;
 use ibc_test_framework::chain::config::{
     set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
@@ -27,10 +28,17 @@ use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
 fn test_ics31_cross_chain_queries() -> Result<(), Error> {
-    run_binary_interchain_security_channel_test(&InterchainSecurityIcqTest)
+    run_binary_interchain_security_channel_test(&InterchainSecurityIcqTest { allow_ccq: true })
 }
 
-struct InterchainSecurityIcqTest;
+#[test]
+fn test_disable_ics31_cross_chain_queries() -> Result<(), Error> {
+    run_binary_interchain_security_channel_test(&InterchainSecurityIcqTest { allow_ccq: false })
+}
+
+struct InterchainSecurityIcqTest {
+    pub allow_ccq: bool,
+}
 
 impl TestOverrides for InterchainSecurityIcqTest {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
@@ -81,6 +89,14 @@ impl TestOverrides for InterchainSecurityIcqTest {
         config.mode.channels.enabled = true;
 
         update_relayer_config_for_consumer_chain(config);
+
+        for chain in config.chains.iter_mut() {
+            match chain {
+                ChainConfig::CosmosSdk(chain_config) => {
+                    chain_config.allow_ccq = self.allow_ccq;
+                }
+            }
+        }
     }
 }
 
@@ -175,10 +191,17 @@ impl BinaryChannelTest for InterchainSecurityIcqTest {
             .assert_pending_cross_chain_query()?;
 
         // After there is a pending cross chain query, wait for it to be processed
-        chains
+        let processed_ccqs = chains
             .node_b
             .chain_driver()
-            .assert_processed_cross_chain_query()?;
+            .assert_processed_cross_chain_query();
+
+        if self.allow_ccq {
+            assert!(processed_ccqs.is_ok());
+        } else {
+            assert!(processed_ccqs.is_err());
+        }
+
         Ok(())
     }
 }

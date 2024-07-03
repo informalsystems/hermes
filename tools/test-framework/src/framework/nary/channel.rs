@@ -11,7 +11,7 @@ use tracing::info;
 use crate::bootstrap::nary::channel::bootstrap_channels_with_connections;
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
-use crate::framework::binary::chain::RelayerConfigOverride;
+use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
 use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::connection::ConnectionDelayOverride;
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
@@ -38,7 +38,8 @@ where
         + SupervisorOverride
         + ConnectionDelayOverride
         + PortsOverride<SIZE>
-        + ChannelOrderOverride,
+        + ChannelOrderOverride
+        + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunNaryConnectionTest::new(
         &RunNaryChannelTest::new(&RunWithSupervisor::new(test)),
@@ -56,7 +57,8 @@ where
         + SupervisorOverride
         + ConnectionDelayOverride
         + PortsOverride<2>
-        + ChannelOrderOverride,
+        + ChannelOrderOverride
+        + TopologyOverride,
 {
     run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(test))
 }
@@ -175,7 +177,6 @@ where
 
         let channels = bootstrap_channels_with_connections(
             connections,
-            chains.chain_handles().clone(),
             port_ids,
             order,
             config.bootstrap_with_random_ids,

@@ -1,7 +1,6 @@
 /*!
    Constructs for N-ary connected connections.
 */
-
 use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
@@ -11,26 +10,28 @@ use crate::error::Error;
 use crate::types::binary::connection::ConnectedConnection;
 use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::tagged::*;
-use crate::util::array::{into_nested_vec, try_into_nested_array};
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
-   A fixed-size N-ary connected connections as specified by `SIZE`.
+   A two dimensional BTreeMap of connected connections as specified by `SIZE`
+   and topology.
 
-   Contains `SIZE`x`SIZE` number of binary [`ConnectedConnection`]s.
+   The number of binary [`ConnectedConnection`]s depends on the topology.
 */
 #[derive(Debug, Clone)]
 pub struct ConnectedConnections<Handle: ChainHandle, const SIZE: usize> {
-    connections: [[ConnectedConnection<Handle, Handle>; SIZE]; SIZE],
+    connections: TwoDimMap<ConnectedConnection<Handle, Handle>>,
 }
 
 /**
-   A dynamic-sized N-ary connected connections, made of a
-   nested vector of binary [`ConnectedConnection`] which must be
-   in the same dimension.
+   A two dimensional BTreeMap of connected connections as specified by `SIZE`
+   and topology.
+
+   The number of binary [`ConnectedConnection`]s depends on the topology.
 */
 #[derive(Debug, Clone)]
 pub struct DynamicConnectedConnections<Handle: ChainHandle> {
-    connections: Vec<Vec<ConnectedConnection<Handle, Handle>>>,
+    connections: TwoDimMap<ConnectedConnection<Handle, Handle>>,
 }
 
 /**
@@ -55,32 +56,31 @@ impl<Handle: ChainHandle, const SIZE: usize> ConnectedConnections<Handle, SIZE> 
     pub fn connection_at<const CHAIN_A: usize, const CHAIN_B: usize>(
         &self,
     ) -> Result<NthConnectedConnection<CHAIN_A, CHAIN_B, Handle>, Error> {
-        if CHAIN_A >= SIZE || CHAIN_B >= SIZE {
-            Err(Error::generic(eyre!(
-                "cannot get connection beyond position {}/{}",
-                CHAIN_A,
-                CHAIN_B
-            )))
-        } else {
-            let raw_connection = self.connections[CHAIN_A][CHAIN_B].clone();
+        let raw_connection = self
+            .connections
+            .get((CHAIN_A, CHAIN_B))
+            .ok_or_else(|| {
+                Error::generic(eyre!(
+                    "No connection entry found for chain `{CHAIN_A}` to `{CHAIN_B}`"
+                ))
+            })?
+            .clone();
+        let connection = raw_connection.map_chain(MonoTagged::new, MonoTagged::new);
 
-            let channel = raw_connection.map_chain(MonoTagged::new, MonoTagged::new);
-
-            Ok(channel)
-        }
+        Ok(connection)
     }
 
-    pub fn connections(&self) -> &[[ConnectedConnection<Handle, Handle>; SIZE]; SIZE] {
+    pub fn connections(&self) -> &TwoDimMap<ConnectedConnection<Handle, Handle>> {
         &self.connections
     }
 }
 
 impl<Handle: ChainHandle> DynamicConnectedConnections<Handle> {
-    pub fn new(connections: Vec<Vec<ConnectedConnection<Handle, Handle>>>) -> Self {
+    pub fn new(connections: TwoDimMap<ConnectedConnection<Handle, Handle>>) -> Self {
         Self { connections }
     }
 
-    pub fn connections(&self) -> &Vec<Vec<ConnectedConnection<Handle, Handle>>> {
+    pub fn connections(&self) -> &TwoDimMap<ConnectedConnection<Handle, Handle>> {
         &self.connections
     }
 }
@@ -90,7 +90,7 @@ impl<Handle: ChainHandle, const SIZE: usize> From<ConnectedConnections<Handle, S
 {
     fn from(connections: ConnectedConnections<Handle, SIZE>) -> Self {
         DynamicConnectedConnections {
-            connections: into_nested_vec(connections.connections),
+            connections: connections.connections,
         }
     }
 }
@@ -102,7 +102,7 @@ impl<Handle: ChainHandle, const SIZE: usize> TryFrom<DynamicConnectedConnections
 
     fn try_from(connections: DynamicConnectedConnections<Handle>) -> Result<Self, Error> {
         Ok(ConnectedConnections {
-            connections: try_into_nested_array(connections.connections)?,
+            connections: connections.connections,
         })
     }
 }
@@ -117,18 +117,11 @@ impl<Handle: ChainHandle> From<ConnectedConnections<Handle, 2>>
 
 impl<Handle: ChainHandle, const SIZE: usize> ExportEnv for ConnectedConnections<Handle, SIZE> {
     fn export_env(&self, writer: &mut impl EnvWriter) {
-        for (i, inner_connections) in self.connections.iter().enumerate() {
-            for (j, connection_i_to_j) in inner_connections.iter().enumerate() {
-                writer.write_env(
-                    &format!("CONNECTION_ID_{j}_to_{i}"),
-                    &format!("{}", connection_i_to_j.connection_id_a),
-                );
-
-                writer.write_env(
-                    &format!("CONNECTION_ID_{i}_to_{j}"),
-                    &format!("{}", connection_i_to_j.connection_id_b),
-                );
-            }
+        for (src_chain, dst_chain, connection) in self.connections.iter() {
+            writer.write_env(
+                &format!("CONNECTION_ID_{}_to_{}", src_chain, dst_chain),
+                &format!("{}", connection.connection_id_a),
+            );
         }
     }
 }

@@ -13,6 +13,7 @@ use tendermint_rpc::HttpClientUrl;
 use tracing::{debug, info};
 
 use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
+use ibc_relayer::HERMES_VERSION;
 use tendermint_rpc::{Client, Url};
 
 use crate::error::RegistryError;
@@ -107,6 +108,7 @@ impl QueryContext for SimpleHermesRpcQuerier {
             .map_err(|e| RegistryError::tendermint_url_parse_error(rpc_url.clone(), e))?;
 
         let client = HttpClient::builder(url)
+            .user_agent(format!("hermes/{}", HERMES_VERSION))
             .build()
             .map_err(|e| RegistryError::rpc_connect_error(rpc_url.clone(), e))?;
 
