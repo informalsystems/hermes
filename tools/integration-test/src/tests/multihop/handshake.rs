@@ -6,7 +6,7 @@ use ibc_test_framework::relayer::channel::assert_eventually_multihop_channel_est
 use ibc_test_framework::relayer::connection::create_connection_hop;
 
 #[test]
-fn test_connection_open_handshake() -> Result<(), Error> {
+fn test_multihop_channel_open_handshake() -> Result<(), Error> {
     run_nary_connection_test(&MultihopChannelHandshakeTest)
 }
 
