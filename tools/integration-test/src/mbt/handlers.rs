@@ -102,8 +102,6 @@ pub fn create_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
         &connection_id_b.as_ref(),
         &port_a.as_ref(),
         &port_b.as_ref(),
-        None,
-        None,
     )?;
 
     let channel_id_a_2 = assert_eventually_channel_established(

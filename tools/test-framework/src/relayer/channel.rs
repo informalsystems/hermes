@@ -6,13 +6,13 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::channel::version::Version as ChannelEndVersion;
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
+use ibc_relayer::util::pretty::PrettySlice;
 use ibc_relayer_types::core::ics04_channel::channel::{
     ChannelEnd, IdentifiedChannelEnd, Ordering, State as ChannelState, UpgradeState,
 };
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
-use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
-use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
+use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ConnectionId, PortId};
 
 use crate::error::Error;
 use crate::types::id::{
@@ -114,8 +114,6 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
     connection_id_b: &TaggedConnectionIdRef<ChainB, ChainA>,
     src_port_id: &TaggedPortIdRef<ChainA, ChainB>,
     dst_port_id: &TaggedPortIdRef<ChainB, ChainA>,
-    src_connection_hops: Option<ConnectionHops>,
-    dst_connection_hops: Option<ConnectionHops>,
 ) -> Result<(TaggedChannelId<ChainB, ChainA>, Channel<ChainB, ChainA>), Error> {
     let channel = Channel {
         connection_delay: Default::default(),
@@ -124,7 +122,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_a.clone(),
             client_id_a.cloned_value(),
             connection_id_a.cloned_value(),
-            src_connection_hops,
+            None,
             src_port_id.cloned_value(),
             None,
             None,
@@ -133,7 +131,7 @@ pub fn init_channel<ChainA: ChainHandle, ChainB: ChainHandle>(
             handle_b.clone(),
             client_id_b.cloned_value(),
             connection_id_b.cloned_value(),
-            dst_connection_hops,
+            None,
             dst_port_id.cloned_value(),
             None,
             None,
@@ -346,6 +344,78 @@ pub fn assert_eventually_channel_established<ChainA: ChainHandle, ChainB: ChainH
             }
 
             Ok(channel_id_b)
+        },
+    )
+}
+
+pub fn assert_eventually_multihop_channel_established<ChainA: ChainHandle, ChainB: ChainHandle>(
+    handle_a: &ChainA,
+    handle_b: &ChainB,
+    channel_id_a: &ChannelId,
+    port_id_a: &PortId,
+    multi_hop_a: &Vec<ConnectionId>,
+    multi_hop_b: &Vec<ConnectionId>,
+) -> Result<ChannelId, Error> {
+    assert_eventually_succeed(
+        "channel should eventually established",
+        20,
+        Duration::from_secs(2),
+        || {
+            let (channel_end_a, _) = handle_a.query_channel(
+                QueryChannelRequest {
+                    port_id: port_id_a.clone(),
+                    channel_id: channel_id_a.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::Yes,
+            )?;
+
+            if !channel_end_a.state_matches(&ChannelState::Open(UpgradeState::NotUpgrading)) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end A to be in open state"
+                )));
+            }
+
+            if channel_end_a.connection_hops.ne(multi_hop_a) {
+                return Err(Error::generic(eyre!(
+                    "connection_hops for chain {} do not match. Expected {}, Got {}",
+                    handle_a.id(),
+                    PrettySlice(multi_hop_a),
+                    PrettySlice(&channel_end_a.connection_hops)
+                )));
+            }
+
+            let channel_id_b = channel_end_a.counterparty().channel_id().ok_or_else(|| {
+                eyre!("expected counterparty channel id to present on open channel")
+            })?;
+
+            let port_id_b = channel_end_a.counterparty().port_id();
+
+            let (channel_end_b, _) = handle_b.query_channel(
+                QueryChannelRequest {
+                    port_id: port_id_b.clone(),
+                    channel_id: channel_id_b.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::Yes,
+            )?;
+
+            if !channel_end_b.state_matches(&ChannelState::Open(UpgradeState::NotUpgrading)) {
+                return Err(Error::generic(eyre!(
+                    "expected channel end B to be in open state"
+                )));
+            }
+
+            if channel_end_b.connection_hops.ne(multi_hop_b) {
+                return Err(Error::generic(eyre!(
+                    "connection_hops for chain {} do not match. Expected {}, Got {}",
+                    handle_a.id(),
+                    PrettySlice(multi_hop_b),
+                    PrettySlice(&channel_end_b.connection_hops)
+                )));
+            }
+
+            Ok(channel_id_b.clone())
         },
     )
 }
