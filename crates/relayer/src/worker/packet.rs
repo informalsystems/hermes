@@ -81,6 +81,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     cmd_rx: Receiver<WorkerCmd>,
     // Mutex is used to prevent race condition between the packet workers
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    mut should_clear_on_start: bool,
     clear_interval: u64,
     path: Packet,
 ) -> TaskHandle {
@@ -112,7 +113,13 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
             // If clearing fails after all these retries with ignorable error the task continues
             // (see `handle_link_error_in_task`) and clearing is retried with the next
             // (`NewBlock`) `cmd` that matches the clearing interval.
-            handle_packet_cmd(&mut link.lock().unwrap(), clear_interval, &path, cmd)?;
+            handle_packet_cmd(
+                &mut link.lock().unwrap(),
+                &mut should_clear_on_start,
+                clear_interval,
+                &path,
+                cmd,
+            )?;
 
             if is_new_batch {
                 idle_worker_timer = 0;
@@ -246,10 +253,32 @@ pub fn spawn_clear_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 /// and executes any scheduled operational data that is ready.
 fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
+    should_clear_on_start: &mut bool,
     clear_interval: u64,
     path: &Packet,
     cmd: WorkerCmd,
 ) -> Result<(), TaskError<RunError>> {
+    // If the channel is Ordered, verify if clearing is required before proceeding
+    // to relaying.
+    match &cmd {
+        WorkerCmd::IbcEvents { batch } if link.a_to_b.channel().ordering == Ordering::Ordered => {
+            let lowest_sequence = lowest_sequence(&batch.events);
+
+            let next_sequence = query_next_sequence_receive(
+                link.a_to_b.dst_chain(),
+                link.a_to_b.dst_port_id(),
+                link.a_to_b.dst_channel_id(),
+                QueryHeight::Specific(batch.height),
+            )
+            .ok();
+
+            if *should_clear_on_start || next_sequence < lowest_sequence {
+                handle_clear_packet(link, clear_interval, path, Some(batch.height))?;
+            }
+        }
+        _ => {}
+    }
+
     // Handle command-specific task
     if let WorkerCmd::IbcEvents { batch } = cmd {
         handle_update_schedule(link, clear_interval, path, batch)?;
@@ -271,22 +300,11 @@ fn handle_clear_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Result<(), TaskError<RunError>> {
     // Handle packet clearing which is triggered from a command
     let (do_clear, maybe_height) = match &cmd {
-        WorkerCmd::IbcEvents { batch } if link.a_to_b.channel().ordering == Ordering::Ordered => {
-            let lowest_sequence = lowest_sequence(&batch.events);
-
-            let next_sequence = query_next_sequence_receive(
-                link.a_to_b.dst_chain(),
-                link.a_to_b.dst_port_id(),
-                link.a_to_b.dst_channel_id(),
-                QueryHeight::Specific(batch.height),
-            )
-            .ok();
-
-            if *should_clear_on_start || next_sequence < lowest_sequence {
-                (true, Some(batch.height))
-            } else {
-                (false, None)
-            }
+        // Clearing for Ordered channels is handled by the packet_cmd_worker
+        WorkerCmd::IbcEvents { batch: _batch }
+            if link.a_to_b.channel().ordering == Ordering::Ordered =>
+        {
+            (false, None)
         }
 
         WorkerCmd::IbcEvents { batch } => {
@@ -469,6 +487,19 @@ fn handle_update_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 ) -> Result<(), TaskError<RunError>> {
     link.a_to_b
         .update_schedule(batch)
+        .map_err(handle_link_error_in_task)?;
+
+    handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))
+}
+
+fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
+    link: &mut Link<ChainA, ChainB>,
+    clear_interval: u64,
+    path: &Packet,
+    height: Option<Height>,
+) -> Result<(), TaskError<RunError>> {
+    link.a_to_b
+        .schedule_packet_clearing(height)
         .map_err(handle_link_error_in_task)?;
 
     handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))

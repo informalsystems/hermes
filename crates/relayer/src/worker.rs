@@ -188,6 +188,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                         None => packet::spawn_packet_cmd_worker(
                             cmd_rx,
                             link.clone(),
+                            should_clear_on_start,
                             clear_interval,
                             path.clone(),
                         ),
