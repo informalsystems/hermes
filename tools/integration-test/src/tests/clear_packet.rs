@@ -7,8 +7,8 @@ use ibc_test_framework::relayer::channel::query_identified_channel_end;
 use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
-fn test_clear_packet() -> Result<(), Error> {
-    run_binary_channel_test(&ClearPacketTest)
+fn test_disabled_clear_packet() -> Result<(), Error> {
+    run_binary_channel_test(&DisabledClearPacketTest)
 }
 
 #[test]
@@ -31,13 +31,13 @@ fn test_clear_packet_sequences() -> Result<(), Error> {
     run_binary_channel_test(&ClearPacketSequencesTest)
 }
 
-pub struct ClearPacketTest;
+pub struct DisabledClearPacketTest;
 pub struct ClearPacketRecoveryTest;
 pub struct ClearPacketNoScanTest;
 pub struct ClearPacketOverrideTest;
 pub struct ClearPacketSequencesTest;
 
-impl TestOverrides for ClearPacketTest {
+impl TestOverrides for DisabledClearPacketTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         // Disabling client workers and clear_on_start should make the relayer not
         // relay any packet it missed before starting.
@@ -60,18 +60,7 @@ impl TestOverrides for ClearPacketTest {
     }
 }
 
-impl TestOverrides for ClearPacketRecoveryTest {
-    fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.packets.enabled = true;
-        config.mode.packets.clear_on_start = true;
-    }
-
-    fn should_spawn_supervisor(&self) -> bool {
-        false
-    }
-}
-
-impl BinaryChannelTest for ClearPacketTest {
+impl BinaryChannelTest for DisabledClearPacketTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
@@ -144,6 +133,17 @@ impl BinaryChannelTest for ClearPacketTest {
 
             Ok(())
         })
+    }
+}
+
+impl TestOverrides for ClearPacketRecoveryTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.enabled = true;
+        config.mode.packets.clear_on_start = true;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
     }
 }
 
