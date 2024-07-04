@@ -104,7 +104,7 @@ function init_network() {
   local chain_id=$(NAMADA_BASE_DIR=${base_dir} \
     ${NAMADAC} utils init-network \
     --chain-prefix namada-${suffix} \
-    --genesis-time "2023-01-01T00:00:00Z" \
+    --genesis-time "2023-01-01T00:00:00.000000000+00:00" \
     --templates-path ${base_dir}/templates \
     --wasm-checksums-path ${CHECKSUM_PATH} \
     --archive-dir ${base_dir}/genesis \

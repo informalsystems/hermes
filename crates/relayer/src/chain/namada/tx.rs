@@ -6,9 +6,11 @@ use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
+use namada_parameters::storage as param_storage;
 use namada_sdk::address::{Address, ImplicitAddress};
 use namada_sdk::args::TxBuilder;
 use namada_sdk::args::{Tx as TxArgs, TxCustom};
+use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::chain::ChainId;
 use namada_sdk::tx::{prepare_tx, ProcessTxResponse};
 use namada_sdk::{signing, tx, Namada};
@@ -20,6 +22,7 @@ use crate::chain::cosmos::types::gas::max_gas_from_config;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::all_tx_results_found;
 use crate::chain::endpoint::ChainEndpoint;
+use crate::chain::requests::{IncludeProof, QueryHeight};
 use crate::error::{Error, ErrorDetail};
 
 use super::error::{Error as NamadaError, ErrorDetail as NamadaErrorDetail};
@@ -167,6 +170,10 @@ impl NamadaChain {
         let max_gas = max_gas_from_config(self.config());
         let gas_price = self.config().gas_price.price;
 
+        let gas_scale_key = param_storage::get_gas_scale_key();
+        let (value, _) = self.query(gas_scale_key, QueryHeight::Latest, IncludeProof::No)?;
+        let gas_scale = u64::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
+
         let args = args.clone().dry_run_wrapper(true);
         // Set the max gas to the gas limit for the simulation
         self.prepare_tx_with_gas(&mut tx, &args, &fee_token, max_gas, gas_price)?;
@@ -195,12 +202,10 @@ impl NamadaChain {
             ProcessTxResponse::DryRun(result) => {
                 if result
                     .batch_results
-                    .0
                     .iter()
                     .all(|(_, r)| matches!(&r, Ok(result) if result.is_accepted()))
                 {
-                    // Convert with the decimal scale of Gas units
-                    u64::from_str(&result.gas_used.to_string()).expect("Gas should be parsable")
+                    result.gas_used.get_whole_gas_units(gas_scale)
                 } else {
                     // All or some of requests will fail
                     return Err(NamadaError::dry_run(result.batch_results).into());

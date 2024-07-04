@@ -136,12 +136,12 @@ impl NamadaChain {
                         height,
                     )]);
                 }
-                let events = tx_result.batch_results.0.into_iter().filter_map(|(_, r)| {
-                    r.map(|batched_tx_result| {
+                let events = tx_result.batch_results.iter().filter_map(|(_, r)| {
+                    r.as_ref().map(|batched_tx_result| {
                         // Get IBC events when the transaction was accepted
                         if batched_tx_result.is_accepted() {
-                            batched_tx_result.events.into_iter().filter_map(|event| {
-                                ibc_event_try_from_abci_event(&event.into()).ok()
+                            batched_tx_result.events.iter().filter_map(|event| {
+                                ibc_event_try_from_abci_event(&event.clone().into()).ok()
                             }).map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)).collect()
                         } else {
                             vec![IbcEventWithHeight::new(
