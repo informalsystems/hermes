@@ -96,7 +96,7 @@ pub fn bootstrap_namada_node(
             "--chain-prefix",
             &chain_driver.chain_id.to_string(),
             "--genesis-time",
-            "2023-01-01T00:00:00Z",
+            "2023-01-01T00:00:00.000000000+00:00",
             "--templates-path",
             templates_path,
             "--wasm-checksums-path",
