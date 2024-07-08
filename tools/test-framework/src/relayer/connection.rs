@@ -11,6 +11,8 @@ use ibc_relayer_types::core::ics03_connection::connection::State as ConnectionSt
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
+use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId};
+use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHop;
 use ibc_relayer_types::timestamp::ZERO_DURATION;
 
 use crate::error::Error;
@@ -193,4 +195,30 @@ pub fn assert_eventually_connection_established<ChainA: ChainHandle, ChainB: Cha
             Ok(connection_id_b)
         },
     )
+}
+
+pub fn create_connection_hop<Handle: ChainHandle>(
+    handle: &Handle,
+    src_chain_id: &ChainId,
+    dst_chain_id: &ChainId,
+    connection_id: &ConnectionId,
+) -> Result<ConnectionHop, Error> {
+    let (connection_end, _) = handle.query_connection(
+        QueryConnectionRequest {
+            connection_id: connection_id.clone(),
+            height: QueryHeight::Latest,
+        },
+        IncludeProof::No,
+    )?;
+
+    let identified_connection_end =
+        IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
+
+    let hop = ConnectionHop::new(
+        identified_connection_end,
+        src_chain_id.clone(),
+        dst_chain_id.clone(),
+    );
+
+    Ok(hop)
 }
