@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
 
-use crossbeam_channel::Receiver;
+use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
 use moka::sync::Cache;
 use tracing::{debug, error, error_span, info, trace, warn};
@@ -188,6 +188,7 @@ pub fn spawn_clear_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
     mut should_clear_on_start: bool,
     clear_interval: u64,
+    clear_cmd_tx: Sender<WorkerCmd>,
 ) -> TaskHandle {
     let span = {
         let relay_path = &link.lock().unwrap().a_to_b;
@@ -210,6 +211,12 @@ pub fn spawn_clear_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     spawn_background_task(span, Some(Duration::from_millis(200)), move || {
         if let Ok(cmd) = cmd_rx.try_recv() {
+            match clear_cmd_tx.send(cmd.clone()) {
+                Ok(_) => trace!("Successfully sent cmd to packet worker"),
+                Err(e) => {
+                    error!("Failed to forward cmd from clear worker to packet worker. Cause: {e}")
+                }
+            }
             let is_new_batch = cmd.is_ibc_events();
 
             // Try to clear pending packets. At different levels down in `handle_clear_cmd` there
