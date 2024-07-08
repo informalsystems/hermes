@@ -1947,7 +1947,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 }
 
-#[tracing::instrument(skip(data))]
+#[tracing::instrument(skip_all)]
 fn check_ics20_fields_size(
     data: &[u8],
     memo_limit: Ics20FieldSizeLimit,
@@ -1962,9 +1962,9 @@ fn check_ics20_fields_size(
                 (ValidationResult::Valid, ValidationResult::Valid) => true,
 
                 (memo_validity, receiver_validity) => {
-                    debug!("found invalid ICS-20 packet data, not relaying packet!");
-                    debug!("    ICS-20 memo:     {memo_validity}");
-                    debug!("    ICS-20 receiver: {receiver_validity}");
+                    warn!("found invalid ICS-20 packet data, not relaying packet!");
+                    warn!("    ICS-20 memo:     {memo_validity}");
+                    warn!("    ICS-20 receiver: {receiver_validity}");
 
                     false
                 }
