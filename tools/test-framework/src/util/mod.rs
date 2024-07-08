@@ -11,3 +11,4 @@ pub mod proposal_status;
 pub mod random;
 pub mod retry;
 pub mod suspend;
+pub mod two_dim_hash_map;

@@ -110,6 +110,7 @@ use crate::util::pretty::PrettySlice;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
+use crate::HERMES_VERSION;
 
 use self::gas::dynamic_gas_price;
 use self::types::app_state::GenesisAppState;
@@ -980,7 +981,9 @@ impl ChainEndpoint for CosmosSdkChain {
             return Err(Error::config(ConfigError::wrong_type()));
         };
 
-        let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
+        let mut rpc_client = HttpClient::builder(config.rpc_addr.clone().try_into().unwrap())
+            .user_agent(format!("hermes/{}", HERMES_VERSION))
+            .build()
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
@@ -2564,8 +2567,8 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     let grpc_address = chain.grpc_addr.to_string();
     let rpc_address = chain.config.rpc_addr.to_string();
 
-    if !chain.config.excluded_sequences.is_empty() {
-        for (channel_id, seqs) in chain.config.excluded_sequences.iter() {
+    if !chain.config.excluded_sequences.map.is_empty() {
+        for (channel_id, seqs) in chain.config.excluded_sequences.map.iter() {
             if !seqs.is_empty() {
                 warn!(
                     "chain '{chain_id}' will not clear packets on channel '{channel_id}' with sequences: {}. \

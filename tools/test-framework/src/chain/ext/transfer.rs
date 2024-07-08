@@ -74,6 +74,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+        fees: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error>;
 
     fn transfer_from_chain<Counterparty>(
@@ -223,6 +224,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Chain, &WalletAddress>,
         token: &TaggedTokenRef<Chain>,
+        fees: &TaggedTokenRef<Chain>,
     ) -> Result<(), Error> {
         let driver = *self.value();
         match driver.chain_type {
@@ -247,6 +249,7 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
                 sender.value().address.as_str(),
                 recipient.value().as_str(),
                 &token.value().to_string(),
+                &fees.value().to_string(),
             ),
         }
     }

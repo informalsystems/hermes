@@ -73,6 +73,23 @@ pub trait TaggedChainDriverExt<Chain> {
     ) -> Result<(), Error>;
 
     /**
+       Tagged version of [`ChainDriver::assert_eventual_escrowed_amount_ics29`].
+
+       Assert that a wallet should eventually have escrowed the amount for ICS29
+       fees of a given denomination.
+       Legacy ICS29 will escrow recv_fee + ack_fee + timeout_fee while more recent
+       versions will escrow max(recv_fee + ack_fee, timeout_fee).
+    */
+    fn assert_eventual_escrowed_amount_ics29(
+        &self,
+        user: &MonoTagged<Chain, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+        recv_fee: u128,
+        ack_fee: u128,
+        timeout_fee: u128,
+    ) -> Result<(), Error>;
+
+    /**
         Tagged version of [`query_recipient_transactions`].
 
         Query for the transactions related to a wallet on `Chain`
@@ -156,6 +173,23 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
     ) -> Result<(), Error> {
         self.value()
             .assert_eventual_wallet_amount(user.value(), token.value())
+    }
+
+    fn assert_eventual_escrowed_amount_ics29(
+        &self,
+        user: &MonoTagged<Chain, &WalletAddress>,
+        token: &TaggedTokenRef<Chain>,
+        recv_fee: u128,
+        ack_fee: u128,
+        timeout_fee: u128,
+    ) -> Result<(), Error> {
+        self.value().assert_eventual_escrowed_amount_ics29(
+            user.value(),
+            token.value(),
+            recv_fee,
+            ack_fee,
+            timeout_fee,
+        )
     }
 
     fn query_recipient_transactions(

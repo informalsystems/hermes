@@ -67,6 +67,7 @@ impl TestOverrides for IcaFilterTestAllow {
     // Enable channel workers and allow relaying on ICA channels
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.channels.enabled = true;
+        config.mode.clients.misbehaviour = false;
 
         for chain in &mut config.chains {
             match chain {
@@ -88,11 +89,13 @@ impl TestOverrides for IcaFilterTestAllow {
 impl BinaryConnectionTest for IcaFilterTestAllow {
     fn run<Controller: ChainHandle, Host: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         _relayer: RelayerDriver,
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
+        let fee_denom_host: MonoTagged<Host, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
         // Register an interchain account on behalf of
         // controller wallet `user1` where the counterparty chain is the interchain accounts host.
         let (wallet, channel_id, port_id) =
@@ -126,6 +129,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
+            &fee_denom_host.with_amount(1200u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
@@ -242,23 +246,14 @@ impl TestOverrides for ICACloseChannelTest {
 impl BinaryConnectionTest for ICACloseChannelTest {
     fn run<Controller: ChainHandle, Host: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<Controller, Host>,
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
-        let gas_denom_str = match relayer
-            .config
-            .chains
-            .first()
-            .ok_or_else(|| eyre!("chain configuration is empty"))?
-        {
-            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
-                chain_config.gas_price.denom.clone()
-            }
-        };
-        let stake_denom: MonoTagged<Host, Denom> =
-            MonoTagged::new(Denom::base(&gas_denom_str, &gas_denom_str));
+        let fee_denom_host: MonoTagged<Host, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
         let (wallet, ica_address, controller_channel_id, controller_port_id) = relayer
             .with_supervisor(|| {
                 // Register an interchain account on behalf of
@@ -304,6 +299,7 @@ impl BinaryConnectionTest for ICACloseChannelTest {
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
+            &fee_denom_host.with_amount(1200u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(

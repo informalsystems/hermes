@@ -24,6 +24,7 @@ use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::types::{MaxMsgNum, MaxTxSize, Memo, TrustThreshold};
 use ibc_relayer::config::{default, AddressType, ChainConfig, EventSourceMode, GasPrice};
 use ibc_relayer::keyring::Store;
+use ibc_relayer::util::excluded_sequences::ExcludedSequences;
 
 const MAX_HEALTHY_QUERY_RETRIES: u8 = 5;
 
@@ -167,7 +168,8 @@ where
         extension_options: Vec::new(),
         compat_mode: None,
         clear_interval: None,
-        excluded_sequences: BTreeMap::new(),
+        excluded_sequences: ExcludedSequences::new(BTreeMap::new()),
+        allow_ccq: true,
     }))
 }
 

@@ -24,6 +24,9 @@ use crate::framework::binary::node::{
 use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
 use crate::framework::supervisor::SupervisorOverride;
 use crate::types::config::TestConfig;
+use crate::types::topology::TopologyType;
+
+use super::binary::chain::TopologyOverride;
 
 /**
    This trait should be implemented for all test cases to allow overriding
@@ -151,6 +154,10 @@ pub trait TestOverrides {
     fn channel_version(&self) -> Version {
         Version::ics20()
     }
+
+    fn topology(&self) -> Option<TopologyType> {
+        None
+    }
 }
 
 impl<Test: TestOverrides> HasOverrides for Test {
@@ -241,5 +248,11 @@ impl<Test: TestOverrides> NaryPortsOverride<2> for Test {
         let port_b = self.channel_port_b();
 
         [[port_a.clone(), port_b.clone()], [port_b, port_a]]
+    }
+}
+
+impl<Test: TestOverrides> TopologyOverride for Test {
+    fn topology(&self) -> Option<TopologyType> {
+        TestOverrides::topology(self)
     }
 }

@@ -1,4 +1,5 @@
 use ibc_test_framework::prelude::*;
+use ibc_test_framework::types::topology::TopologyType;
 
 #[test]
 fn test_ternary_ibc_transfer() -> Result<(), Error> {
@@ -10,6 +11,10 @@ pub struct TernaryIbcTransferTest;
 impl TestOverrides for TernaryIbcTransferTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.clients.misbehaviour = false;
+    }
+
+    fn topology(&self) -> Option<TopologyType> {
+        Some(TopologyType::Cyclic)
     }
 }
 

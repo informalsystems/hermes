@@ -66,11 +66,13 @@ impl TestOverrides for IcaOrderedChannelTest {
 impl BinaryChannelTest for IcaOrderedChannelTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(0), config.native_token(0)));
         let connection_b_to_a = channel.connection.clone().flip();
         let (wallet, channel_id, port_id) =
             register_interchain_account(&chains.node_b, chains.handle_b(), &connection_b_to_a)?;
@@ -113,6 +115,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
             &chains.node_a.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
+            &fee_denom_a.with_amount(1200u64).as_ref(),
         )?;
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(

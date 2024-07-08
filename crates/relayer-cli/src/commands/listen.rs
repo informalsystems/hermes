@@ -19,6 +19,7 @@ use ibc_relayer::{
     error::Error,
     event::source::EventSource,
     util::compat_mode::compat_mode_from_version,
+    HERMES_VERSION,
 };
 use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
 
@@ -161,7 +162,9 @@ fn subscribe(
                     interval,
                     max_retries,
                 } => {
-                    let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
+                    let mut rpc_client = HttpClient::builder(config.rpc_addr.clone().try_into()?)
+                        .user_agent(format!("hermes/{}", HERMES_VERSION))
+                        .build()
                         .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
                     rpc_client.set_compat_mode(compat_mode);
 
@@ -191,7 +194,10 @@ fn detect_compatibility_mode(
     let rpc_addr = match config {
         ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => config.rpc_addr.clone(),
     };
-    let client = HttpClient::new(rpc_addr)?;
+    let client = HttpClient::builder(rpc_addr.try_into()?)
+        .user_agent(format!("hermes/{}", HERMES_VERSION))
+        .build()?;
+
     let status = rt.block_on(client.status())?;
     let compat_mode = match config {
         ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => {

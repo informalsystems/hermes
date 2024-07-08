@@ -39,6 +39,7 @@ pub fn local_transfer_handler<ChainA: ChainHandle>(
     target: u128,
     denom: u128,
     amount: u128,
+    fees: &TaggedTokenRef<ChainA>,
 ) -> Result<(), Error> {
     let wallets = node.wallets();
 
@@ -50,6 +51,7 @@ pub fn local_transfer_handler<ChainA: ChainHandle>(
         &source_wallet,
         &target_wallet.address(),
         &denom.with_amount(amount).as_ref(),
+        fees,
     )?;
 
     Ok(())
