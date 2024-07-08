@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia15
+          - package: .#gaia17
             command: gaiad,namada
             account_prefix: cosmos,''
             native_token: stake,nam
