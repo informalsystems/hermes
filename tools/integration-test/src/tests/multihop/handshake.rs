@@ -45,8 +45,8 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
         let chain_handle_b = chains.chain_handle_at::<1>()?;
         let chain_handle_c = chains.chain_handle_at::<2>()?;
 
-        let client_a_to_b = chains.foreign_client_at::<1, 0>()?;
-        let client_c_to_b = chains.foreign_client_at::<1, 2>()?;
+        let client_b_on_a = chains.foreign_client_at::<1, 0>()?;
+        let client_b_on_c = chains.foreign_client_at::<1, 2>()?;
 
         let connection_a_to_b = connections.connection_at::<0, 1>()?;
         let connection_b_to_a = connections.connection_at::<1, 0>()?;
@@ -87,7 +87,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ordering: Ordering::Unordered,
             a_side: ChannelSide::new(
                 chain_handle_a.value().clone(),
-                client_a_to_b.id.clone(),
+                client_b_on_a.id.clone(),
                 connection_a_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_a.clone()),
                 PortId::transfer(),
@@ -96,7 +96,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ),
             b_side: ChannelSide::new(
                 chain_handle_c.value().clone(),
-                client_c_to_b.id.clone(),
+                client_b_on_c.id.clone(),
                 connection_c_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_b.clone()),
                 PortId::transfer(),
@@ -124,7 +124,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ordering: tmp_channel_c_to_a.ordering,
             a_side: ChannelSide::new(
                 tmp_channel_c_to_a.a_side.chain.clone(),
-                client_c_to_b.id.clone(),
+                client_b_on_c.id.clone(),
                 connection_c_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_b.clone()),
                 tmp_channel_c_to_a.a_side.port_id().clone(),
@@ -133,7 +133,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ),
             b_side: ChannelSide::new(
                 tmp_channel_c_to_a.b_side.chain.clone(),
-                client_a_to_b.id.clone(),
+                client_b_on_a.id.clone(),
                 connection_a_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_a.clone()),
                 tmp_channel_c_to_a.b_side.port_id().clone(),
@@ -151,7 +151,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ordering: tmp_channel_c_to_a.ordering,
             a_side: ChannelSide::new(
                 chain_handle_a.value().clone(),
-                client_a_to_b.id.clone(),
+                client_b_on_a.id.clone(),
                 connection_a_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_a.clone()),
                 tmp_channel_c_to_a.b_side.port_id().clone(),
@@ -160,7 +160,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ),
             b_side: ChannelSide::new(
                 chain_handle_c.value().clone(),
-                client_c_to_b.id.clone(),
+                client_b_on_c.id.clone(),
                 connection_c_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_b.clone()),
                 tmp_channel_c_to_a.a_side.port_id().clone(),
@@ -178,7 +178,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ordering: tmp_channel_c_to_a.ordering,
             a_side: ChannelSide::new(
                 tmp_channel_c_to_a.a_side.chain.clone(),
-                client_c_to_b.id.clone(),
+                client_b_on_c.id.clone(),
                 connection_c_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_b.clone()),
                 tmp_channel_c_to_a.a_side.port_id().clone(),
@@ -187,7 +187,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
             ),
             b_side: ChannelSide::new(
                 tmp_channel_c_to_a.b_side.chain.clone(),
-                client_a_to_b.id.clone(),
+                client_b_on_a.id.clone(),
                 connection_a_to_b.connection_id_a.value().clone(),
                 Some(connection_hops_a.clone()),
                 tmp_channel_c_to_a.b_side.port_id().clone(),
