@@ -39,10 +39,11 @@ tendermint-rpc                   = { version = "0.37.0" }
 tendermint-testgen               = { version = "0.37.0" }
 
 # Namada dependencies
-namada_ibc        = { git = "https://github.com/anoma/namada", rev = "6dd5ded3f79ba4cb7313f140e11ee8a557d599f5" }
-namada_parameters = { git = "https://github.com/anoma/namada", rev = "6dd5ded3f79ba4cb7313f140e11ee8a557d599f5" }
-namada_sdk        = { git = "https://github.com/anoma/namada", rev = "6dd5ded3f79ba4cb7313f140e11ee8a557d599f5" }
-namada_token      = { git = "https://github.com/anoma/namada", rev = "6dd5ded3f79ba4cb7313f140e11ee8a557d599f5" }
+namada_ibc        = { git = "https://github.com/anoma/namada", rev = "6b0fd295519aa25d22b73301dfd1ac05cdec634a" }
+namada_parameters = { git = "https://github.com/anoma/namada", rev = "6b0fd295519aa25d22b73301dfd1ac05cdec634a" }
+namada_sdk        = { git = "https://github.com/anoma/namada", rev = "6b0fd295519aa25d22b73301dfd1ac05cdec634a" }
+namada_token      = { git = "https://github.com/anoma/namada", rev = "6b0fd295519aa25d22b73301dfd1ac05cdec634a" }
+
 
 # Other dependencies
 abscissa_core            = "=0.6.0"

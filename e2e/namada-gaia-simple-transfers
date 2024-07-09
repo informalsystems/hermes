@@ -157,6 +157,7 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --amount 50 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --gas-limit 150000 \
   --node ${NAMADA_LEDGER_ADDR}
 
 # packet-recv
@@ -207,6 +208,7 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --amount 200 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --gas-limit 150000 \
   --node ${NAMADA_LEDGER_ADDR}
 
 # wait for relaying
@@ -324,6 +326,7 @@ ${NAMADAC} --base-dir ${base_dir} ibc-transfer \
   --amount 5 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --gas-limit 150000 \
   --node ${NAMADA_LEDGER_ADDR}
 
 # wait for relaying

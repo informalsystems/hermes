@@ -7,7 +7,6 @@ use core::ops::Add;
 use core::time::Duration;
 use eyre::eyre;
 use ibc_relayer_types::events::IbcEvent;
-use std::io::Write;
 
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::batched_send_tx;
@@ -196,14 +195,10 @@ pub fn ibc_namada_token_transfer(
         &node,
     ];
 
-    let path = format!("{home_path}/memo.txt");
-    if let Some(memo) = memo {
-        let mut memo_file = std::fs::File::create(&path).expect("Creating a memo file failed");
-        memo_file
-            .write_all(memo.as_bytes())
-            .expect("Writing memo failed");
-        args.push("--memo-path");
-        args.push(&path);
+    let memo_str = memo.clone().unwrap_or_default();
+    if memo.is_some() {
+        args.push("--ibc-memo");
+        args.push(&memo_str);
     }
 
     let timeout_str;

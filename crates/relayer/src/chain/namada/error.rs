@@ -23,8 +23,8 @@ define_error! {
             |_| { "borsh decoding failed" },
 
         DryRun
-            { tx_results: namada_sdk::tx::data::BatchResults<String> }
-            |e| { format!("Dry run to simulate a transaction failed: {:?}", e.tx_results) },
+            { tx_result: namada_sdk::tx::data::TxResult<String> }
+            |e| { format!("Dry run to simulate a transaction failed: {:?}", e.tx_result) },
     }
 }
 

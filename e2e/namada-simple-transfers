@@ -150,6 +150,7 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --amount 100 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --gas-limit 150000 \
   --node ${LEDGER_ADDR_A}
 
 # packet-recv
@@ -198,6 +199,7 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --amount 50000000 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --gas-limit 150000 \
   --node ${LEDGER_ADDR_B}
 
 # packet-recv
@@ -250,6 +252,7 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --amount 200 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --gas-limit 150000 \
   --node ${LEDGER_ADDR_A}
 
 echo "~~ Transfer 300 apfel from chain B to chain A ~~"
@@ -260,6 +263,7 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --amount 300 \
   --signing-keys relayer \
   --channel-id channel-0 \
+  --gas-limit 150000 \
   --node ${LEDGER_ADDR_B}
 
 wait_for_relaying ${chain_a}
@@ -327,8 +331,9 @@ ${NAMADAC} --base-dir ${base_dir_a} ibc-transfer \
   --token apfel \
   --amount 100 \
   --channel-id channel-0 \
-  --memo-path ${memo_path} \
+  --ibc-shielding-data ${memo_path} \
   --gas-payer relayer \
+  --gas-limit 150000 \
   --node ${LEDGER_ADDR_A}
 
 wait_for_relaying ${chain_a}
@@ -418,7 +423,8 @@ ${NAMADAC} --base-dir ${base_dir_b} ibc-transfer \
   --amount 50000000 \
   --signing-keys relayer \
   --channel-id channel-0 \
-  --memo-path ${memo_path} \
+  --ibc-shielding-data ${memo_path} \
+  --gas-limit 150000 \
   --node ${LEDGER_ADDR_B}
 
 wait_for_relaying ${chain_a}

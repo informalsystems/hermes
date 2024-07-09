@@ -136,7 +136,7 @@ impl NamadaChain {
                         height,
                     )]);
                 }
-                let events = tx_result.batch_results.iter().filter_map(|(_, r)| {
+                let events = tx_result.iter().filter_map(|(_, r)| {
                     r.as_ref().map(|batched_tx_result| {
                         // Get IBC events when the transaction was accepted
                         if batched_tx_result.is_accepted() {

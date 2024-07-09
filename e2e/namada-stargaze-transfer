@@ -113,6 +113,7 @@ ${NAMADAC} --base-dir ${NAMADA_BASE} ibc-transfer \
   --signing-keys relayer \
   --channel-id ${namada_channel} \
   --port-id nft-transfer \
+  --gas-limit 150000 \
   --node ${NAMADA_LEDGER_ADDR}
 
 sleep 5
@@ -233,6 +234,7 @@ ${NAMADAC} --base-dir ${NAMADA_BASE} ibc-transfer \
   --signing-keys relayer \
   --channel-id ${namada_channel} \
   --port-id nft-transfer \
+  --gas-limit 150000 \
   --node ${NAMADA_LEDGER_ADDR}
 
 sleep 5
