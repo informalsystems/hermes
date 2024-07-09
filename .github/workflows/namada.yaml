@@ -108,6 +108,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
@@ -180,6 +181,7 @@ jobs:
           RUST_LOG: info
           RUST_BACKTRACE: 1
           NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
           CHAIN_COMMAND_PATHS: namada
           ACCOUNT_PREFIXES: ''
           NATIVE_TOKENS: nam
