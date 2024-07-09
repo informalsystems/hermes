@@ -213,7 +213,7 @@ impl BinaryChainTest for ChannelExpirationTest {
                     },
                     // From simapp version v7.1.0 if `ConnOpenInit` is sent while the client
                     // is expired, an error will be returned.
-                    Err(e) => match chains.node_a.chain_driver().value().chain_type {
+                    Err(e) => match chains.node_b.chain_driver().value().chain_type {
                         ChainType::Namada => {
                             // See https://github.com/cosmos/ibc-rs/blob/v0.53.0/ibc-core/ics02-client/types/src/error.rs#L22
                             assert!(e.to_string().contains("client is not active. Status=`Expired`"))

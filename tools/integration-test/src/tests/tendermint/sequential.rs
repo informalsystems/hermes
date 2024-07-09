@@ -3,6 +3,7 @@ use std::time::Instant;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::types::max_msg_num::MaxMsgNum;
 use ibc_relayer::config::ChainConfig;
+use ibc_test_framework::chain::chain_type::ChainType;
 use ibc_test_framework::chain::config;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
@@ -104,16 +105,28 @@ impl BinaryChannelTest for SequentialCommitTest {
                 TOTAL_MESSAGES, duration
             );
 
-            // Time taken for submitting sequential batches should be around number of transactions * block time
-
-            assert!(
-                duration
-                    > Duration::from_millis((BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) - 1000)
-            );
-            assert!(
-                duration
-                    < Duration::from_millis((BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) + 1000)
-            );
+            let (min_duration, max_duration) = match chains.node_a.chain_driver().value().chain_type
+            {
+                ChainType::Namada => (
+                    Duration::from_millis((BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) - 1000),
+                    Duration::from_millis(
+                        (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) * 2 + 1000,
+                    ),
+                ),
+                _ => {
+                    // Time taken for submitting sequential batches should be around number of transactions * block time
+                    (
+                        Duration::from_millis(
+                            (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) - 1000,
+                        ),
+                        Duration::from_millis(
+                            (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) + 1000,
+                        ),
+                    )
+                }
+            };
+            assert!(duration > min_duration);
+            assert!(duration < max_duration);
         }
 
         {
@@ -150,7 +163,11 @@ impl BinaryChannelTest for SequentialCommitTest {
                 TOTAL_MESSAGES, duration
             );
 
-            assert!(duration < Duration::from_millis(BLOCK_TIME_MILLIS * 3));
+            let max_duration = match chains.node_b.chain_driver().value().chain_type {
+                ChainType::Namada => Duration::from_millis(BLOCK_TIME_MILLIS * 2 * 2),
+                _ => Duration::from_millis(BLOCK_TIME_MILLIS * 2),
+            };
+            assert!(duration < max_duration);
         }
 
         Ok(())

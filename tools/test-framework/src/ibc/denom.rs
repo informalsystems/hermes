@@ -20,6 +20,7 @@ pub enum Denom {
     Base {
         display_name: String,
         raw_address: String,
+        token_denom: u8,
     },
     Ibc {
         path: String,
@@ -94,17 +95,26 @@ fn derive_cosmos_ibc_denom<ChainA, ChainB>(
     }
 
     match denom.value() {
-        Denom::Base { raw_address, .. } => {
+        Denom::Base {
+            raw_address,
+            token_denom,
+            ..
+        } => {
             let hashed = derive_denom(port_id.value(), channel_id.value(), raw_address)?;
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path: format!("{port_id}/{channel_id}"),
                 denom: Box::new((*denom.value()).clone()),
                 hashed,
-                token_denom: 0,
+                token_denom: *token_denom,
             }))
         }
-        Denom::Ibc { path, denom, .. } => {
+        Denom::Ibc {
+            path,
+            denom,
+            token_denom,
+            ..
+        } => {
             let new_path = format!("{port_id}/{channel_id}/{path}");
             let hashed = derive_denom_with_path(&format!("{new_path}/{denom}"))?;
 
@@ -112,7 +122,7 @@ fn derive_cosmos_ibc_denom<ChainA, ChainB>(
                 path: new_path,
                 denom: denom.clone(),
                 hashed,
-                token_denom: 0,
+                token_denom: *token_denom,
             }))
         }
     }
@@ -124,7 +134,11 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
     denom: &TaggedDenomRef<ChainA>,
 ) -> Result<TaggedDenom<ChainB>, Error> {
     match denom.value() {
-        Denom::Base { raw_address, .. } => {
+        Denom::Base {
+            raw_address,
+            token_denom,
+            ..
+        } => {
             let path = format!("{port_id}/{channel_id}");
             let ibc_token_addr = namada_ibc::trace::ibc_token(format!("{path}/{raw_address}"));
 
@@ -132,10 +146,15 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
                 path,
                 denom: Box::new((*denom.value()).clone()),
                 hashed: ibc_token_addr.to_string(),
-                token_denom: 6,
+                token_denom: *token_denom,
             }))
         }
-        Denom::Ibc { path, denom, .. } => {
+        Denom::Ibc {
+            path,
+            denom,
+            token_denom,
+            ..
+        } => {
             let new_path = format!("{port_id}/{channel_id}/{path}");
             let ibc_token_addr =
                 namada_ibc::trace::ibc_token(format!("{new_path}/{}", denom.hash_only()));
@@ -144,7 +163,7 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
                 path: new_path,
                 denom: denom.clone(),
                 hashed: ibc_token_addr.to_string(),
-                token_denom: 6,
+                token_denom: *token_denom,
             }))
         }
     }
@@ -155,6 +174,7 @@ impl Denom {
         Denom::Base {
             display_name: display_name.to_owned(),
             raw_address: raw_address.to_owned(),
+            token_denom: if display_name == "nam" { 6 } else { 0 },
         }
     }
 
@@ -210,12 +230,14 @@ impl PartialEq for Denom {
                 Self::Base {
                     display_name: d1,
                     raw_address: a1,
+                    token_denom: td1,
                 },
                 Self::Base {
                     display_name: d2,
                     raw_address: a2,
+                    token_denom: td2,
                 },
-            ) => (d1 == d2) && (a1 == a2),
+            ) => (d1 == d2) && (a1 == a2) && (td1 == td2),
             (
                 Self::Ibc {
                     path: p1,
