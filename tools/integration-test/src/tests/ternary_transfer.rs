@@ -136,7 +136,7 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
         let channel_c_to_a = channels.channel_at::<2, 0>()?;
 
         let denom_a_to_c_to_a = derive_ibc_denom(
-            &node_b.chain_driver().value().chain_type,
+            &node_a.chain_driver().value().chain_type,
             &channel_c_to_a.port_b.as_ref(),
             &channel_c_to_a.channel_id_b.as_ref(),
             &denom_a_to_c.as_ref(),
