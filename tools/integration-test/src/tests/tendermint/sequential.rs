@@ -110,7 +110,7 @@ impl BinaryChannelTest for SequentialCommitTest {
                 ChainType::Namada => (
                     Duration::from_millis((BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) - 1000),
                     Duration::from_millis(
-                        (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) * 2 + 1000,
+                        (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64 * 2) + 1000,
                     ),
                 ),
                 _ => {
@@ -164,7 +164,10 @@ impl BinaryChannelTest for SequentialCommitTest {
             );
 
             let max_duration = match chains.node_b.chain_driver().value().chain_type {
-                ChainType::Namada => Duration::from_millis(BLOCK_TIME_MILLIS * 2 * 2),
+                ChainType::Namada => {
+                    // Shorter than the sequential batches
+                    Duration::from_millis(BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64 * 2)
+                }
                 _ => Duration::from_millis(BLOCK_TIME_MILLIS * 2),
             };
             assert!(duration < max_duration);

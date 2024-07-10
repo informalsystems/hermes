@@ -60,7 +60,9 @@ where
         let mut node_processes = Vec::new();
 
         for i in 0..SIZE {
-            let node = if builder.command_paths.contains(&"namada".to_string()) {
+            let is_namada = builder.command_paths == vec!["namada".to_string()]
+                || builder.command_paths.get(i) == Some(&"namada".to_string());
+            let node = if is_namada {
                 bootstrap_namada_node(
                     builder,
                     &format!("{}", i + 1),
