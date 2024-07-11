@@ -633,8 +633,10 @@ define_error! {
 
         SpawnError
             { chain_id: ChainId }
-            |e| { format!("unable to spawn chain runtime for chain '{}'", e.chain_id)},
+            |e| { format!("failed to spawn chain runtime for chain '{}'", e.chain_id)},
 
+        EmptyConnectionHopIds
+            |_| { format!("cannot build connection hops from an empty list of connection ids")},
     }
 }
 

@@ -1,5 +1,4 @@
 use std::collections::HashSet;
-use std::convert::TryFrom;
 
 use ibc_relayer_types::{
     core::{
@@ -34,8 +33,7 @@ use crate::client_state::IdentifiedAnyClientState;
 use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
 use crate::telemetry;
-pub use crate::util::multihop::*;
-pub use ibc_relayer_types::core::ics33_multihop::channel_path::{ConnectionHop, ConnectionHops};
+use crate::util::multihop::build_hops_from_connection_ids;
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
@@ -184,12 +182,13 @@ pub fn channel_connection_client_no_checks(
         ));
     }
 
-    let raw_conn_hops = RawConnectionHops {
-        src_chain: chain,
-        conn_hop_ids: channel_end.connection_hops().clone(),
-    };
+    let conn_hops =
+        build_hops_from_connection_ids(chain.id().clone(), channel_end.connection_hops())
+            .map_err(Error::relayer)?;
 
-    let conn_hops = ConnectionHops::TryFrom(raw_conn_hops);
+    println!("\n\n\n\n ----------------------------------------- \n\n\n\n");
+    dbg!(&conn_hops);
+    println!("\n\n\n\n ----------------------------------------- \n\n\n\n");
 
     let connection_id = channel_end
         .connection_hops()
