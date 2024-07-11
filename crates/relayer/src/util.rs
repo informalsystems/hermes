@@ -8,6 +8,7 @@ pub mod diff;
 pub mod excluded_sequences;
 pub mod iter;
 pub mod lock;
+pub mod multihop;
 pub mod pretty;
 pub mod profiling;
 pub mod queue;

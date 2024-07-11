@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::convert::TryFrom;
 
 use ibc_relayer_types::{
     core::{
@@ -33,6 +34,8 @@ use crate::client_state::IdentifiedAnyClientState;
 use crate::path::PathIdentifiers;
 use crate::supervisor::Error;
 use crate::telemetry;
+pub use crate::util::multihop::*;
+pub use ibc_relayer_types::core::ics33_multihop::channel_path::{ConnectionHop, ConnectionHops};
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
@@ -160,6 +163,7 @@ pub fn channel_connection_client_no_checks(
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ChannelConnectionClient, Error> {
+    //~ Get the channel end on the source chain
     let (channel_end, _) = chain
         .query_channel(
             QueryChannelRequest {
@@ -171,6 +175,7 @@ pub fn channel_connection_client_no_checks(
         )
         .map_err(Error::relayer)?;
 
+    //~ Check if the channel end on the source chain is initialized
     if channel_end.state_matches(&State::Uninitialized) {
         return Err(Error::channel_uninitialized(
             port_id.clone(),
@@ -178,6 +183,13 @@ pub fn channel_connection_client_no_checks(
             chain.id(),
         ));
     }
+
+    let raw_conn_hops = RawConnectionHops {
+        src_chain: chain,
+        conn_hop_ids: channel_end.connection_hops().clone(),
+    };
+
+    let conn_hops = ConnectionHops::TryFrom(raw_conn_hops);
 
     let connection_id = channel_end
         .connection_hops()
@@ -195,6 +207,7 @@ pub fn channel_connection_client_no_checks(
         .map_err(Error::relayer)?;
 
     let client_id = connection_end.client_id();
+
     let (client_state, _) = chain
         .query_client_state(
             QueryClientStateRequest {
@@ -210,6 +223,7 @@ pub fn channel_connection_client_no_checks(
     let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
 
     Ok(ChannelConnectionClient::new(channel, connection, client))
+    // }
 }
 
 /// Returns the [`ChannelConnectionClient`] associated with the
@@ -222,6 +236,11 @@ pub fn channel_connection_client(
 ) -> Result<ChannelConnectionClient, Error> {
     let channel_connection_client =
         channel_connection_client_no_checks(chain, port_id, channel_id)?;
+
+    println!("##################");
+    dbg!(&channel_connection_client);
+
+    // CHECK THAT THE CLIENTS ALONG THE MULTIHOP PATH ARE NOT FROZEN AND ALL CONNECTIONS ARE OPEN
 
     if !channel_connection_client
         .connection
@@ -341,7 +360,11 @@ pub fn check_channel_counterparty(
         )
         .map_err(|e| ChannelError::query(target_chain.id(), e))?;
 
+    //~ This is the other end of the channel
     let counterparty = channel_end_dst.remote;
+
+    dbg!(&counterparty);
+
     match counterparty.channel_id {
         Some(actual_channel_id) => {
             let actual = PortChannelId {

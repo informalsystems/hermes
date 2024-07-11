@@ -86,6 +86,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 )
             })?;
 
+        println!("#######################################\n\n");
+        dbg!(&b_chain);
+        println!("#######################################\n\n");
+
+        println!("#######################################\n\n");
+        dbg!(&a_channel);
+        println!("#######################################\n\n");
+
         if !a_channel.state_matches(&ChannelState::Open(UpgradeState::NotUpgrading))
             && !a_channel.state_matches(&ChannelState::Open(UpgradeState::Upgrading))
             && !a_channel.state_matches(&ChannelState::Flushing)
