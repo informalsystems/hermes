@@ -159,7 +159,7 @@ impl TestOverrides for IbcTransferMBT {
 
         for chain_config in config.chains.iter_mut() {
             match chain_config {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.trusting_period = Some(CLIENT_EXPIRY);
                 }
             }
@@ -180,7 +180,7 @@ impl BinaryChannelTest for IbcTransferMBT {
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(0)));
+            MonoTagged::new(Denom::base(config.native_token(0), config.native_token(0)));
         // relayer is spawned
         let mut supervisor = Some(relayer.spawn_supervisor()?);
 

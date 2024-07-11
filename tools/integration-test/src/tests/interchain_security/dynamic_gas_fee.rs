@@ -80,7 +80,7 @@ impl TestOverrides for DynamicGasTest {
         update_relayer_config_for_consumer_chain(config);
 
         match &mut config.chains[0] {
-            ChainConfig::CosmosSdk(chain_config_a) => {
+            ChainConfig::CosmosSdk(chain_config_a) | ChainConfig::Namada(chain_config_a) => {
                 chain_config_a.gas_price =
                     GasPrice::new(0.3, chain_config_a.gas_price.denom.clone());
 
@@ -89,7 +89,7 @@ impl TestOverrides for DynamicGasTest {
         }
 
         match &mut config.chains[1] {
-            ChainConfig::CosmosSdk(chain_config_b) => {
+            ChainConfig::CosmosSdk(chain_config_b) | ChainConfig::Namada(chain_config_b) => {
                 chain_config_b.gas_price =
                     GasPrice::new(0.3, chain_config_b.gas_price.denom.clone());
 
@@ -121,15 +121,14 @@ impl BinaryChannelTest for DynamicGasTest {
         let a_to_b_amount = 12345u64;
 
         let denom_a_to_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
-        let gas_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::Base("stake".to_owned()));
-        let gas_denom_b: MonoTagged<ChainB, Denom> =
-            MonoTagged::new(Denom::Base("stake".to_owned()));
+        let gas_denom_a: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
+        let gas_denom_b: MonoTagged<ChainB, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         let balance_relayer_b_before = chains.node_b.chain_driver().query_balance(
             &chains.node_b.wallets().relayer().address(),
@@ -185,6 +184,7 @@ impl BinaryChannelTest for DynamicGasTest {
         let denom_b = chains.node_b.denom();
 
         let denom_b_to_a = derive_ibc_denom(
+            &chains.node_a.chain_driver().value().chain_type,
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &denom_b,

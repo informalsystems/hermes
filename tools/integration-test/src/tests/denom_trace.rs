@@ -40,6 +40,7 @@ impl BinaryChannelTest for IbcDenomTraceTest {
         )?;
 
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -83,7 +84,8 @@ impl BinaryChannelTest for IbcDenomTraceTest {
         assert_eq(
             "Denom returned by denom_trace query should be the same as denom_a",
             &denom_trace.base_denom,
-            &denom_a.value().as_str().to_string(),
+            // check the raw address
+            &denom_a.value().hash_only(),
         )?;
 
         Ok(())

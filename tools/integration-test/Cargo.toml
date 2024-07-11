@@ -49,10 +49,11 @@ juno                            = []
 dynamic-gas-fee                 = []
 new-register-interchain-account = []
 authz                           = []
+namada                          = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
-doc  = true
+doc = true
 
 [dev-dependencies]
 tempfile = { workspace = true }

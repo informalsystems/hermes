@@ -1,6 +1,6 @@
 use ibc_relayer::channel::version::Version;
 use ibc_relayer::config::ChainConfig;
-use ibc_test_framework::chain::config::{
+use ibc_test_framework::chain::config::cosmos::{
     add_allow_message_interchainquery, set_max_deposit_period, set_voting_period,
 };
 use ibc_test_framework::chain::ext::async_icq::AsyncIcqMethodsExt;
@@ -52,8 +52,10 @@ impl BinaryConnectionTest for AsyncIcqTest {
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
-        let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(0)));
+        let fee_denom_a: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
         let port_a = DualTagged::new(PortId::oracle());
         let port_b = DualTagged::new(PortId::icqhost());
         let (channel_id_b, channel_id_a) = init_channel_version(
@@ -129,7 +131,7 @@ fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
     relayer: &RelayerDriver,
 ) -> Result<(), Error> {
     let rpc_addr = match relayer.config.chains.first().unwrap() {
-        ChainConfig::CosmosSdk(c) => c.rpc_addr.clone(),
+        ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => c.rpc_addr.clone(),
     };
 
     let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
