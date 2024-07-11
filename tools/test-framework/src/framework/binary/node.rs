@@ -34,7 +34,8 @@ pub fn run_single_node_test<Test, Overrides>(test: &Test) -> Result<(), Error>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + NodeGenesisOverride + TestConfigOverride,
+    Overrides:
+        NodeConfigOverride + NodeGenesisOverride + TestConfigOverride + NamadaParametersOverride,
 {
     run_basic_test(&RunSingleNodeTest { test })
 }
@@ -183,17 +184,34 @@ impl<'a, Test, Overrides> BasicTest for RunSingleNodeTest<'a, Test>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + NodeGenesisOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride + NamadaParametersOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
-        let node = bootstrap_single_node(
-            builder,
-            "1",
-            config.bootstrap_with_random_ids,
-            |config| self.test.get_overrides().modify_node_config(config),
-            |genesis| self.test.get_overrides().modify_genesis_file(genesis),
-            0,
-        )?;
+        let command_paths_len = builder.command_paths.len();
+        let node_type = ChainType::from_str(&builder.command_paths[0 % command_paths_len])?;
+        let node = match node_type {
+            ChainType::Namada => bootstrap_namada_node(
+                builder,
+                "a",
+                false,
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                |parameters| {
+                    self.test
+                        .get_overrides()
+                        .namada_modify_parameter_file(parameters)
+                },
+                0,
+            ),
+            _ => bootstrap_single_node(
+                builder,
+                "1",
+                config.bootstrap_with_random_ids,
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                0,
+            ),
+        }?;
 
         let _node_process = node.process.clone();
 

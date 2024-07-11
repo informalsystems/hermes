@@ -10,7 +10,7 @@ fn test_ibc_transfer() -> Result<(), Error> {
    Test that IBC token transfer can still work with a single
    chain that is connected to itself.
 */
-#[cfg(not(any(feature = "celestia", feature = "namada")))]
+#[cfg(not(feature = "celestia"))]
 #[test]
 fn test_self_connected_ibc_transfer() -> Result<(), Error> {
     run_self_connected_binary_chain_test(&RunBinaryConnectionTest::new(&RunBinaryChannelTest::new(
@@ -25,13 +25,13 @@ fn test_self_connected_ibc_transfer() -> Result<(), Error> {
    this behind the "experimental" feature flag so that normal developers
    are not obligated to understand how this test works yet.
 */
-#[cfg(not(any(feature = "celestia", feature = "namada")))]
+#[cfg(not(feature = "celestia"))]
 #[test]
 fn test_nary_ibc_transfer() -> Result<(), Error> {
     run_binary_as_nary_channel_test(&IbcTransferTest)
 }
 
-#[cfg(not(any(feature = "celestia", feature = "namada")))]
+#[cfg(not(feature = "celestia"))]
 #[test]
 fn test_self_connected_nary_ibc_transfer() -> Result<(), Error> {
     run_self_connected_nary_chain_test(&RunNaryConnectionTest::new(&RunNaryChannelTest::new(

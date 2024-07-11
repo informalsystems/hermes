@@ -76,7 +76,8 @@ where
         + NodeGenesisOverride
         + RelayerConfigOverride
         + ClientOptionsOverride
-        + TestConfigOverride,
+        + TestConfigOverride
+        + NamadaParametersOverride,
 {
     run_single_node_test(&RunBinaryChainTest::new(test))
 }
