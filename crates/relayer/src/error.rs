@@ -636,7 +636,7 @@ define_error! {
             |e| { format!("failed to spawn chain runtime for chain '{}'", e.chain_id)},
 
         EmptyConnectionHopIds
-            |_| { format!("cannot build connection hops from an empty list of connection ids")},
+            |_| { "cannot build connection hops from an empty list of connection ids".to_string() },
     }
 }
 
