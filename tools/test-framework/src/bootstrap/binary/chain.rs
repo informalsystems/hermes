@@ -17,7 +17,7 @@ use ibc_relayer::foreign_client::{
     extract_client_id, CreateOptions as ClientOptions, ForeignClient,
 };
 use ibc_relayer::keyring::errors::ErrorDetail as KeyringErrorDetail;
-use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 
 use crate::relayer::driver::RelayerDriver;
@@ -68,6 +68,7 @@ pub fn bootstrap_chains_with_full_nodes(
     save_relayer_config(&config, &config_path)?;
 
     let registry = new_registry(config.clone());
+    set_global_registry(registry.clone());
 
     // Pass in unique closure expressions `||{}` as the first argument so that
     // the returned chains are considered different types by Rust.
