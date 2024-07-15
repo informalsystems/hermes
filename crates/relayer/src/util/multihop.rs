@@ -1,5 +1,5 @@
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
-use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ConnectionId};
+use ibc_relayer_types::core::ics24_host::identifier::ConnectionId;
 pub use ibc_relayer_types::core::ics33_multihop::channel_path::{ConnectionHop, ConnectionHops};
 
 use crate::chain::handle::ChainHandle;
@@ -10,7 +10,7 @@ use crate::error::Error;
 use crate::registry::get_global_registry;
 
 pub fn build_hops_from_connection_ids(
-    src_chain_id: ChainId,
+    src_chain: &impl ChainHandle,
     connection_ids: &[ConnectionId],
 ) -> Result<ConnectionHops, Error> {
     let registry = get_global_registry();
@@ -21,11 +21,6 @@ pub fn build_hops_from_connection_ids(
         .first()
         .ok_or(Error::empty_connection_hop_ids())?
         .clone();
-
-    let src_chain = match registry.get_or_spawn(&src_chain_id) {
-        Ok(chain) => chain,
-        Err(_) => return Err(Error::spawn_error(src_chain_id.clone())),
-    };
 
     let (src_hop_connection, _) = src_chain.query_connection(
         QueryConnectionRequest {
@@ -45,7 +40,7 @@ pub fn build_hops_from_connection_ids(
 
     connection_hops.push(ConnectionHop {
         connection: IdentifiedConnectionEnd::new(src_connection_id.clone(), src_hop_connection),
-        src_chain_id: src_chain_id.clone(),
+        src_chain_id: src_chain.id(),
         dst_chain_id: src_hop_conn_client_state.chain_id().clone(),
     });
 

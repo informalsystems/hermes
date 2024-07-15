@@ -182,9 +182,8 @@ pub fn channel_connection_client_no_checks(
         ));
     }
 
-    let conn_hops =
-        build_hops_from_connection_ids(chain.id().clone(), channel_end.connection_hops())
-            .map_err(Error::relayer)?;
+    let conn_hops = build_hops_from_connection_ids(chain, channel_end.connection_hops())
+        .map_err(Error::relayer)?;
 
     println!("\n\n\n\n ----------------------------------------- \n\n\n\n");
     dbg!(&conn_hops);
