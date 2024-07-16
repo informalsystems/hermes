@@ -124,7 +124,8 @@ pub fn add_genesis_validator(
         ],
     ) {
         Ok(_) => Ok(()),
-        Err(_) => {
+        Err(e) => {
+            tracing::warn!("{e}");
             simple_exec(
                 chain_id,
                 command_path,

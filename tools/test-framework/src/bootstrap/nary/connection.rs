@@ -3,6 +3,7 @@
 */
 
 use core::time::Duration;
+use eyre::eyre;
 use ibc_relayer::chain::handle::ChainHandle;
 use ibc_relayer::foreign_client::ForeignClient;
 
@@ -12,48 +13,44 @@ use crate::types::binary::connection::ConnectedConnection;
 use crate::types::binary::foreign_client::ForeignClientPair;
 use crate::types::nary::connection::{ConnectedConnections, DynamicConnectedConnections};
 use crate::types::nary::foreign_client::ForeignClientPairs;
-use crate::util::array::assert_same_dimension;
+use crate::util::two_dim_hash_map::TwoDimMap;
 
 /**
    Bootstrap a dynamic number of connections based on the
-   given foreign client NxN matrix.
+   given foreign clients.
+   See [`crate::types::topology`] for more information.
 */
 pub fn bootstrap_connections_dynamic<Handle: ChainHandle>(
-    foreign_clients: &Vec<Vec<ForeignClient<Handle, Handle>>>,
+    foreign_clients: &TwoDimMap<ForeignClient<Handle, Handle>>,
     connection_delay: Duration,
     bootstrap_with_random_ids: bool,
 ) -> Result<DynamicConnectedConnections<Handle>, Error> {
-    let size = foreign_clients.len();
+    let mut connections: TwoDimMap<ConnectedConnection<Handle, Handle>> = TwoDimMap::new();
 
-    assert_same_dimension(size, foreign_clients)?;
+    for (src_chain, dst_chain, foreign_client) in foreign_clients.iter() {
+        let connection = if let Some(counterparty_connection) =
+            connections.get((dst_chain, src_chain))
+        {
+            counterparty_connection.clone().flip()
+        } else {
+            // No connection is found, will create one
+            let client_a_to_b = foreign_client.clone();
+            let client_b_to_a = foreign_clients.get((dst_chain, src_chain)).ok_or_else(|| {
+                Error::generic(eyre!(
+                    "No client entry found from chain `{}` to `{}`",
+                    dst_chain,
+                    src_chain,
+                ))
+            })?;
+            let foreign_clients = ForeignClientPair::new(client_a_to_b, client_b_to_a.clone());
 
-    let mut connections: Vec<Vec<ConnectedConnection<Handle, Handle>>> = Vec::new();
+            let bootstrap_options = BootstrapConnectionOptions::default()
+                .connection_delay(connection_delay)
+                .bootstrap_with_random_ids(bootstrap_with_random_ids);
 
-    for (i, foreign_clients_b) in foreign_clients.iter().enumerate() {
-        let mut connections_b: Vec<ConnectedConnection<Handle, Handle>> = Vec::new();
-
-        for (j, foreign_client) in foreign_clients_b.iter().enumerate() {
-            if i <= j {
-                let counter_foreign_client = &foreign_clients[j][i];
-                let foreign_clients =
-                    ForeignClientPair::new(foreign_client.clone(), counter_foreign_client.clone());
-
-                let bootstrap_options = BootstrapConnectionOptions::default()
-                    .connection_delay(connection_delay)
-                    .bootstrap_with_random_ids(bootstrap_with_random_ids);
-
-                let connection = bootstrap_connection(&foreign_clients, bootstrap_options)?;
-
-                connections_b.push(connection);
-            } else {
-                let counter_connection = &connections[j][i];
-                let connection = counter_connection.clone().flip();
-
-                connections_b.push(connection);
-            }
-        }
-
-        connections.push(connections_b);
+            bootstrap_connection(&foreign_clients, bootstrap_options)?
+        };
+        connections.insert((src_chain, dst_chain), connection);
     }
 
     Ok(DynamicConnectedConnections::new(connections))

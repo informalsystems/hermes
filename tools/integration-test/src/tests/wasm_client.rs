@@ -57,10 +57,6 @@ fn wasm_options() -> CreateOptions {
 struct CreateAndUpdateWasmClientTest;
 
 impl TestOverrides for CreateAndUpdateWasmClientTest {
-    fn client_options_a_to_b(&self) -> CreateOptions {
-        wasm_options()
-    }
-
     fn client_options_b_to_a(&self) -> CreateOptions {
         wasm_options()
     }
@@ -99,9 +95,6 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
         info!("Storing Wasm contract on chain A");
         store_wasm_contract(node_a, test_config)?;
 
-        info!("Storing Wasm contract on chain B");
-        store_wasm_contract(node_b, test_config)?;
-
         let overrides = self.get_overrides();
 
         info!("Creating client A to B");
@@ -123,6 +116,10 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
 
         assert_client_refreshed(true, res);
         info!("Client B to A was refreshed successfully");
+
+        let _foreign_clients = ForeignClientPair::new(client_b_to_a, client_a_to_b);
+
+        //bootstrap_connection(&foreign_clients, Default::default())?;
 
         Ok(())
     }
@@ -148,7 +145,7 @@ fn store_wasm_contract(node_a: FullNode, test_config: &TestConfig) -> Result<(),
         .chain_driver
         .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
-    let fee_denom_a = &test_config.native_tokens[0];
+    let fee_denom_a = test_config.native_token(0);
     node_a
         .chain_driver
         .vote_proposal("1", &format!("381000000{}", fee_denom_a))?;

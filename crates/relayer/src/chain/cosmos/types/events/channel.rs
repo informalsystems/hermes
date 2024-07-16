@@ -5,10 +5,11 @@ use ibc_relayer_types::core::ics02_client::height::HeightErrorDetail;
 use ibc_relayer_types::core::ics04_channel::error::Error;
 use ibc_relayer_types::core::ics04_channel::events::{
     AcknowledgePacket, Attributes, CloseConfirm, CloseInit, EventType, OpenAck, OpenConfirm,
-    OpenInit, OpenTry, SendPacket, TimeoutPacket, WriteAcknowledgement, PKT_ACK_ATTRIBUTE_KEY,
-    PKT_DATA_ATTRIBUTE_KEY, PKT_DST_CHANNEL_ATTRIBUTE_KEY, PKT_DST_PORT_ATTRIBUTE_KEY,
-    PKT_SEQ_ATTRIBUTE_KEY, PKT_SRC_CHANNEL_ATTRIBUTE_KEY, PKT_SRC_PORT_ATTRIBUTE_KEY,
-    PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY, PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY,
+    OpenInit, OpenTry, SendPacket, TimeoutPacket, UpgradeAttributes, UpgradeInit,
+    WriteAcknowledgement, PKT_ACK_ATTRIBUTE_KEY, PKT_DATA_ATTRIBUTE_KEY,
+    PKT_DST_CHANNEL_ATTRIBUTE_KEY, PKT_DST_PORT_ATTRIBUTE_KEY, PKT_SEQ_ATTRIBUTE_KEY,
+    PKT_SRC_CHANNEL_ATTRIBUTE_KEY, PKT_SRC_PORT_ATTRIBUTE_KEY, PKT_TIMEOUT_HEIGHT_ATTRIBUTE_KEY,
+    PKT_TIMEOUT_TIMESTAMP_ATTRIBUTE_KEY,
 };
 use ibc_relayer_types::core::ics04_channel::events::{ReceivePacket, TimeoutOnClosePacket};
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
@@ -38,6 +39,46 @@ fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attribu
             &format!("{namespace}.counterparty_channel_id"),
         )
         .and_then(|v| v.parse().ok()),
+    })
+}
+
+fn extract_upgrade_attributes(
+    object: &RawObject<'_>,
+    namespace: &str,
+) -> Result<UpgradeAttributes, EventError> {
+    Ok(UpgradeAttributes {
+        port_id: extract_attribute(object, &format!("{namespace}.port_id"))?
+            .parse()
+            .map_err(EventError::parse)?,
+        channel_id: extract_attribute(object, &format!("{namespace}.channel_id"))?
+            .parse()
+            .map_err(EventError::parse)?,
+        counterparty_port_id: extract_attribute(
+            object,
+            &format!("{namespace}.counterparty_port_id"),
+        )?
+        .parse()
+        .map_err(EventError::parse)?,
+        counterparty_channel_id: maybe_extract_attribute(
+            object,
+            &format!("{namespace}.counterparty_channel_id"),
+        )
+        .and_then(|v| v.parse().ok()),
+        upgrade_sequence: extract_attribute(object, &format!("{namespace}.upgrade_sequence"))?
+            .parse()
+            .map_err(|_| EventError::missing_action_string())?,
+        upgrade_timeout_height: maybe_extract_attribute(
+            object,
+            &format!("{namespace}.timeout_height"),
+        )
+        .and_then(|v| v.parse().ok()),
+        upgrade_timeout_timestamp: maybe_extract_attribute(
+            object,
+            &format!("{namespace}.timeout_timestamp"),
+        )
+        .and_then(|v| v.parse().ok()),
+        error_receipt: maybe_extract_attribute(object, &format!("{namespace}.error_receipt"))
+            .and_then(|v| v.parse().ok()),
     })
 }
 
@@ -96,6 +137,14 @@ impl TryFrom<RawObject<'_>> for WriteAcknowledgement {
         let packet = Packet::try_from(obj)?;
 
         Ok(Self { packet, ack })
+    }
+}
+
+impl TryFrom<RawObject<'_>> for UpgradeInit {
+    type Error = EventError;
+
+    fn try_from(obj: RawObject<'_>) -> Result<Self, Self::Error> {
+        extract_upgrade_attributes(&obj, Self::event_type().as_str())?.try_into()
     }
 }
 

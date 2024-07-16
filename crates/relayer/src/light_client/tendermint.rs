@@ -31,11 +31,11 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::Height as ICSHeight;
 
 use crate::{
-    chain::cosmos::config::CosmosSdkConfig,
-    chain::cosmos::CosmosSdkChain,
+    chain::cosmos::{config::CosmosSdkConfig, CosmosSdkChain},
     client_state::AnyClientState,
     error::Error,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
+    HERMES_VERSION,
 };
 
 use super::{
@@ -267,7 +267,10 @@ fn io_for_addr(
     peer_id: PeerId,
     timeout: Option<Duration>,
 ) -> Result<ProdIo, Error> {
-    let rpc_client = rpc::HttpClient::new(addr.clone()).map_err(|e| Error::rpc(addr.clone(), e))?;
+    let rpc_client = rpc::HttpClient::builder(addr.clone().try_into().unwrap())
+        .user_agent(format!("hermes/{}", HERMES_VERSION))
+        .build()
+        .map_err(|e| Error::rpc(addr.clone(), e))?;
     Ok(ProdIo::new(peer_id, rpc_client, timeout))
 }
 

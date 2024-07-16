@@ -150,11 +150,13 @@ impl BinaryChannelTest for ClearPacketTest {
 impl BinaryChannelTest for ClearPacketRecoveryTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
+        let fee_denom_b: MonoTagged<ChainB, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(1)));
         let denom_a = chains.node_a.denom();
         let denom_b1 = chains.node_b.denom();
 
@@ -168,6 +170,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
             &relayer_wallet_b.as_ref(),
             &wallet_b.address(),
             &denom_b1.with_amount(100u64).as_ref(),
+            &fee_denom_b.with_amount(1200u64).as_ref(),
         )?;
 
         let amount1 = random_u128_range(1000, 5000);
@@ -224,7 +227,7 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -344,7 +347,7 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();

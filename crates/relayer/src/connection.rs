@@ -1365,7 +1365,9 @@ fn check_destination_connection_state(
         && existing_connection.counterparty().client_id()
             == expected_connection.counterparty().client_id();
 
-    let good_state = *existing_connection.state() as u32 <= *expected_connection.state() as u32;
+    let good_state = existing_connection
+        .state()
+        .less_or_equal_progress(*expected_connection.state());
 
     let good_connection_ids = existing_connection.counterparty().connection_id().is_none()
         || existing_connection.counterparty().connection_id()

@@ -1,5 +1,7 @@
 use ibc_relayer::channel::version::Version;
-use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
+use ibc_test_framework::chain::config::{
+    add_allow_message_interchainquery, set_max_deposit_period, set_voting_period,
+};
 use ibc_test_framework::chain::ext::async_icq::AsyncIcqMethodsExt;
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use ibc_test_framework::prelude::*;
@@ -29,26 +31,11 @@ impl TestOverrides for AsyncIcqTest {
 
     // Allow Oracle message on host side
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
-        use serde_json::Value;
-
         set_max_deposit_period(genesis, MAX_DEPOSIT_PERIOD)?;
         set_voting_period(genesis, VOTING_PERIOD)?;
+        add_allow_message_interchainquery(genesis, "/provenance.oracle.v1.Query/Oracle")?;
 
-        let allow_messages = genesis
-            .get_mut("app_state")
-            .and_then(|app_state| app_state.get_mut("interchainquery"))
-            .and_then(|ica| ica.get_mut("params"))
-            .and_then(|params| params.get_mut("allow_queries"))
-            .and_then(|allow_messages| allow_messages.as_array_mut());
-
-        if let Some(allow_messages) = allow_messages {
-            allow_messages.push(Value::String(
-                "/provenance.oracle.v1.Query/Oracle".to_string(),
-            ));
-            Ok(())
-        } else {
-            Err(Error::generic(eyre!("failed to update genesis file")))
-        }
+        Ok(())
     }
 
     fn channel_version(&self) -> Version {
@@ -65,7 +52,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&config.native_tokens[0]));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let port_a = DualTagged::new(PortId::oracle());
         let port_b = DualTagged::new(PortId::icqhost());
         let (channel_id_b, channel_id_a) = init_channel_version(

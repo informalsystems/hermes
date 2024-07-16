@@ -3,8 +3,9 @@ use core::fmt::{Debug, Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use tracing::Span;
 
-use ibc_proto::ibc::apps::fee::v1::{
-    QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
+use ibc_proto::ibc::{
+    apps::fee::v1::{QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse},
+    core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest},
 };
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
@@ -13,7 +14,10 @@ use ibc_relayer_types::{
         ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
         ics03_connection::version::Version,
         ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
-        ics04_channel::packet::{PacketMsgType, Sequence},
+        ics04_channel::{
+            packet::{PacketMsgType, Sequence},
+            upgrade::{ErrorReceipt, Upgrade},
+        },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
         ics24_host::identifier::ChainId,
         ics24_host::identifier::ChannelId,
@@ -520,5 +524,33 @@ impl ChainHandle for BaseChainHandle {
 
     fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
         self.send(|reply_to| ChainRequest::QueryConsumerChains { reply_to })
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryUpgrade {
+            request,
+            height,
+            include_proof,
+            reply_to,
+        })
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        self.send(|reply_to| ChainRequest::QueryUpgradeError {
+            request,
+            height,
+            include_proof,
+            reply_to,
+        })
     }
 }

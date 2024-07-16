@@ -246,6 +246,10 @@ pub mod default {
     pub fn ics20_max_receiver_size() -> Ics20FieldSizeLimit {
         Ics20FieldSizeLimit::new(true, Byte::from_bytes(2048))
     }
+
+    pub fn allow_ccq() -> bool {
+        true
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -719,9 +723,16 @@ impl ChainConfig {
         match self {
             Self::CosmosSdk(config) => config
                 .excluded_sequences
+                .map
                 .get(channel_id)
                 .map(|seqs| Cow::Borrowed(seqs.as_slice()))
                 .unwrap_or_else(|| Cow::Owned(Vec::new())),
+        }
+    }
+
+    pub fn allow_ccq(&self) -> bool {
+        match self {
+            Self::CosmosSdk(config) => config.allow_ccq,
         }
     }
 }
@@ -834,7 +845,7 @@ impl From<CosmosConfigError> for Error {
 mod tests {
     use core::str::FromStr;
 
-    use super::{load, parse_gas_prices, store_writer};
+    use super::{load, parse_gas_prices, store_writer, ChainConfig};
     use crate::config::GasPrice;
     use test_log::test;
 
@@ -923,6 +934,39 @@ mod tests {
 
         let mut buffer = Vec::new();
         store_writer(&config, &mut buffer).unwrap();
+    }
+
+    #[test]
+    fn serialize_valid_excluded_sequences_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example.toml"
+        );
+
+        let config = load(path).expect("could not parse config");
+
+        let excluded_sequences1 = match config.chains.first().unwrap() {
+            ChainConfig::CosmosSdk(chain_config) => chain_config.excluded_sequences.clone(),
+        };
+
+        let excluded_sequences2 = match config.chains.last().unwrap() {
+            ChainConfig::CosmosSdk(chain_config) => chain_config.excluded_sequences.clone(),
+        };
+
+        assert_eq!(excluded_sequences1, excluded_sequences2);
+
+        let mut buffer = Vec::new();
+        store_writer(&config, &mut buffer).unwrap();
+    }
+
+    #[test]
+    fn serialize_invalid_excluded_sequences_config() {
+        let path = concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/config/fixtures/relayer_conf_example_invalid_excluded_sequences.toml"
+        );
+
+        assert!(load(path).is_err());
     }
 
     #[test]
