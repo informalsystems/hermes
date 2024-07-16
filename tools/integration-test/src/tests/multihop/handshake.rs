@@ -38,8 +38,6 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
         chains: NaryConnectedChains<Handle, 3>,
         connections: ConnectedConnections<Handle, 3>,
     ) -> Result<(), Error> {
-        // let registry = SharedRegistry::new(relayer.config.clone());
-        // set_global_registry(registry.clone());
         let chain_handle_a = chains.chain_handle_at::<0>()?;
         let chain_handle_b = chains.chain_handle_at::<1>()?;
         let chain_handle_c = chains.chain_handle_at::<2>()?;

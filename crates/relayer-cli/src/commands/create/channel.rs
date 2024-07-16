@@ -15,7 +15,6 @@ use ibc_relayer::channel::Channel;
 use ibc_relayer::config::default::connection_delay;
 use ibc_relayer::connection::{Connection, ConnectionError};
 use ibc_relayer::foreign_client::ForeignClient;
-use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer_types::core::ics03_connection::connection::IdentifiedConnectionEnd;
 use ibc_relayer_types::core::ics04_channel::channel::Ordering;
 use ibc_relayer_types::core::ics04_channel::version::Version;
@@ -322,9 +321,6 @@ impl CreateChannelCommand {
         connection_hops: &ConnectionIds,
     ) {
         let config = app_config();
-
-        // Set global registry to get or spawn chain handles
-        set_global_registry(SharedRegistry::new((*app_config()).clone()));
 
         let mut a_side_hops = Vec::new(); // Hops from --a-chain's channel side towards --b-chain
         let mut b_side_hops = Vec::new(); // Hops from --b-chain's channel side towards --a-chain
