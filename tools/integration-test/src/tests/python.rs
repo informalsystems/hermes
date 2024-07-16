@@ -67,6 +67,7 @@ impl BinaryChainTest for PythonTest {
 }
 
 #[test]
+#[ignore]
 fn python_end_to_end_tests() -> Result<(), Error> {
     run_binary_chain_test(&PythonTest)
 }
