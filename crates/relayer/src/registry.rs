@@ -121,32 +121,30 @@ impl SharedRegistry {
     pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
         let read_reg = self.read();
 
-        if read_reg.handles.contains_key(chain_id) {
-            Ok(read_reg
-                .handles
-                .get(chain_id)
-                .cloned()
-                .expect("runtime exists"))
+        if let Some(handle) = read_reg.handles.get(chain_id) {
+            Ok(handle.clone())
         } else {
-            let chain_config = read_reg
-                .config
-                .find_chain(chain_id)
-                .cloned()
-                .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
-
-            let rt = Arc::clone(&read_reg.rt);
             drop(read_reg);
-
-            let handle: DefaultChainHandle = spawn_chain_runtime_with_config(chain_config, rt)?;
-
-            let mut write_reg = self.write();
-            write_reg.handles.insert(chain_id.clone(), handle.clone());
-            drop(write_reg);
-
-            trace!(chain = %chain_id, "spawned chain runtime");
-
-            Ok(handle)
+            self.spawn(chain_id)
         }
+    }
+
+    pub fn spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
+        let mut write_reg = self.write();
+
+        if let Some(handle) = write_reg.handles.get(chain_id) {
+            return Ok(handle.clone());
+        }
+
+        let rt = Arc::clone(&write_reg.rt);
+        let handle: DefaultChainHandle = spawn_chain_runtime(&write_reg.config, chain_id, rt)?;
+
+        write_reg.handles.insert(chain_id.clone(), handle.clone());
+        drop(write_reg);
+
+        trace!(chain = %chain_id, "spawned chain runtime");
+
+        Ok(handle)
     }
 
     pub fn shutdown(&self, chain_id: &ChainId) {
