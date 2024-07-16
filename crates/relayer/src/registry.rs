@@ -11,6 +11,7 @@ use tracing::{trace, warn};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::chain::handle::DefaultChainHandle;
+use crate::spawn::spawn_chain_runtime_with_config;
 use crate::{
     chain::handle::ChainHandle,
     config::Config,
@@ -127,11 +128,16 @@ impl SharedRegistry {
                 .cloned()
                 .expect("runtime exists"))
         } else {
-            let config = read_reg.config.clone();
+            let chain_config = read_reg
+                .config
+                .find_chain(chain_id)
+                .cloned()
+                .ok_or_else(|| SpawnError::missing_chain_config(chain_id.clone()))?;
+
             let rt = Arc::clone(&read_reg.rt);
             drop(read_reg);
 
-            let handle: DefaultChainHandle = spawn_chain_runtime(&config, chain_id, rt)?;
+            let handle: DefaultChainHandle = spawn_chain_runtime_with_config(chain_config, rt)?;
 
             let mut write_reg = self.write();
             write_reg.handles.insert(chain_id.clone(), handle.clone());
