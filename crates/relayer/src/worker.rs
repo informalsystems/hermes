@@ -175,6 +175,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                         link.clone(),
                         should_clear_on_start,
                         clear_interval,
+                        config.mode.packets.clear_limit,
                         clear_cmd_tx,
                     );
                     task_handles.push(clear_task);
@@ -192,6 +193,7 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
                             link.clone(),
                             should_clear_on_start,
                             clear_interval,
+                            config.mode.packets.clear_limit,
                             path.clone(),
                         ),
                     };

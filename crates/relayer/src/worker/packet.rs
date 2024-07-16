@@ -83,6 +83,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
     mut should_clear_on_start: bool,
     clear_interval: u64,
+    clear_limit: usize,
     path: Packet,
 ) -> TaskHandle {
     let span = {
@@ -117,6 +118,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 &mut link.lock().unwrap(),
                 &mut should_clear_on_start,
                 clear_interval,
+                clear_limit,
                 &path,
                 cmd,
             )?;
@@ -188,6 +190,7 @@ pub fn spawn_clear_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
     mut should_clear_on_start: bool,
     clear_interval: u64,
+    clear_limit: usize,
     clear_cmd_tx: Sender<WorkerCmd>,
 ) -> TaskHandle {
     let span = {
@@ -228,6 +231,7 @@ pub fn spawn_clear_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 &mut link.lock().unwrap(),
                 &mut should_clear_on_start,
                 clear_interval,
+                clear_limit,
                 cmd,
             )?;
 
@@ -262,6 +266,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     should_clear_on_start: &mut bool,
     clear_interval: u64,
+    clear_limit: usize,
     path: &Packet,
     cmd: WorkerCmd,
 ) -> Result<(), TaskError<RunError>> {
@@ -280,7 +285,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             .ok();
 
             if *should_clear_on_start || next_sequence < lowest_sequence {
-                handle_clear_packet(link, clear_interval, path, Some(batch.height))?;
+                handle_clear_packet(link, clear_interval, path, Some(batch.height), clear_limit)?;
             }
         }
         _ => {}
@@ -303,6 +308,7 @@ fn handle_clear_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     should_clear_on_start: &mut bool,
     clear_interval: u64,
+    clear_limit: usize,
     cmd: WorkerCmd,
 ) -> Result<(), TaskError<RunError>> {
     // Handle packet clearing which is triggered from a command
@@ -345,7 +351,7 @@ fn handle_clear_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
 
         link.a_to_b
-            .schedule_packet_clearing(maybe_height)
+            .schedule_packet_clearing(maybe_height, clear_limit)
             .map_err(handle_link_error_in_task)?;
     }
 
@@ -504,9 +510,10 @@ fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     clear_interval: u64,
     path: &Packet,
     height: Option<Height>,
+    clear_limit: usize,
 ) -> Result<(), TaskError<RunError>> {
     link.a_to_b
-        .schedule_packet_clearing(height)
+        .schedule_packet_clearing(height, clear_limit)
         .map_err(handle_link_error_in_task)?;
 
     handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))
