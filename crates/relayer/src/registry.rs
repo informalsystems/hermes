@@ -127,10 +127,11 @@ impl SharedRegistry {
                 .cloned()
                 .expect("runtime exists"))
         } else {
-            let handle: DefaultChainHandle =
-                spawn_chain_runtime(&read_reg.config, chain_id, read_reg.rt.clone())?;
-
+            let config = read_reg.config.clone();
+            let rt = Arc::clone(&read_reg.rt);
             drop(read_reg);
+
+            let handle: DefaultChainHandle = spawn_chain_runtime(&config, chain_id, rt)?;
 
             let mut write_reg = self.write();
             write_reg.handles.insert(chain_id.clone(), handle.clone());
