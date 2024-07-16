@@ -10,13 +10,11 @@ use tracing::{trace, warn};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::chain::handle::DefaultChainHandle;
-use crate::spawn::spawn_chain_runtime_with_config;
 use crate::{
-    chain::handle::ChainHandle,
+    chain::handle::{ChainHandle, DefaultChainHandle},
     config::Config,
     spawn::{spawn_chain_runtime, SpawnError},
-    util::lock::RwArc,
+    util::lock::{LockExt, RwArc},
 };
 
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
@@ -118,6 +116,10 @@ impl SharedRegistry {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.read().size() == 0
+    }
+
     pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
         let read_reg = self.read();
 
@@ -156,10 +158,10 @@ impl SharedRegistry {
     }
 
     pub fn write(&self) -> RwLockWriteGuard<'_, Registry<DefaultChainHandle>> {
-        self.registry.write().unwrap()
+        self.registry.acquire_write()
     }
 
     pub fn read(&self) -> RwLockReadGuard<'_, Registry<DefaultChainHandle>> {
-        self.registry.read().unwrap()
+        self.registry.acquire_read()
     }
 }

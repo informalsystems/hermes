@@ -6,11 +6,14 @@ use ibc_relayer_types::core::{
 };
 
 use crate::{
-    chain::{counterparty::connection_state_on_destination, handle::ChainHandle},
+    chain::{
+        counterparty::connection_state_on_destination,
+        handle::{ChainHandle, DefaultChainHandle},
+    },
     client_state::IdentifiedAnyClientState,
     config::Config,
     object::{Channel, Client, Connection, Object, Packet, Wallet},
-    registry::Registry,
+    registry::SharedRegistry,
     supervisor::error::Error as SupervisorError,
     telemetry,
     worker::WorkerMap,
@@ -22,16 +25,16 @@ use super::{
 };
 
 /// A context for spawning workers within the supervisor.
-pub struct SpawnContext<'a, Chain: ChainHandle> {
+pub struct SpawnContext<'a> {
     config: &'a Config,
-    registry: &'a mut Registry<Chain>,
+    registry: &'a SharedRegistry,
     workers: &'a mut WorkerMap,
 }
 
-impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
+impl<'a> SpawnContext<'a> {
     pub fn new(
         config: &'a Config,
-        registry: &'a mut Registry<Chain>,
+        registry: &'a SharedRegistry,
         workers: &'a mut WorkerMap,
     ) -> Self {
         Self {
@@ -77,7 +80,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
         telemetry!(self.spawn_wallet_worker(chain));
     }
 
-    pub fn spawn_wallet_worker(&mut self, chain: Chain) {
+    pub fn spawn_wallet_worker(&mut self, chain: DefaultChainHandle) {
         let wallet_object = Object::Wallet(Wallet {
             chain_id: chain.id(),
         });
@@ -89,7 +92,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
             });
     }
 
-    pub fn spawn_workers_for_client(&mut self, chain: Chain, client_scan: ClientScan) {
+    pub fn spawn_workers_for_client(&mut self, chain: DefaultChainHandle, client_scan: ClientScan) {
         let _span = tracing::error_span!("client", client = %client_scan.id()).entered();
 
         for (_, connection_scan) in client_scan.connections {
@@ -99,7 +102,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
     pub fn spawn_workers_for_connection(
         &mut self,
-        chain: Chain,
+        chain: DefaultChainHandle,
         client: &IdentifiedAnyClientState,
         connection_scan: ConnectionScan,
     ) {
@@ -155,7 +158,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
 
     fn spawn_connection_workers(
         &mut self,
-        chain: Chain,
+        chain: DefaultChainHandle,
         client: IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<bool, Error> {
@@ -216,7 +219,7 @@ impl<'a, Chain: ChainHandle> SpawnContext<'a, Chain> {
     /// handle a given channel for a given source chain.
     pub fn spawn_workers_for_channel(
         &mut self,
-        chain: Chain,
+        chain: DefaultChainHandle,
         client: &IdentifiedAnyClientState,
         channel_scan: ChannelScan,
     ) -> Result<bool, Error> {

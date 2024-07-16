@@ -158,7 +158,7 @@ pub fn spawn_supervisor_tasks(
     options: SupervisorOptions,
 ) -> Result<Vec<TaskHandle>, Error> {
     if options.health_check {
-        health_check(&config, &mut registry.write());
+        health_check(&config, &registry);
     }
 
     // If telemetry is enabled, for each chain register the relayer's address
@@ -178,7 +178,7 @@ pub fn spawn_supervisor_tasks(
     if should_scan(&config, &options) {
         let scan = chain_scanner(
             &config,
-            &mut registry.write(),
+            &registry,
             &mut client_state_filter.acquire_write(),
             if options.force_full_scan {
                 ScanMode::Full
@@ -191,11 +191,10 @@ pub fn spawn_supervisor_tasks(
         info!("scanned chains:");
         info!("{}", scan);
 
-        spawn_context(&config, &mut registry.write(), &mut workers.acquire_write())
-            .spawn_workers(scan);
+        spawn_context(&config, &registry, &mut workers.acquire_write()).spawn_workers(scan);
     }
 
-    let subscriptions = init_subscriptions(&config, &mut registry.write())?;
+    let subscriptions = init_subscriptions(&config, &registry)?;
 
     let batch_tasks = spawn_batch_workers(
         &config,
@@ -243,7 +242,7 @@ fn spawn_batch_workers(
                 if let Ok(batch) = subscription.try_recv() {
                     handle_batch(
                         &config,
-                        &mut registry.write(),
+                        &registry,
                         &mut client_state_filter.acquire_write(),
                         &mut workers.acquire_write(),
                         chain.clone(),
@@ -345,9 +344,9 @@ fn is_channel_allowed(
 
 /// Whether or not the relayer should relay packets
 /// or complete handshakes for the given [`Object`].
-fn relay_on_object<Chain: ChainHandle>(
+fn relay_on_object(
     config: &Config,
-    registry: &mut Registry<Chain>,
+    registry: &SharedRegistry,
     client_state_filter: &mut FilterPolicy,
     chain_id: &ChainId,
     object: &Object,
@@ -623,25 +622,25 @@ pub fn collect_events(
 }
 
 /// Create a new `SpawnContext` for spawning workers.
-fn spawn_context<'a, Chain: ChainHandle>(
+fn spawn_context<'a>(
     config: &'a Config,
-    registry: &'a mut Registry<Chain>,
+    registry: &'a SharedRegistry,
     workers: &'a mut WorkerMap,
-) -> SpawnContext<'a, Chain> {
+) -> SpawnContext<'a> {
     SpawnContext::new(config, registry, workers)
 }
 
-fn chain_scanner<'a, Chain: ChainHandle>(
+fn chain_scanner<'a>(
     config: &'a Config,
-    registry: &'a mut Registry<Chain>,
+    registry: &'a SharedRegistry,
     client_state_filter: &'a mut FilterPolicy,
     full_scan: ScanMode,
-) -> ChainScanner<'a, Chain> {
+) -> ChainScanner<'a> {
     ChainScanner::new(config, registry, client_state_filter, full_scan)
 }
 
 /// Perform a health check on all connected chains
-fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Chain>) {
+fn health_check(config: &Config, registry: &SharedRegistry) {
     use HealthCheck::*;
 
     let chains = &config.chains;
@@ -672,7 +671,7 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 #[instrument(name = "supervisor.init_subscriptions", level = "error", skip_all)]
 fn init_subscriptions(
     config: &Config,
-    registry: &mut Registry<DefaultChainHandle>,
+    registry: &SharedRegistry,
 ) -> Result<Vec<(DefaultChainHandle, Subscription)>, Error> {
     let chains = &config.chains;
 
@@ -704,7 +703,7 @@ fn init_subscriptions(
 
     // At least one chain runtime should be available, otherwise the supervisor
     // cannot do anything and will hang indefinitely.
-    if registry.size() == 0 {
+    if registry.is_empty() {
         return Err(Error::no_chains_available());
     }
 
@@ -800,7 +799,7 @@ fn clear_pending_packets(workers: &WorkerMap, chain_id: &ChainId) -> Result<(), 
 ]
 fn process_batch<Chain: ChainHandle>(
     config: &Config,
-    registry: &mut Registry<Chain>,
+    registry: &SharedRegistry,
     client_state_filter: &mut FilterPolicy,
     workers: &mut WorkerMap,
     src_chain: Chain,
@@ -891,7 +890,7 @@ fn process_batch<Chain: ChainHandle>(
 /// The labels `chain_id` represents the chain sending the event, and `counterparty_chain_id` represents
 /// the chain receiving the event.
 /// So successfully sending a packet from chain A to chain B will result in first a SendPacket
-/// event with `chain_id = A` and `counterparty_chain_id = B` and then a WriteAcknowlegment
+/// event with `chain_id = A` and `counterparty_chain_id = B` and then a WriteAcknowledgment
 /// event with `chain_id = B` and `counterparty_chain_id = A`.
 fn send_telemetry<Src, Dst>(
     src: &Src,
@@ -949,7 +948,7 @@ fn send_telemetry<Src, Dst>(
 )]
 fn handle_batch<Chain: ChainHandle>(
     config: &Config,
-    registry: &mut Registry<Chain>,
+    registry: &SharedRegistry,
     client_state_filter: &mut FilterPolicy,
     workers: &mut WorkerMap,
     chain: Chain,
