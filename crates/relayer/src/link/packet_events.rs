@@ -43,7 +43,7 @@ where
 
                 if events.is_empty() && !chunk.is_empty() {
                     warn!("no packet data was pulled at height {query_height} for sequences {}, this might be due to the data not being available on the configured endpoint. \
-                    Please verify that the RPC endpoint has the required packet data",
+                    Please verify that the RPC endpoint has the required packet data, for more details see https://hermes.informal.systems/advanced/troubleshooting/cross-comp-config.html#uncleared-pending-packets",
                     chunk.iter().copied().collated().format(", "));
                 } else {
                     info!(
