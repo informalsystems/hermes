@@ -28,11 +28,6 @@ pub struct Registry<Chain: ChainHandle> {
     rt: Arc<TokioRuntime>,
 }
 
-#[derive(Clone)]
-pub struct SharedRegistry {
-    pub registry: RwArc<Registry<DefaultChainHandle>>,
-}
-
 impl<Chain: ChainHandle> Registry<Chain> {
     /// Construct a new [`Registry`] using the provided [`Config`]
     pub fn new(config: Config) -> Self {
@@ -108,6 +103,11 @@ pub fn get_global_registry() -> SharedRegistry {
         .clone()
 }
 
+#[derive(Clone)]
+pub struct SharedRegistry {
+    pub registry: RwArc<Registry<DefaultChainHandle>>,
+}
+
 impl SharedRegistry {
     pub fn new(config: Config) -> Self {
         let registry = Registry::new(config);
@@ -118,15 +118,36 @@ impl SharedRegistry {
     }
 
     pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
-        self.registry.write().unwrap().get_or_spawn(chain_id)
-    }
+        let read_reg = self.read();
 
-    pub fn spawn(&self, chain_id: &ChainId) -> Result<bool, SpawnError> {
-        self.write().spawn(chain_id)
+        if read_reg.handles.contains_key(chain_id) {
+            Ok(read_reg
+                .handles
+                .get(chain_id)
+                .cloned()
+                .expect("runtime exists"))
+        } else {
+            let handle: DefaultChainHandle =
+                spawn_chain_runtime(&read_reg.config, chain_id, read_reg.rt.clone())?;
+
+            drop(read_reg);
+
+            let mut write_reg = self.write();
+            write_reg.handles.insert(chain_id.clone(), handle.clone());
+            drop(write_reg);
+
+            trace!(chain = %chain_id, "spawned chain runtime");
+
+            Ok(handle)
+        }
     }
 
     pub fn shutdown(&self, chain_id: &ChainId) {
-        self.write().shutdown(chain_id)
+        if let Some(handle) = self.write().handles.remove(chain_id) {
+            if let Err(e) = handle.shutdown() {
+                warn!(chain = %chain_id, "chain runtime might have failed to shutdown properly: {}", e);
+            }
+        }
     }
 
     pub fn write(&self) -> RwLockWriteGuard<'_, Registry<DefaultChainHandle>> {
