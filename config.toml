@@ -93,6 +93,11 @@ auto_register_counterparty_payee = false
 # [Default: "2KiB"]
 #ics20_max_receiver_size = { enabled = true, size = "2KiB" }
 
+# Set the maximum number of packets cleared every time the packet
+# clearing is triggered.
+# [Default: 50]
+#clear_limit = 50
+
 # The REST section defines parameters for Hermes' built-in RESTful API.
 # https://hermes.informal.systems/rest.html
 [rest]
