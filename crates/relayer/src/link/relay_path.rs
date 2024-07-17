@@ -443,8 +443,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let chunk_size = src_config.query_packets_chunk_size();
 
         for i in 1..=MAX_RETRIES {
-            let cleared_recv =
-                self.schedule_recv_packet_and_timeout_msgs(height, chunk_size, tracking_id);
+            let cleared_recv = self.schedule_recv_packet_and_timeout_msgs(
+                height,
+                chunk_size,
+                clear_limit,
+                tracking_id,
+            );
 
             let cleared_ack =
                 self.schedule_packet_ack_msgs(height, chunk_size, clear_limit, tracking_id);
@@ -1148,6 +1152,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         opt_query_height: Option<Height>,
         chunk_size: usize,
+        clear_limit: usize,
         tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
         let _span = span!(
@@ -1175,7 +1180,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             .filter(|sequence| !self.exclude_src_sequences.contains(sequence))
             .collect();
 
-        let sequences = &raw_sequences[..raw_sequences.len().min(50)];
+        let sequences = &raw_sequences[..raw_sequences.len().min(clear_limit)];
 
         debug!(
             dst_chain = %self.dst_chain().id(),

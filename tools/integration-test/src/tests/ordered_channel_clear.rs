@@ -47,6 +47,7 @@ impl OrderedChannelClearTest {
 impl TestOverrides for OrderedChannelClearTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = self.tx_confirmation;
+        config.mode.packets.clear_limit = 150;
         {
             let chain_a = &mut config.chains[0];
             match chain_a {
