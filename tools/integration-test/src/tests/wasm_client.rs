@@ -2,6 +2,8 @@ use core::time::Duration;
 use std::path::PathBuf;
 use std::thread::sleep;
 
+use ibc_test_framework::bootstrap::binary::channel::bootstrap_channel;
+use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
 use sha2::Digest;
 
 use ibc_relayer::foreign_client::{
@@ -117,9 +119,22 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
         assert_client_refreshed(true, res);
         info!("Client B to A was refreshed successfully");
 
-        let _foreign_clients = ForeignClientPair::new(client_b_to_a, client_a_to_b);
+        let foreign_clients = ForeignClientPair::new(client_a_to_b.clone(), client_b_to_a.clone());
 
-        //bootstrap_connection(&foreign_clients, Default::default())?;
+        bootstrap_connection(&foreign_clients, Default::default())?;
+        let port_a = DualTagged::new(PortId::transfer());
+        let port_b = DualTagged::new(PortId::transfer());
+
+        let _ = client_a_to_b.force_refresh();
+        let _ = client_b_to_a.force_refresh();
+
+        bootstrap_channel(
+            &foreign_clients,
+            &port_a.as_ref(),
+            &port_b.as_ref(),
+            Default::default(),
+            Default::default(),
+        )?;
 
         Ok(())
     }
