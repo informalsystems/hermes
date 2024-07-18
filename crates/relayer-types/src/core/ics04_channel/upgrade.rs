@@ -27,7 +27,7 @@ impl TryFrom<RawUpgrade> for Upgrade {
             .try_into()?;
         let timeout = value
             .timeout
-            .filter(|tm| Timeout::try_from(tm.clone()).is_ok())
+            .filter(|tm| Timeout::try_from(*tm).is_ok())
             .map(|tm| Timeout::try_from(tm).unwrap());
         let next_sequence_send = value.next_sequence_send.into();
 
