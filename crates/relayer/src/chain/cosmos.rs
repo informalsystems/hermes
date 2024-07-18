@@ -1,6 +1,8 @@
 use alloc::sync::Arc;
 use core::{future::Future, str::FromStr, time::Duration};
+use futures::{pin_mut, StreamExt};
 use std::{cmp::Ordering, thread};
+use tendermint::Genesis;
 
 use bytes::{Buf, Bytes};
 use futures::future::join_all;
@@ -296,30 +298,40 @@ impl CosmosSdkChain {
             ));
         }
 
-        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value to use as `max_block_time`.
-        // If it is not found, keep the configured `max_block_time`.
-        match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
-            Ok(genesis_reponse) => {
-                let old_max_block_time = self.config.max_block_time;
-                let new_max_block_time =
-                    Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
+        // Query /genesis_chunked RPC endpoint to retrieve the genesis information as chunks of
+        // 16Mb and reconstruct it.
+        let genesis_bytes = self.block_on(async {
+            let responses = self.rpc_client.genesis_chunked_stream().await;
 
-                if old_max_block_time.as_secs() != new_max_block_time.as_secs() {
-                    self.config.max_block_time = new_max_block_time;
-
-                    info!(
-                        "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
-                        old_max_block_time.as_secs(),
-                        self.config.max_block_time.as_secs()
-                    );
+            let mut all_data = Vec::new();
+            pin_mut!(responses);
+            while let Some(response) = responses.next().await {
+                match response {
+                    Ok(data) => all_data.extend(data),
+                    Err(e) => {
+                        return Err(Error::rpc(self.config.rpc_addr.clone(), e));
+                    }
                 }
             }
-            Err(e) => {
-                warn!(
-                    "Will use fallback value for max_block_time: `{}s`. Error: {e}",
-                    self.config.max_block_time.as_secs()
-                );
-            }
+            Ok(all_data)
+        })?;
+        let genesis_reponse: Genesis<GenesisAppState> =
+            serde_json::from_slice(&genesis_bytes).map_err(Error::json_deserialize)?;
+
+        // Use the queried genesis information to retrieve the `max_expected_time_per_block`
+        // value to use as `max_block_time`.
+        let old_max_block_time = self.config.max_block_time;
+        let new_max_block_time =
+            Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
+
+        if old_max_block_time.as_secs() != new_max_block_time.as_secs() {
+            self.config.max_block_time = new_max_block_time;
+
+            info!(
+                "Updated `max_block_time` using /genesis_chunked endpoint. Old value: `{}s`, new value: `{}s`",
+                old_max_block_time.as_secs(),
+                self.config.max_block_time.as_secs()
+            );
         }
 
         Ok(())
