@@ -28,7 +28,7 @@ cd $(dirname $0)
 HERMES_DIR=${PWD%/e2e*}
 
 # edit for your environment
-NAMADA_CHAIN_ID="namada-test.eb0199f3257a844df8"
+NAMADA_CHAIN_ID="namada-test.8adce119ebc4d7efe9"
 NAMADAC="${NAMADA_DIR}/target/debug/namadac"
 NAMADAN="${NAMADA_DIR}/target/debug/namadan"
 NAMADAW="${NAMADA_DIR}/target/debug/namadaw"
@@ -154,10 +154,23 @@ ${NAMADAW} --base-dir ${NAMADA_BASE} gen-payment-addr --alias ${PAYMENT_ALIAS_2}
 payment_addr_2=$(${NAMADAW} --base-dir ${NAMADA_BASE} find --alias ${PAYMENT_ALIAS_2} \
   | awk -v paymentAlias="${PAYMENT_ALIAS_2}" '{if($1 ~ paymentAlias) {print $2}}')
 
+echo "~~ Generate the proof from Namada for the following transfer ~~"
+token="${SG721_CONTRACT}/${TOKEN_ID}"
+resp=$(${NAMADAC} --base-dir ${NAMADA_BASE} ibc-gen-shielding \
+  --output-folder-path ${NAMADA_BASE} \
+  --target ${payment_addr} \
+  --token "${token}" \
+  --amount 1 \
+  --port-id nft-transfer \
+  --channel-id ${namada_channel} \
+  --node ${NAMADA_LEDGER_ADDR})
+memo_path=$(echo ${resp} | awk '{print $8}')
+memo=$(cat ${memo_path})
+
 echo "==== Shielding transfer from Stargaze to Namada ===="
 current_height=$(starsd status --node ${STARGAZE_NODE} | jq .SyncInfo.latest_block_height | sed 's/"//g')
 timeout_height=$((${current_height} + 100))
-msg="{\"receiver\": \"${payment_addr}\", \"channel_id\": \"${stargaze_channel}\", \"timeout\": {\"block\": { \"revision\": 0, \"height\": ${timeout_height}}}}"
+msg="{\"receiver\": \"${payment_addr}\", \"channel_id\": \"${stargaze_channel}\", \"timeout\": {\"block\": { \"revision\": 0, \"height\": ${timeout_height}}}, \"memo\": \"${memo}\"}"
 encoded_msg=$(echo ${msg} | base64)
 starsd tx wasm execute ${SG721_CONTRACT} \
   "{\"send_nft\": {\"contract\":\"${ICS721_CONTRACT}\", \"token_id\": \"${TOKEN_ID}\", \"msg\": \"${encoded_msg}\"}}" \
