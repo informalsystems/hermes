@@ -1516,7 +1516,7 @@ dependencies = [
  "ibc-proto",
  "ibc-relayer",
  "ibc-relayer-types",
- "itertools",
+ "itertools 0.13.0",
  "reqwest",
  "serde",
  "serde_json",
@@ -1547,8 +1547,9 @@ dependencies = [
 
 [[package]]
 name = "ibc-proto"
-version = "0.46.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs.git?branch=romac/prost-0.13-tonic-0.12#371e3c849d2631a9f8cf761921d55f8c2126872d"
+version = "0.47.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1678333cf68c9094ca66aaf9a271269f1f6bf5c26881161def8bd88cee831a23"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -1591,7 +1592,7 @@ dependencies = [
  "ibc-proto",
  "ibc-relayer-types",
  "ibc-telemetry",
- "itertools",
+ "itertools 0.13.0",
  "moka",
  "num-bigint",
  "num-rational",
@@ -1654,7 +1655,7 @@ dependencies = [
  "ibc-relayer-rest",
  "ibc-relayer-types",
  "ibc-telemetry",
- "itertools",
+ "itertools 0.13.0",
  "once_cell",
  "oneline-eyre",
  "regex",
@@ -1697,7 +1698,7 @@ dependencies = [
  "flex-error",
  "ibc-proto",
  "ics23",
- "itertools",
+ "itertools 0.13.0",
  "num-rational",
  "primitive-types",
  "prost 0.13.1",
@@ -1752,7 +1753,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-cli",
  "ibc-relayer-types",
- "itertools",
+ "itertools 0.13.0",
  "once_cell",
  "prost 0.13.1",
  "rand",
@@ -1867,6 +1868,15 @@ name = "itertools"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba291022dbbd398a455acf126c1e341954079855bc60dfdda641363bd6922569"
+dependencies = [
+ "either",
+]
+
+[[package]]
+name = "itertools"
+version = "0.13.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "413ee7dfc52ee1a4949ceeb7dbc8a33f2d6c088194d9f922fb8318faf1f01186"
 dependencies = [
  "either",
 ]
@@ -2407,7 +2417,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
 dependencies = [
  "anyhow",
- "itertools",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.67",
@@ -2420,7 +2430,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "18bec9b0adc4eba778b33684b7ba3e7137789434769ee3ce3930463ef904cfca"
 dependencies = [
  "anyhow",
- "itertools",
+ "itertools 0.12.1",
  "proc-macro2",
  "quote",
  "syn 2.0.67",
