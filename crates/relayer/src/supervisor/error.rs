@@ -75,6 +75,72 @@ define_error! {
 
         HandleRecv
             |_| { "failed to receive the result of a command from the supervisor through a channel" },
+
+        ChannelConnectionClientMissingConnection
+            {
+                channel_id: ChannelId,
+            }
+            |e| {
+                format_args!("ChannelConnectionClient constructor failed due to a missing \
+                value for the connection field of channel '{}'",
+                e.channel_id)
+            },
+
+        ChannelConnectionClientMissingClient
+            {
+                channel_id: ChannelId,
+            }
+            |e| {
+                format_args!("ChannelConnectionClient constructor failed due to a missing \
+                value for the client field of channel '{}'",
+                e.channel_id)
+            },
+
+        ChannelConnectionClientMultihopMissingClient
+            {
+                channel_id: ChannelId,
+            }
+            |e| {
+                format_args!("failed due to missing clients for channel '{}'", e.channel_id)
+            },
+
+        ChannelConnectionClientMultihopMissingConnection
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("failed due to missing connections for channel '{}'", e.channel_id)
+        },
+
+        ChannelConnectionClientMultihopConstructorMissingClients
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("ChannelConnectionClientMultihop constructor failed due to missing
+            values for the client field of channel '{}'",
+            e.channel_id)
+        },
+
+        ChannelConnectionClientMultihopConstructorMissingConnections
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("ChannelConnectionClientMultihop constructor failed due to a missing \
+            value for the client field of channel '{}'",
+            e.channel_id)
+        },
+
+        ChannelConnectionClientMultihopConstructorLengthMismatch
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("ChannelConnectionClientMultihop constructor failed due to a mismatch \
+            in the number of connections and clients in the channel path for channel '{}'",
+            e.channel_id)
+        },
     }
 }
 

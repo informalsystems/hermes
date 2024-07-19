@@ -173,3 +173,9 @@ impl From<IdentifiedAnyClientState> for IdentifiedClientState {
         }
     }
 }
+
+impl From<IdentifiedAnyClientState> for Vec<IdentifiedAnyClientState> {
+    fn from(value: IdentifiedAnyClientState) -> Self {
+        vec![value]
+    }
+}
