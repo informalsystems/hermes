@@ -104,7 +104,7 @@ strum                    = "0.25"
 subtle-encoding          = "0.5.1"
 tempfile                 = "3.10.1"
 test-log                 = "0.2.14"
-thiserror                = "1.0.62"
+thiserror                = "1.0.63"
 time                     = "0.3"
 tiny-bip39               = "1.0.0"
 tiny-keccak              = { version = "2.0.2", default-features = false }
