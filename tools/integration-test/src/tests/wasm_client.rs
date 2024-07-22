@@ -42,7 +42,7 @@ fn ibc_client_wasm_code() -> Vec<u8> {
 
 const TM_CREATE_OPTIONS: TendermintCreateOptions = TendermintCreateOptions {
     max_clock_drift: Some(Duration::from_secs(3)),
-    trusting_period: Some(Duration::from_secs(30)),
+    trusting_period: Some(Duration::from_secs(120)),
     trust_threshold: Some(TrustThreshold::TWO_THIRDS),
 };
 
