@@ -30,3 +30,6 @@ mc.log
 
 # Ignore tooling Cargo.lock
 tools/check-guide/Cargo.lock
+
+# Ignore CosmWasm artifacts
+ibc_08-wasm_client_data

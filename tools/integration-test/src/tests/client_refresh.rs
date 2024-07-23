@@ -1,6 +1,6 @@
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::config::ChainConfig;
-use ibc_relayer::foreign_client::CreateOptions;
+use ibc_relayer::foreign_client::{CreateOptions, TendermintCreateOptions};
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use ibc_test_framework::prelude::*;
@@ -26,19 +26,21 @@ struct ClientDefaultsTest;
 // Override the clients `trusting_period` such that the refresh_window is 40 seconds.
 impl TestOverrides for ClientDefaultsTest {
     fn client_options_a_to_b(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(60)),
             trust_threshold: Some(TrustThreshold::new(13, 23).unwrap()),
         }
+        .into()
     }
 
     fn client_options_b_to_a(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(60)),
             trust_threshold: Some(TrustThreshold::TWO_THIRDS),
         }
+        .into()
     }
 }
 
@@ -98,19 +100,21 @@ impl BinaryChainTest for ClientDefaultsTest {
 // Override the clients `trusting_period` such that the refresh_window is 40 seconds.
 impl TestOverrides for ClientFailsTest {
     fn client_options_a_to_b(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(60)),
             trust_threshold: Some(TrustThreshold::new(13, 23).unwrap()),
         }
+        .into()
     }
 
     fn client_options_b_to_a(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(60)),
             trust_threshold: Some(TrustThreshold::TWO_THIRDS),
         }
+        .into()
     }
 }
 
