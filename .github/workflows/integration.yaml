@@ -45,26 +45,26 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia15
+          - package: gaia17
             command: gaiad
             account_prefix: cosmos
             native_token: stake
-            features: forward-packet,clean-workers
+            features: forward-packet,clean-workers,ica,ics29-fee
           - package: ibc-go-v6-simapp
             command: simd
             account_prefix: cosmos
             native_token: stake
-            features: ica,ics29-fee
+            features: ica,ics29-fee,authz
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
             native_token: stake
-            features: ica,ics29-fee
+            features: ica,ics29-fee,authz
           - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
             native_token: stake
-            features: ica,ics29-fee
+            features: ica,ics29-fee,new-register-interchain-account,channel-upgrade,authz
           - package: wasmd
             command: wasmd
             account_prefix: wasm
@@ -74,7 +74,7 @@ jobs:
             command: osmosisd
             account_prefix: osmo
             native_token: stake
-            features: dynamic-gas-fee
+            features: dynamic-gas-fee,forward-packet,ica
           - package: juno
             command: junod
             account_prefix: juno
@@ -84,12 +84,12 @@ jobs:
             command: provenanced
             account_prefix: pb
             native_token: nhash
-            features: fee-grant,async-icq
+            features: fee-grant,async-icq,authz
           - package: migaloo
             command: migalood
             account_prefix: migaloo
             native_token: stake
-            features: ''
+            features: ics29-fee
           - package: injective
             command: injectived
             account_prefix: inj
@@ -171,10 +171,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia15 .#stride
+          - package: .#gaia17 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia15 .#neutron
+          - package: .#gaia17 .#neutron
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
@@ -216,7 +216,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia15 .#stride-no-admin
+          - package: .#gaia17 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -257,7 +257,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia15
+          - package: .#celestia .#gaia17
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake

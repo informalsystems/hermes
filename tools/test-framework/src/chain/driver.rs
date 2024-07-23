@@ -2,11 +2,11 @@
    Implementation of [`ChainDriver`].
 */
 
-use core::time::Duration;
-
 use alloc::sync::Arc;
+use core::time::Duration;
 use eyre::eyre;
 use ibc_relayer::config::compat_mode::CompatMode;
+use std::cmp::max;
 use tokio::runtime::Runtime;
 
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
@@ -218,6 +218,65 @@ impl ChainDriver {
                 let amount: Amount = self.query_balance(wallet, &token.denom)?;
 
                 if amount == token.amount {
+                    Ok(())
+                } else {
+                    Err(Error::generic(eyre!(
+                        "current balance of account {} with amount {} does not match the target amount {}",
+                        wallet,
+                        amount,
+                        token
+                    )))
+                }
+            },
+        )?;
+
+        Ok(())
+    }
+
+    /**
+       Assert that a wallet should eventually have escrowed the amount for ICS29
+       fees of a given denomination.
+       Legacy ICS29 will escrow recv_fee + ack_fee + timeout_fee while more recent
+       versions will escrow max(recv_fee + ack_fee, timeout_fee).
+    */
+    pub fn assert_eventual_escrowed_amount_ics29(
+        &self,
+        wallet: &WalletAddress,
+        token: &Token,
+        recv_fee: u128,
+        ack_fee: u128,
+        timeout_fee: u128,
+    ) -> Result<(), Error> {
+        assert_eventually_succeed(
+            &format!("wallet reach {wallet} amount {token}"),
+            WAIT_WALLET_AMOUNT_ATTEMPTS,
+            Duration::from_secs(1),
+            || {
+                let amount: Amount = self.query_balance(wallet, &token.denom)?;
+
+                let legacy_escrow = token
+                    .amount
+                    .checked_sub(recv_fee + ack_fee + timeout_fee)
+                    .ok_or_else(|| {
+                        Error::generic(eyre!(
+                            "error computing the following subtraction: {}-{}",
+                            token.amount,
+                            recv_fee + ack_fee + timeout_fee
+                        ))
+                    })?;
+                let escrow = token
+                    .amount
+                    .checked_sub(max(recv_fee + ack_fee, timeout_fee))
+                    .ok_or_else(|| {
+                        Error::generic(eyre!(
+                            "error computing the following subtraction: {}-{}",
+                            token.amount,
+                            max(recv_fee + ack_fee, timeout_fee)
+                        ))
+                    })?;
+
+                // Assert either the legacy or current ICS29 amount has been escrowed
+                if amount == legacy_escrow || amount == escrow {
                     Ok(())
                 } else {
                     Err(Error::generic(eyre!(

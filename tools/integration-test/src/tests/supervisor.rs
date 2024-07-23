@@ -51,10 +51,14 @@ impl TestOverrides for SupervisorTest {
 impl BinaryChainTest for SupervisorTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
-        _config: &TestConfig,
+        config: &TestConfig,
         _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(0)));
+        let fee_denom_b: MonoTagged<ChainB, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(1)));
         let (connection_id_b, _) = init_connection(
             &chains.handle_a,
             &chains.handle_b,
@@ -112,12 +116,14 @@ impl BinaryChainTest for SupervisorTest {
             &chains.node_a.wallets().relayer(),
             &chains.node_a.wallets().user2().address(),
             &denom_a.with_amount(1000u64).as_ref(),
+            &fee_denom_a.with_amount(1200u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().local_transfer_token(
             &chains.node_b.wallets().relayer(),
             &chains.node_b.wallets().user2().address(),
             &chains.node_b.denom().with_amount(1000u64).as_ref(),
+            &fee_denom_b.with_amount(1200u64).as_ref(),
         )?;
 
         info!(
@@ -193,7 +199,7 @@ impl BinaryChannelTest for SupervisorScanTest {
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(&config.native_tokens[0]));
+        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
 
         let denom_b = derive_ibc_denom(
             &channels.port_b.as_ref(),

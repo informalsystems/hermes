@@ -11,9 +11,11 @@
 //! ```no_run
 //! # use serde_json as json;
 //! # use ibc_relayer::config::{types::Memo, Config};
+//! # use ibc_relayer::config::ChainConfig;
 //! # use ibc_test_framework::ibc::denom::derive_ibc_denom;
 //! # use ibc_test_framework::prelude::*;
 //! # use ibc_test_framework::util::random::{random_string, random_u128_range};
+//!
 //!
 //! #[test]
 //! fn test_memo() -> Result<(), Error> {
@@ -29,7 +31,11 @@
 //! impl TestOverrides for MemoTest {
 //!     fn modify_relayer_config(&self, config: &mut Config) {
 //!         for mut chain in config.chains.iter_mut() {
-//!             chain.memo_prefix = self.memo.clone();
+//!             match chain {
+//!                 ChainConfig::CosmosSdk(chain_config) => {
+//!                     chain_config.memo_prefix = self.memo.clone();
+//!                 },
+//!             }
 //!         }
 //!     }
 //! }

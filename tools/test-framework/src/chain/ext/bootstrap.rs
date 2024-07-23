@@ -309,7 +309,12 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             "transfer_timeout_period": 100000000000,
             "ccv_timeout_period": 100000000000,
             "unbonding_period": 100000000000,
-            "deposit": "10000001stake"
+            "deposit": "10000001stake",
+            "top_N": 95,
+            "validators_power_cap": 0,
+            "validator_set_cap": 0,
+            "allowlist": [],
+            "denylist": []
         }"#;
 
         let proposal = raw_proposal.replace("{consumer_chain_id}", consumer_chain_id);
@@ -337,7 +342,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         assert_eventually_succeed(
             &format!("proposal `{}` status: {}", proposal_id, status.as_str()),
             10,
-            Duration::from_secs(2),
+            Duration::from_secs(3),
             || match query_gov_proposal(
                 chain_id,
                 command_path,

@@ -1,10 +1,12 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
 use ibc_relayer_types::core::ics02_client::header::AnyHeader;
+use ibc_relayer_types::core::ics04_channel::upgrade::ErrorReceipt;
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketResponse;
+use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::ConnectionEnd;
@@ -13,6 +15,7 @@ use ibc_relayer_types::core::ics03_connection::version::Version;
 use ibc_relayer_types::core::ics04_channel::channel::ChannelEnd;
 use ibc_relayer_types::core::ics04_channel::channel::IdentifiedChannelEnd;
 use ibc_relayer_types::core::ics04_channel::packet::{PacketMsgType, Sequence};
+use ibc_relayer_types::core::ics04_channel::upgrade::Upgrade;
 use ibc_relayer_types::core::ics23_commitment::commitment::CommitmentPrefix;
 use ibc_relayer_types::core::ics23_commitment::merkle::MerkleProof;
 use ibc_relayer_types::core::ics24_host::identifier::{
@@ -514,5 +517,24 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
 
     fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
         self.inner.query_consumer_chains()
+    }
+
+    fn query_upgrade(
+        &self,
+        request: QueryUpgradeRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(Upgrade, Option<MerkleProof>), Error> {
+        self.inner.query_upgrade(request, height, include_proof)
+    }
+
+    fn query_upgrade_error(
+        &self,
+        request: QueryUpgradeErrorRequest,
+        height: Height,
+        include_proof: IncludeProof,
+    ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
+        self.inner
+            .query_upgrade_error(request, height, include_proof)
     }
 }

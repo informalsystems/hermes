@@ -12,6 +12,7 @@ use ibc_relayer::config::compat_mode::CompatMode;
 use ibc_relayer::config::dynamic_gas::DynamicGasPrice;
 use ibc_relayer::config::gas_multiplier::GasMultiplier;
 use ibc_relayer::keyring::Store;
+use ibc_relayer::util::excluded_sequences::ExcludedSequences;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use std::collections::BTreeMap;
 use std::sync::{Arc, RwLock};
@@ -149,7 +150,6 @@ impl FullNode {
         test_config: &TestConfig,
         chain_number: usize,
     ) -> Result<config::ChainConfig, Error> {
-        let native_token_number = chain_number % test_config.native_tokens.len();
         let hermes_keystore_dir = test_config
             .chain_store_dir
             .join("hermes_keyring")
@@ -164,14 +164,10 @@ impl FullNode {
 
         // Provenance requires a very high gas price
         let gas_price = match chain_type {
-            TestedChainType::Provenance => config::GasPrice::new(
-                5000.0,
-                test_config.native_tokens[native_token_number].clone(),
-            ),
-            _ => config::GasPrice::new(
-                0.003,
-                test_config.native_tokens[native_token_number].clone(),
-            ),
+            TestedChainType::Provenance => {
+                config::GasPrice::new(5000.0, test_config.native_token(chain_number).clone())
+            }
+            _ => config::GasPrice::new(0.003, test_config.native_token(chain_number).clone()),
         };
 
         Ok(config::ChainConfig::CosmosSdk(CosmosSdkConfig {
@@ -216,7 +212,8 @@ impl FullNode {
             sequential_batch_tx: false,
             compat_mode,
             clear_interval: None,
-            excluded_sequences: BTreeMap::new(),
+            excluded_sequences: ExcludedSequences::new(BTreeMap::new()),
+            allow_ccq: true,
         }))
     }
 

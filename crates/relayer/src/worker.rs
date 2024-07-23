@@ -209,16 +209,24 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
         }
 
         Object::CrossChainQuery(cross_chain_query) => {
-            let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
-            let cross_chain_query_task = cross_chain_query::spawn_cross_chain_query_worker(
-                chains.a.clone(),
-                chains.b,
-                cmd_rx,
-                cross_chain_query.clone(),
-            );
-            task_handles.push(cross_chain_query_task);
+            if config
+                .chains
+                .iter()
+                .any(|chain| chain.id() == &cross_chain_query.dst_chain_id && chain.allow_ccq())
+            {
+                let (cmd_tx, cmd_rx) = crossbeam_channel::unbounded();
+                let cross_chain_query_task = cross_chain_query::spawn_cross_chain_query_worker(
+                    chains.a.clone(),
+                    chains.b,
+                    cmd_rx,
+                    cross_chain_query.clone(),
+                );
+                task_handles.push(cross_chain_query_task);
 
-            (Some(cmd_tx), None)
+                (Some(cmd_tx), None)
+            } else {
+                (None, None)
+            }
         }
     };
 
