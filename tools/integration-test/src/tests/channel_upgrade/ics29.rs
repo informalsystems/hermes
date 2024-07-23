@@ -133,7 +133,7 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
             new_version.clone(),

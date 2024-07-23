@@ -140,7 +140,7 @@ impl BinaryChannelTest for ChannelUpgradeTimeoutAckHandshake {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
             old_version.clone(),
@@ -256,7 +256,7 @@ impl BinaryChannelTest for ChannelUpgradeTimeoutConfirmHandshake {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
             old_version.clone(),
@@ -388,7 +388,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
             old_version.clone(),
@@ -554,7 +554,7 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
             old_version.clone(),
@@ -734,7 +734,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnAck {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
             old_version.clone(),
@@ -877,7 +877,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
             old_version.clone(),

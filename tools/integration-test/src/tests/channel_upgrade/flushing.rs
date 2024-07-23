@@ -137,7 +137,7 @@ impl BinaryChannelTest for ChannelUpgradeFlushing {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
             new_version.clone(),
@@ -258,7 +258,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
         let old_connection_hops_b = channel_end_b.connection_hops;
 
         let channel = channels.channel;
-        let new_version = Version::ics20_with_fee();
+        let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
             old_version.clone(),
