@@ -30,13 +30,13 @@ ibc-test-framework   = { version = "0.29.0", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.29.0", path = "tools/integration-test" }
 
 # Tendermint dependencies
-tendermint                       = { version = "0.38.0", default-features = false }
-tendermint-light-client          = { version = "0.38.0", default-features = false }
-tendermint-light-client-detector = { version = "0.38.0", default-features = false }
-tendermint-light-client-verifier = { version = "0.38.0", default-features = false }
-tendermint-proto                 = { version = "0.38.0" }
-tendermint-rpc                   = { version = "0.38.0" }
-tendermint-testgen               = { version = "0.38.0" }
+tendermint                       = { version = "0.38.1", default-features = false }
+tendermint-light-client          = { version = "0.38.1", default-features = false }
+tendermint-light-client-detector = { version = "0.38.1", default-features = false }
+tendermint-light-client-verifier = { version = "0.38.1", default-features = false }
+tendermint-proto                 = { version = "0.38.1" }
+tendermint-rpc                   = { version = "0.38.1" }
+tendermint-testgen               = { version = "0.38.1" }
 
 # Other dependencies
 abscissa_core            = "=0.6.0"
