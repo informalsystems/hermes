@@ -1534,7 +1534,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-types",
  "ibc-test-framework",
- "prost 0.13.1",
+ "prost",
  "serde",
  "serde_json",
  "tempfile",
@@ -1556,7 +1556,7 @@ dependencies = [
  "flex-error",
  "ics23",
  "informalsystems-pbjson",
- "prost 0.13.1",
+ "prost",
  "serde",
  "subtle-encoding",
  "tendermint-proto",
@@ -1597,7 +1597,7 @@ dependencies = [
  "num-bigint",
  "num-rational",
  "once_cell",
- "prost 0.13.1",
+ "prost",
  "regex",
  "reqwest",
  "retry",
@@ -1701,7 +1701,7 @@ dependencies = [
  "itertools 0.13.0",
  "num-rational",
  "primitive-types",
- "prost 0.13.1",
+ "prost",
  "regex",
  "serde",
  "serde_derive",
@@ -1755,7 +1755,7 @@ dependencies = [
  "ibc-relayer-types",
  "itertools 0.13.0",
  "once_cell",
- "prost 0.13.1",
+ "prost",
  "rand",
  "semver",
  "serde",
@@ -1783,7 +1783,7 @@ dependencies = [
  "bytes",
  "hex",
  "informalsystems-pbjson",
- "prost 0.13.1",
+ "prost",
  "ripemd",
  "serde",
  "sha2 0.10.8",
@@ -2392,35 +2392,12 @@ dependencies = [
 
 [[package]]
 name = "prost"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "deb1435c188b76130da55f17a466d252ff7b1418b2ad3e037d127b94e3411f29"
-dependencies = [
- "bytes",
- "prost-derive 0.12.6",
-]
-
-[[package]]
-name = "prost"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e13db3d3fde688c61e2446b4d843bc27a7e8af269a69440c0308021dc92333cc"
 dependencies = [
  "bytes",
- "prost-derive 0.13.1",
-]
-
-[[package]]
-name = "prost-derive"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81bddcdb20abf9501610992b6759a4c888aef7d1a7247ef75e2404275ac24af1"
-dependencies = [
- "anyhow",
- "itertools 0.12.1",
- "proc-macro2",
- "quote",
- "syn 2.0.67",
+ "prost-derive",
 ]
 
 [[package]]
@@ -2438,20 +2415,11 @@ dependencies = [
 
 [[package]]
 name = "prost-types"
-version = "0.12.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9091c90b0a32608e984ff2fa4091273cbdd755d54935c51d520887f4a1dbd5b0"
-dependencies = [
- "prost 0.12.6",
-]
-
-[[package]]
-name = "prost-types"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cee5168b05f49d4b0ca581206eb14a7b22fafd963efe729ac48eb03266e25cc2"
 dependencies = [
- "prost 0.13.1",
+ "prost",
 ]
 
 [[package]]
@@ -3361,8 +3329,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e662ae0a3a5fa3c8f4347e5635b63066bdd9db591e9e17169d99e8ae77eb80cf"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3373,8 +3340,8 @@ dependencies = [
  "k256",
  "num-traits",
  "once_cell",
- "prost 0.12.6",
- "prost-types 0.12.6",
+ "prost",
+ "prost-types",
  "ripemd",
  "serde",
  "serde_bytes",
@@ -3392,8 +3359,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6830b90f6eca3eca86a3dc40da863b3855b417d1a92d54befe6f2ff4e4572b41"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "flex-error",
  "serde",
@@ -3406,8 +3372,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d8202a717d75411d5858d94d5a20e480c5ccd0405f91baa588457e435e6cfb4"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "contracts",
  "crossbeam-channel",
@@ -3431,8 +3396,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-detector"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9ef161d1f1173efefb87a10478c4492c919bd8a15813d0cc8ab880206293be20"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "crossbeam-channel",
  "derive_more",
@@ -3454,8 +3418,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ec2ba2177c643ef3a570b64358b6d390fdf143e82a063535bad44c915e0d275b"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3467,13 +3430,12 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0d4fb3c04c9ceff97b4f4a96351bf6ec20a3656eff9df2ad908f63da6c67e7da"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "bytes",
  "flex-error",
- "prost 0.13.1",
- "prost-types 0.13.1",
+ "prost",
+ "prost-types",
  "serde",
  "serde_bytes",
  "subtle-encoding",
@@ -3483,8 +3445,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b9900ff9d51d7d6cd0855bf92944e4e8980eb6da028efd4d46259b928acd7f8"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3517,8 +3478,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.38.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cf559213262d9882b87e4e0d4845e1607a0a35dfe4c1dd1fecc347b2fe879161"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=luca_joss/decode-app-hash-with-base64#70c4c1a70793d760bd01adadeabfed362ff1f49a"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
@@ -3819,7 +3779,7 @@ dependencies = [
  "hyper-util",
  "percent-encoding",
  "pin-project",
- "prost 0.13.1",
+ "prost",
  "rustls-native-certs 0.7.0",
  "rustls-pemfile 2.1.2",
  "socket2",
