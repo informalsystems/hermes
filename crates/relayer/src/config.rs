@@ -3,8 +3,6 @@
 pub mod compat_mode;
 pub mod dynamic_gas;
 pub mod error;
-/// TODO: Fix mutable_key_type warning
-#[allow(clippy::mutable_key_type)]
 pub mod filter;
 pub mod gas_multiplier;
 pub mod proof_specs;
