@@ -18,6 +18,8 @@ fn test_filter_by_channel_incentivized_fees_relayer() -> Result<(), Error> {
 
 struct FilterIncentivizedFeesRelayerTest;
 
+/// TODO: Fix mutable_key_type warning
+#[allow(clippy::mutable_key_type)]
 impl TestOverrides for FilterIncentivizedFeesRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.auto_register_counterparty_payee = true;
@@ -166,6 +168,8 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
 
 struct FilterByChannelIncentivizedFeesRelayerTest;
 
+/// TODO: Fix mutable_key_type warning
+#[allow(clippy::mutable_key_type)]
 impl TestOverrides for FilterByChannelIncentivizedFeesRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.auto_register_counterparty_payee = true;

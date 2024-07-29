@@ -31,6 +31,8 @@ impl Default for PacketFilter {
     }
 }
 
+/// TODO: Fix mutable_key_type warning
+#[allow(clippy::mutable_key_type)]
 impl PacketFilter {
     pub fn new(
         channel_policy: ChannelPolicy,
