@@ -705,13 +705,19 @@ impl CosmosSdkChain {
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
+        let memo_prefix = if let Some(memo_overwrite) = &self.config.memo_overwrite {
+            memo_overwrite.clone()
+        } else {
+            self.config.memo_prefix.clone()
+        };
+
         if self.config.sequential_batch_tx {
             sequential_send_batched_messages_and_wait_commit(
                 &self.rpc_client,
                 &self.tx_config,
                 &key_pair,
                 account,
-                &self.config.memo_prefix,
+                &memo_prefix,
                 proto_msgs,
             )
             .await
@@ -721,7 +727,7 @@ impl CosmosSdkChain {
                 &self.tx_config,
                 &key_pair,
                 account,
-                &self.config.memo_prefix,
+                &memo_prefix,
                 proto_msgs,
             )
             .await
@@ -756,12 +762,18 @@ impl CosmosSdkChain {
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
+        let memo_prefix = if let Some(memo_overwrite) = &self.config.memo_overwrite {
+            memo_overwrite.clone()
+        } else {
+            self.config.memo_prefix.clone()
+        };
+
         send_batched_messages_and_wait_check_tx(
             &self.rpc_client,
             &self.tx_config,
             &key_pair,
             account,
-            &self.config.memo_prefix,
+            &memo_prefix,
             proto_msgs,
         )
         .await
@@ -2305,12 +2317,18 @@ impl ChainEndpoint for CosmosSdkChain {
         let address = self.get_signer()?;
         let key_pair = self.key()?;
 
+        let memo_prefix = if let Some(memo_overwrite) = &self.config.memo_overwrite {
+            memo_overwrite.clone()
+        } else {
+            self.config.memo_prefix.clone()
+        };
+
         self.rt.block_on(maybe_register_counterparty_payee(
             &self.rpc_client,
             &self.tx_config,
             &key_pair,
             &mut self.account,
-            &self.config.memo_prefix,
+            &memo_prefix,
             channel_id,
             port_id,
             &address,
