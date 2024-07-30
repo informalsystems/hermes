@@ -341,7 +341,7 @@ impl Runnable for TxUpgradeClientCmd {
             reference_application_latest_height
         );
 
-        while reference_application_latest_height != target_reference_application_height {
+        while reference_application_latest_height < target_reference_application_height {
             thread::sleep(Duration::from_millis(500));
 
             reference_application_latest_height = match client.src_chain().query_latest_height() {

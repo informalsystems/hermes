@@ -640,7 +640,7 @@ impl ChainEndpoint for NamadaChain {
 
     fn query_upgraded_client_state(
         &self,
-        _request: QueryUpgradedClientStateRequest,
+        request: QueryUpgradedClientStateRequest,
     ) -> Result<(AnyClientState, MerkleProof), Error> {
         crate::time!(
             "query_upgraded_client_state",
@@ -650,12 +650,29 @@ impl ChainEndpoint for NamadaChain {
         );
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
 
-        unimplemented!()
+        let height = request
+            .upgrade_height
+            .to_string()
+            .parse()
+            .expect("height conversion is infallible");
+        let query_height = request
+            .upgrade_height
+            .decrement()
+            .map_err(|_| Error::invalid_height_no_source())?;
+        let key = namada_ibc::storage::upgraded_client_state_key(height);
+        let (value, proof) =
+            self.query(key, QueryHeight::Specific(query_height), IncludeProof::Yes)?;
+        if let Some(proof) = proof {
+            let client_state = AnyClientState::decode_vec(&value).map_err(Error::decode)?;
+            Ok((client_state, proof))
+        } else {
+            Err(Error::queried_proof_not_found())
+        }
     }
 
     fn query_upgraded_consensus_state(
         &self,
-        _request: QueryUpgradedConsensusStateRequest,
+        request: QueryUpgradedConsensusStateRequest,
     ) -> Result<(AnyConsensusState, MerkleProof), Error> {
         crate::time!(
             "query_upgraded_consensus_state",
@@ -665,7 +682,24 @@ impl ChainEndpoint for NamadaChain {
         );
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
 
-        unimplemented!()
+        let height = request
+            .upgrade_height
+            .to_string()
+            .parse()
+            .expect("height conversion is infallible");
+        let query_height = request
+            .upgrade_height
+            .decrement()
+            .map_err(|_| Error::invalid_height_no_source())?;
+        let key = namada_ibc::storage::upgraded_consensus_state_key(height);
+        let (value, proof) =
+            self.query(key, QueryHeight::Specific(query_height), IncludeProof::Yes)?;
+        if let Some(proof) = proof {
+            let client_state = AnyConsensusState::decode_vec(&value).map_err(Error::decode)?;
+            Ok((client_state, proof))
+        } else {
+            Err(Error::queried_proof_not_found())
+        }
     }
 
     fn query_connections(
