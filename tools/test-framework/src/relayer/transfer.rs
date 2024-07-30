@@ -154,6 +154,8 @@ pub fn local_namada_token_transfer(
             amount,
             "--signing-keys",
             &format!("{sender}-key"),
+            "--gas-limit",
+            "150000",
             "--node",
             &format!("http://127.0.0.1:{rpc_port}"),
         ],
@@ -191,6 +193,8 @@ pub fn ibc_namada_token_transfer(
         &signing_key,
         "--channel-id",
         channel_id,
+        "--gas-limit",
+        "150000",
         "--node",
         &node,
     ];
