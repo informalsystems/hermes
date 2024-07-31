@@ -1,6 +1,6 @@
 use std::thread;
 
-use ibc_relayer::chain::counterparty::pending_packet_summary;
+use ibc_relayer::chain::{counterparty::pending_packet_summary, requests::Paginate};
 use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_identified_channel_end;
@@ -478,8 +478,12 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
             channel.port_a.as_ref(),
         )?;
 
-        let pending_packets_a =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end_a.value())?;
+        let pending_packets_a = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end_a.value(),
+            Paginate::All,
+        )?;
 
         info!("Pending packets: {:?}", pending_packets_a);
 
@@ -526,8 +530,12 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
 
         sleep(Duration::from_secs(10));
 
-        let pending_packets =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end_a.value())?;
+        let pending_packets = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end_a.value(),
+            Paginate::All,
+        )?;
 
         info!("Pending packets: {pending_packets:?}");
 
@@ -554,8 +562,12 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
 
         rev_link.relay_ack_packet_messages(to_clear)?;
 
-        let pending_packets_a =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end_a.value())?;
+        let pending_packets_a = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end_a.value(),
+            Paginate::All,
+        )?;
 
         info!("Pending packets: {pending_packets_a:?}");
 

@@ -19,7 +19,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{error, trace};
 
 use super::requests::{
-    IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
+    IncludeProof, PageRequest, Paginate, QueryChannelRequest, QueryClientConnectionsRequest,
     QueryClientStateRequest, QueryConnectionRequest, QueryPacketAcknowledgementsRequest,
     QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
@@ -381,13 +381,14 @@ pub fn commitments_on_chain(
     chain: &impl ChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
+    paginate: Paginate,
 ) -> Result<(Vec<Sequence>, Height), Error> {
     // get the packet commitments on the counterparty/ source chain
     let (mut commit_sequences, response_height) = chain
         .query_packet_commitments(QueryPacketCommitmentsRequest {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
-            pagination: Some(PageRequest::all()),
+            pagination: paginate,
         })
         .map_err(Error::relayer)?;
 
@@ -424,6 +425,7 @@ pub fn packet_acknowledgements(
     port_id: &PortId,
     channel_id: &ChannelId,
     commit_sequences: Vec<Sequence>,
+    pagination: Paginate,
 ) -> Result<Option<(Vec<Sequence>, Height)>, Error> {
     // If there aren't any sequences to query for, return early.
     // Otherwise we end up with the full list of acknowledgements on chain,
@@ -439,7 +441,7 @@ pub fn packet_acknowledgements(
         .query_packet_acknowledgements(QueryPacketAcknowledgementsRequest {
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
-            pagination: Some(PageRequest::all()),
+            pagination,
             packet_commitment_sequences: commit_sequences,
         })
         .map_err(Error::relayer)?;
@@ -500,11 +502,13 @@ pub fn unreceived_packets(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     path: &PathIdentifiers,
+    paginate: Paginate,
 ) -> Result<(Vec<Sequence>, Height), Error> {
     let (commit_sequences, h) = commitments_on_chain(
         counterparty_chain,
         &path.counterparty_port_id,
         &path.counterparty_channel_id,
+        paginate,
     )?;
 
     telemetry!(
@@ -541,6 +545,7 @@ pub fn acknowledgements_on_chain(
         counterparty_chain,
         &counterparty.port_id,
         counterparty_channel_id,
+        Paginate::All,
     )?;
 
     let sequences_and_height = packet_acknowledgements(
@@ -548,6 +553,7 @@ pub fn acknowledgements_on_chain(
         &channel.port_id,
         &channel.channel_id,
         commitments_on_counterparty,
+        Paginate::All,
     )?;
 
     Ok(sequences_and_height)
@@ -586,14 +592,17 @@ pub fn unreceived_acknowledgements(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     path: &PathIdentifiers,
+    pagination: Paginate,
 ) -> Result<Option<(Vec<Sequence>, Height)>, Error> {
-    let (commitments_on_src, _) = commitments_on_chain(chain, &path.port_id, &path.channel_id)?;
+    let (commitments_on_src, _) =
+        commitments_on_chain(chain, &path.port_id, &path.channel_id, pagination.clone())?;
 
     let acks_and_height_on_counterparty = packet_acknowledgements(
         counterparty_chain,
         &path.counterparty_port_id,
         &path.counterparty_channel_id,
         commitments_on_src,
+        pagination,
     )?;
 
     if let Some((acks_on_counterparty, height)) = acks_and_height_on_counterparty {
@@ -625,6 +634,7 @@ pub fn pending_packet_summary(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
     channel: &IdentifiedChannelEnd,
+    pagination: Paginate,
 ) -> Result<PendingPackets, Error> {
     let counterparty = channel.channel_end.counterparty();
     let counterparty_channel_id = counterparty
@@ -633,7 +643,7 @@ pub fn pending_packet_summary(
         .ok_or_else(Error::missing_counterparty_channel_id)?;
 
     let (commitments_on_src, _) =
-        commitments_on_chain(chain, &channel.port_id, &channel.channel_id)?;
+        commitments_on_chain(chain, &channel.port_id, &channel.channel_id, pagination)?;
 
     let unreceived = unreceived_packets_sequences(
         counterparty_chain,
@@ -647,6 +657,7 @@ pub fn pending_packet_summary(
         &counterparty.port_id,
         counterparty_channel_id,
         commitments_on_src,
+        Paginate::All,
     )?;
 
     let pending_acks = if let Some((acks_on_counterparty, _)) = acks_on_counterparty {

@@ -1,6 +1,6 @@
 use ibc_relayer::chain::requests::{
-    QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest, QueryUnreceivedAcksRequest,
-    QueryUnreceivedPacketsRequest,
+    Paginate, QueryPacketAcknowledgementsRequest, QueryPacketCommitmentsRequest,
+    QueryUnreceivedAcksRequest, QueryUnreceivedPacketsRequest,
 };
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_test_framework::prelude::*;
@@ -94,7 +94,7 @@ pub fn get_committed_packets_at_src<ChainA: ChainHandle, ChainB: ChainHandle>(
     let request = QueryPacketCommitmentsRequest {
         port_id: port_id_a.clone(),
         channel_id: channel_id_a.clone(),
-        pagination: None,
+        pagination: Paginate::All,
     };
     let (sequences, _) = chain.query_packet_commitments(request)?;
     Ok(sequences)
@@ -123,7 +123,7 @@ pub fn get_acknowledged_packets_at_dst<ChainA: ChainHandle, ChainB: ChainHandle>
     let request = QueryPacketAcknowledgementsRequest {
         port_id: port_id_a.clone(),
         channel_id: channel_id_a.clone(),
-        pagination: None,
+        pagination: Paginate::All,
         packet_commitment_sequences: Vec::new(),
     };
     Ok(chain.query_packet_acknowledgements(request)?.0)
