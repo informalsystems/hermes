@@ -1,6 +1,6 @@
 use abscissa_core::clap::Parser;
 
-use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
+use ibc_relayer::chain::counterparty::{unreceived_acknowledgements, ChannelConnectionClient};
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer::util::collate::CollatedIterExt;
@@ -58,7 +58,14 @@ impl QueryPendingAcksCmd {
             &self.channel_id,
         )?;
 
-        let channel = chan_conn_cli.channel;
+        // FIXME: Perhaps we could add a trait to enable the channel to be retrieved from both
+        // ChannelConnectionClientSingleHop and ChannelConnectionClientMultihop without the need
+        // for pattern matching, as the channel field is of the same type in both variants,
+        // unlike connections and clients.
+        let channel = match chan_conn_cli {
+            ChannelConnectionClient::SingleHop(chan_conn_cli) => chan_conn_cli.channel,
+            ChannelConnectionClient::Multihop(chan_conn_cli) => chan_conn_cli.channel,
+        };
 
         debug!(
             "fetched from source chain {} the following channel {:?}",

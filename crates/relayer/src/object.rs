@@ -13,6 +13,7 @@ use ibc_relayer_types::core::{
     ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
 };
 
+use crate::chain::counterparty::ChannelConnectionClient;
 use crate::chain::{
     counterparty::{
         channel_connection_client, channel_connection_client_no_checks,
@@ -376,9 +377,19 @@ impl Object {
             .channel_id()
             .ok_or_else(|| ObjectError::missing_channel_id(e.clone()))?;
 
-        let client = channel_connection_client(chain, e.port_id(), channel_id)
-            .map_err(ObjectError::supervisor)?
-            .client;
+        let chan_conn_client = channel_connection_client(chain, e.port_id(), channel_id)
+            .map_err(ObjectError::supervisor)?;
+
+        let client = match chan_conn_client {
+            ChannelConnectionClient::SingleHop(chan_conn_client) => chan_conn_client.client,
+
+            // FIXME: Figure out how the multihop case should be handled. In the single hop case
+            // the only client from ChannelConnectionClient is returned. For multihop, there are
+            // multiple clients along the channel path.
+            ChannelConnectionClient::Multihop(_chan_conn_client) => {
+                panic!("Not yet implemented for multihop!")
+            }
+        };
 
         Ok(Client {
             dst_client_id: client.client_id.clone(),
@@ -429,13 +440,27 @@ impl Object {
             // This is to support the optimistic channel handshake by allowing the channel worker to get
             // the channel events while the connection is being established.
             // The channel worker will eventually finish the channel handshake via the retry mechanism.
-            channel_connection_client_no_checks(src_chain, port_id, channel_id)
-                .map(|c| c.client.client_state.chain_id())
-                .map_err(ObjectError::supervisor)?
+            match channel_connection_client_no_checks(src_chain, port_id, channel_id) {
+                Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
+                    Ok(chan_conn_client.client.client_state.chain_id())
+                }
+                Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
+                    // FIXME: Handle the multihop case
+                    panic!("Not yet implemented for multihop!");
+                }
+                Err(e) => Err(ObjectError::supervisor(e)),
+            }?
         } else {
-            channel_connection_client(src_chain, port_id, channel_id)
-                .map(|c| c.client.client_state.chain_id())
-                .map_err(ObjectError::supervisor)?
+            match channel_connection_client(src_chain, port_id, channel_id) {
+                Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
+                    Ok(chan_conn_client.client.client_state.chain_id())
+                }
+                Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
+                    // FIXME: Handle the multihop case
+                    panic!("Not yet implemented for multihop!");
+                }
+                Err(e) => Err(ObjectError::supervisor(e)),
+            }?
         };
 
         Ok(Channel {
@@ -461,13 +486,27 @@ impl Object {
             // This is to support the optimistic channel handshake by allowing the channel worker to get
             // the channel events while the connection is being established.
             // The channel worker will eventually finish the channel handshake via the retry mechanism.
-            channel_connection_client_no_checks(src_chain, port_id, channel_id)
-                .map(|c| c.client.client_state.chain_id())
-                .map_err(ObjectError::supervisor)?
+            match channel_connection_client_no_checks(src_chain, port_id, channel_id) {
+                Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
+                    Ok(chan_conn_client.client.client_state.chain_id())
+                }
+                Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
+                    // FIXME: Handle the multihop case
+                    panic!("Not yet implemented for multihop!");
+                }
+                Err(e) => Err(ObjectError::supervisor(e)),
+            }?
         } else {
-            channel_connection_client(src_chain, port_id, channel_id)
-                .map(|c| c.client.client_state.chain_id())
-                .map_err(ObjectError::supervisor)?
+            match channel_connection_client(src_chain, port_id, channel_id) {
+                Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
+                    Ok(chan_conn_client.client.client_state.chain_id())
+                }
+                Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
+                    // FIXME: Handle the multihop case
+                    panic!("Not yet implemented for multihop!");
+                }
+                Err(e) => Err(ObjectError::supervisor(e)),
+            }?
         };
 
         Ok(Channel {

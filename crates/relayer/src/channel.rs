@@ -41,6 +41,7 @@ use ibc_relayer_types::events::IbcEvent;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
+use crate::chain::counterparty::ChannelConnectionClient;
 use crate::chain::counterparty::{channel_connection_client, channel_state_on_destination};
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{
@@ -345,7 +346,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 chain,
                 connection.client_id().clone(),
                 connection_id.clone(),
-                None, //FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
+                None, // FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
                 port_id,
                 channel_id,
                 // The event does not include the version.
@@ -356,7 +357,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
                 counterparty_chain,
                 connection.counterparty().client_id().clone(),
                 counterparty_connection_id.clone(),
-                None, //FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
+                None, // FIXME: Unsure what to add here ('None' for now), can we get the hops from the event?
                 channel_event_attributes.counterparty_port_id.clone(),
                 channel_event_attributes.counterparty_channel_id,
                 None,
@@ -826,12 +827,29 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             channel_connection_client(self.src_chain(), self.src_port_id(), channel_id)
                 .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))?;
 
-        channel_state_on_destination(
-            &channel_deps.channel,
-            &channel_deps.connection,
-            self.dst_chain(),
-        )
-        .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
+        match channel_deps {
+            ChannelConnectionClient::SingleHop(chan_conn_client) => channel_state_on_destination(
+                &chan_conn_client.channel,
+                &chan_conn_client.connection,
+                self.dst_chain(),
+            )
+            .map_err(|e| ChannelError::query_channel(channel_id.clone(), e)),
+
+            ChannelConnectionClient::Multihop(chan_conn_client) => {
+                let last_hop_connection = &chan_conn_client.connections.last().ok_or(
+                    ChannelError::channel_connection_client_multihop_missing_connections(
+                        channel_id.clone(),
+                    ),
+                )?;
+
+                channel_state_on_destination(
+                    &chan_conn_client.channel,
+                    &last_hop_connection,
+                    self.dst_chain(),
+                )
+                .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))
+            }
+        }
     }
 
     pub fn handshake_step(

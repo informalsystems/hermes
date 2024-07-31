@@ -12,6 +12,7 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::config::Config;
 use ibc_relayer::spawn;
+use ibc_relayer::supervisor::Error as SupervisorError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::error::Error;
@@ -87,9 +88,26 @@ pub fn spawn_chain_counterparty<Chain: ChainHandle>(
     let chain = spawn_chain_runtime_generic::<Chain>(config, chain_id)?;
     let channel_connection_client =
         channel_connection_client(&chain, port_id, channel_id).map_err(Error::supervisor)?;
-    let counterparty_chain = {
-        let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
-        spawn_chain_runtime_generic::<Chain>(config, &counterparty_chain_id)?
+
+    let counterparty_chain = match channel_connection_client {
+        ChannelConnectionClient::SingleHop(ref chan_conn_cli) => {
+            let counterparty_chain_id = chan_conn_cli.client.client_state.chain_id();
+            spawn_chain_runtime_generic::<Chain>(config, &counterparty_chain_id)?
+        }
+
+        ChannelConnectionClient::Multihop(ref chan_conn_cli) => {
+            let last_hop_client = chan_conn_cli
+                .clients
+                .last()
+                .ok_or(
+                    SupervisorError::channel_connection_client_multihop_missing_client(
+                        channel_id.clone(),
+                    ),
+                )
+                .map_err(Error::supervisor)?;
+            let counterparty_chain_id = last_hop_client.client_state.chain_id();
+            spawn_chain_runtime_generic::<Chain>(config, &counterparty_chain_id)?
+        }
     };
 
     Ok((

@@ -1,6 +1,6 @@
 use abscissa_core::clap::Parser;
 
-use ibc_relayer::chain::counterparty::acknowledgements_on_chain;
+use ibc_relayer::chain::counterparty::{acknowledgements_on_chain, ChannelConnectionClient};
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
@@ -53,9 +53,17 @@ impl QueryPacketAcknowledgementsCmd {
             &self.channel_id,
         )?;
 
-        if let Some((seqs, height)) =
-            acknowledgements_on_chain(&chains.src, &chains.dst, &chan_conn_cli.channel)
-                .map_err(Error::supervisor)?
+        // FIXME: Perhaps we could add a trait to enable the channel to be retrieved from both
+        // ChannelConnectionClientSingleHop and ChannelConnectionClientMultihop without the need
+        // for pattern matching, as the channel field is of the same type in both variants,
+        // unlike connections and clients.
+        let channel = match chan_conn_cli {
+            ChannelConnectionClient::SingleHop(chan_conn_cli) => chan_conn_cli.channel,
+            ChannelConnectionClient::Multihop(chan_conn_cli) => chan_conn_cli.channel,
+        };
+
+        if let Some((seqs, height)) = acknowledgements_on_chain(&chains.src, &chains.dst, &channel)
+            .map_err(Error::supervisor)?
         {
             Ok(Some(PacketSeqs { seqs, height }))
         } else {

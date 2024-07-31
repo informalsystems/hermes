@@ -326,7 +326,7 @@ pub fn channel_connection_client_no_checks(
         )
         .map_err(Error::relayer)?;
 
-    connections.push(first_hop.connection);
+    connections.push(first_hop.connection.clone());
 
     clients.push(IdentifiedAnyClientState::new(
         client_id.clone(),
@@ -360,7 +360,7 @@ pub fn channel_connection_client_no_checks(
             )
             .map_err(Error::relayer)?;
 
-        connections.push(connection_hop.connection);
+        connections.push(connection_hop.connection.clone());
         clients.push(IdentifiedAnyClientState::new(
             client_id.clone(),
             client_state,
@@ -382,13 +382,12 @@ pub fn channel_connection_client(
     let channel_connection_client =
         channel_connection_client_no_checks(chain, port_id, channel_id)?;
 
-    // FIXME: CHECK THAT THE CLIENTS ALONG THE MULTIHOP PATH ARE NOT FROZEN AND ALL CONNECTIONS ARE OPEN
-
-    match channel_connection_client {
+    match &channel_connection_client {
         ChannelConnectionClient::SingleHop(chan_conn_client) => {
+            // Check if the channel's connection is open
             if !chan_conn_client.connection.connection_end.is_open() {
                 return Err(Error::connection_not_open(
-                    chan_conn_client.connection.connection_id,
+                    chan_conn_client.connection.connection_id.clone(),
                     channel_id.clone(),
                     chain.id(),
                 ));
@@ -396,10 +395,11 @@ pub fn channel_connection_client(
         }
 
         ChannelConnectionClient::Multihop(chan_conn_client) => {
+            // Check if all connections along the channel path are open
             for connection in chan_conn_client.connections.iter() {
                 if !connection.connection_end.is_open() {
                     return Err(Error::connection_not_open(
-                        connection.connection_id,
+                        connection.connection_id.clone(),
                         channel_id.clone(),
                         chain.id(),
                     ));
@@ -407,6 +407,8 @@ pub fn channel_connection_client(
             }
         }
     }
+
+    // FIXME: Also check that the clients are not frozen before returning channel_connection_client
 
     Ok(channel_connection_client)
 }
