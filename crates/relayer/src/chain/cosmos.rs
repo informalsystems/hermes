@@ -1944,7 +1944,15 @@ impl ChainEndpoint for CosmosSdkChain {
             let mut results = Vec::new();
             let mut page_key = Vec::new();
 
+            let mut limit = request.pagination.get_limit();
+
             loop {
+                crate::time!(
+                    "query_packet_commitments_loop_iteration",
+                    {
+                        "src_chain": self.config().id.to_string(),
+                    }
+                );
                 let mut raw_request =
                     ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest::from(
                         request.clone(),
@@ -1986,6 +1994,10 @@ impl ChainEndpoint for CosmosSdkChain {
                         break;
                     }
                 }
+                if limit == 0 {
+                    break;
+                }
+                limit -= 1;
             }
 
             let responses =

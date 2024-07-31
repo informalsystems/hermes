@@ -143,12 +143,26 @@ pub enum Paginate {
     #[default]
     All,
 
-    PerPage(u64),
+    PerPage {
+        pagination: u64,
+        limit: u64,
+    },
 }
 
 impl Paginate {
     pub fn is_enabled(&self) -> bool {
         !matches!(self, Self::All)
+    }
+
+    pub fn get_limit(&self) -> u64 {
+        if let Paginate::PerPage {
+            pagination: _,
+            limit,
+        } = self
+        {
+            return *limit;
+        }
+        0
     }
 }
 
@@ -156,7 +170,10 @@ impl From<Paginate> for PageRequest {
     fn from(value: Paginate) -> Self {
         match value {
             Paginate::All => PageRequest::all(),
-            Paginate::PerPage(limit) => PageRequest::per_page(limit),
+            Paginate::PerPage {
+                pagination: _,
+                limit,
+            } => PageRequest::per_page(limit),
         }
     }
 }
