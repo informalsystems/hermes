@@ -53,7 +53,7 @@ impl QueryPacketAcknowledgementsCmd {
             &self.channel_id,
         )?;
 
-        // FIXME: Perhaps we could add a trait to enable the channel to be retrieved from both
+        // FIXME(MULTIHOP): Perhaps we could add a trait to enable the channel to be retrieved from both
         // ChannelConnectionClientSingleHop and ChannelConnectionClientMultihop without the need
         // for pattern matching, as the channel field is of the same type in both variants,
         // unlike connections and clients.

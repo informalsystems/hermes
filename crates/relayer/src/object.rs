@@ -383,7 +383,7 @@ impl Object {
         let client = match chan_conn_client {
             ChannelConnectionClient::SingleHop(chan_conn_client) => chan_conn_client.client,
 
-            // FIXME: Figure out how the multihop case should be handled. In the single hop case
+            // FIXME(MULTIHOP): Figure out how the multihop case should be handled. In the single hop case
             // the only client from ChannelConnectionClient is returned. For multihop, there are
             // multiple clients along the channel path.
             ChannelConnectionClient::Multihop(_chan_conn_client) => {
@@ -445,7 +445,7 @@ impl Object {
                     Ok(chan_conn_client.client.client_state.chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
-                    // FIXME: Handle the multihop case
+                    // FIXME(MULTIHOP): Handle the multihop case
                     panic!("Not yet implemented for multihop!");
                 }
                 Err(e) => Err(ObjectError::supervisor(e)),
@@ -456,7 +456,7 @@ impl Object {
                     Ok(chan_conn_client.client.client_state.chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
-                    // FIXME: Handle the multihop case
+                    // FIXME(MULTIHOP): Handle the multihop case
                     panic!("Not yet implemented for multihop!");
                 }
                 Err(e) => Err(ObjectError::supervisor(e)),
@@ -491,7 +491,7 @@ impl Object {
                     Ok(chan_conn_client.client.client_state.chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
-                    // FIXME: Handle the multihop case
+                    // FIXME(MULTIHOP): Handle the multihop case
                     panic!("Not yet implemented for multihop!");
                 }
                 Err(e) => Err(ObjectError::supervisor(e)),
@@ -502,7 +502,7 @@ impl Object {
                     Ok(chan_conn_client.client.client_state.chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
-                    // FIXME: Handle the multihop case
+                    // FIXME(MULTIHOP): Handle the multihop case
                     panic!("Not yet implemented for multihop!");
                 }
                 Err(e) => Err(ObjectError::supervisor(e)),

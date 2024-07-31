@@ -408,7 +408,7 @@ pub fn channel_connection_client(
         }
     }
 
-    // FIXME: Also check that the clients are not frozen before returning channel_connection_client
+    // FIXME(MULTIHOP): Also check that the clients are not frozen before returning channel_connection_client
 
     Ok(channel_connection_client)
 }
