@@ -71,7 +71,7 @@ impl BinaryChannelTest for QueryCommitmentsBenchmark {
             None,
         )?;
 
-        info!("Waiting for profiling to be populated", a_to_b_amount);
+        info!("Waiting for profiling to be populated");
 
         relayer.with_supervisor(|| {
             std::thread::sleep(core::time::Duration::from_secs(180));
