@@ -604,6 +604,8 @@ pub fn extract_packet_and_write_ack_from_tx(
             .value_str()
             .map_err(|_| ChannelError::malformed_event_attribute_value(key.to_owned()))?;
 
+        tracing::debug!("key: {key} && value: {value}");
+
         match key {
             channel_events::PKT_SRC_PORT_ATTRIBUTE_KEY => {
                 packet.source_port = value.parse().map_err(ChannelError::identifier)?;
