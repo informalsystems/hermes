@@ -163,6 +163,8 @@ pub async fn query_packets_from_txs(
         result.push(first_event);
     }
 
+    tracing::debug!("Retrieved events from /tx_search: {result:#?}");
+
     Ok(result)
 }
 
@@ -334,7 +336,11 @@ pub fn filter_matching_event(
         return None;
     }
 
+    tracing::debug!("abci event: {event:#?}");
+
     let ibc_event = ibc_event_try_from_abci_event(event).ok()?;
+
+    tracing::debug!("extracted ibc event: {ibc_event:#?}");
 
     match ibc_event {
         IbcEvent::SendPacket(ref send_ev)
