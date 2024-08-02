@@ -100,7 +100,7 @@ pub enum CliCmd {
     /// The `version` subcommand, retained for backward compatibility.
     Version(VersionCmd),
 
-    /// Performs a health check of all chains in the the config
+    /// Performs a health check of all chains in the config
     HealthCheck(HealthCheckCmd),
 
     /// Generate auto-complete scripts for different shells.
