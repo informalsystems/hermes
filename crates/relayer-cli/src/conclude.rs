@@ -17,9 +17,9 @@
 //! ```
 //!
 //! - Exit from a query/tx with an error of type `anomaly`:
-//! In the case where the error is a complex type such as anomaly (including backtraces), it is
-//! better to simplify the output and only write out the chain of error sources, which we can
-//! achieve with `format!("{}", e)`. The complete solution is as follows:
+//!   In the case where the error is a complex type such as anomaly (including backtraces), it is
+//!   better to simplify the output and only write out the chain of error sources, which we can
+//!   achieve with `format!("{}", e)`. The complete solution is as follows:
 //!
 //! ```ignore
 //! let e: Error = Kind::Query.into();

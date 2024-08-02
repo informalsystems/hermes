@@ -757,7 +757,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Return value:
     ///   - `Some(..)`: a new operational data from which to retry sending,
     ///   - `None`: all the events in the initial operational data were exhausted (i.e., turned
-    ///   into timeouts), so there is nothing to retry.
+    ///     into timeouts), so there is nothing to retry.
     ///
     /// Side effects: may schedule a new operational data targeting the source chain, comprising
     /// new timeout messages.

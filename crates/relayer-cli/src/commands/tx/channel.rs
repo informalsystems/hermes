@@ -23,7 +23,7 @@ use crate::prelude::*;
 ///
 /// The macro takes the following arguments:
 /// - `$dbg_string`: a string literal that will be used to identify the subcommand
-///  in debug logs
+///   in debug logs
 /// - `$func`: the method that will be called to build and send the `Channel` message
 /// - `$self`: the type that `Runnable` is being implemented for
 /// - `$chan`: a closure that specifies how to build the `Channel` object
