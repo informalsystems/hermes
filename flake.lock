@@ -218,16 +218,15 @@
         "wasmvm_2_1_0-src": "wasmvm_2_1_0-src"
       },
       "locked": {
-        "lastModified": 1722849961,
+        "lastModified": 1722854456,
         "narHash": "sha256-F0W2ocQ/l+4RYyywn3yZ3rgK1NJQHSBKqu1WmeUV+8s=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "4b4c2bef9f21e5d64489211ccd8b04eaa748ce56",
+        "rev": "2da69965064cbc2462507643ca67905e283efe67",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/update-provenance-to-v1-19-1",
         "repo": "cosmos.nix",
         "type": "github"
       }
