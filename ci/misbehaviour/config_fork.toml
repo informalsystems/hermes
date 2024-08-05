@@ -208,7 +208,7 @@ gas_price = { price = 0.001, denom = 'stake' }
 #
 # Default: 1.1, ie. the gas is increased by 10%
 # Minimum value: 1.0
-gas_multiplier = 1.1
+gas_multiplier = 1.3
 
 # Query the current gas price from the chain instead of using the static `gas_price` from the config.
 # Useful for chains which have [EIP-1559][eip]-like dynamic gas price. 
@@ -325,7 +325,7 @@ store_prefix = 'ibc'
 default_gas = 100000
 max_gas = 400000
 gas_price = { price = 0.001, denom = 'stake' }
-gas_multiplier = 1.1
+gas_multiplier = 1.3
 dynamic_gas_price = { enabled = true, multiplier = 1.3, max = 5.0 }
 max_msg_num = 30
 max_tx_size = 2097152
