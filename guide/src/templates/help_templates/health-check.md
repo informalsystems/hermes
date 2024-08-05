@@ -1,5 +1,5 @@
 DESCRIPTION:
-Performs a health check of all chains in the the config
+Performs a health check of all chains in the config
 
 USAGE:
     hermes health-check
