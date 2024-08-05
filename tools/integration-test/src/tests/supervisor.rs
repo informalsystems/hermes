@@ -116,14 +116,14 @@ impl BinaryChainTest for SupervisorTest {
             &chains.node_a.wallets().relayer(),
             &chains.node_a.wallets().user2().address(),
             &denom_a.with_amount(1000u64).as_ref(),
-            &fee_denom_a.with_amount(1200u64).as_ref(),
+            &fee_denom_a.with_amount(210000u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().local_transfer_token(
             &chains.node_b.wallets().relayer(),
             &chains.node_b.wallets().user2().address(),
             &chains.node_b.denom().with_amount(1000u64).as_ref(),
-            &fee_denom_b.with_amount(1200u64).as_ref(),
+            &fee_denom_b.with_amount(210000u64).as_ref(),
         )?;
 
         info!(
