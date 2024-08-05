@@ -844,7 +844,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
                 channel_state_on_destination(
                     &chan_conn_client.channel,
-                    &last_hop_connection,
+                    last_hop_connection,
                     self.dst_chain(),
                 )
                 .map_err(|e| ChannelError::query_channel(channel_id.clone(), e))

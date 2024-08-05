@@ -72,7 +72,7 @@ pub async fn query_consensus_state_heights(
         .consensus_state_heights
         .into_iter()
         .filter_map(|h| {
-            Height::try_from(h.clone())
+            Height::try_from(h)
                 .map_err(|e| {
                     warn!(
                         "failed to parse consensus state height {}. Error: {}",

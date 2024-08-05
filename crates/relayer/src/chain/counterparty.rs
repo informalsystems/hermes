@@ -217,6 +217,7 @@ impl ChannelConnectionClientMultihop {
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 pub enum ChannelConnectionClient {
     SingleHop(ChannelConnectionClientSingleHop),
     Multihop(ChannelConnectionClientMultihop),
@@ -233,18 +234,14 @@ impl ChannelConnectionClient {
 
         match (connection_vec.len(), client_vec.len()) {
             // ChannelConnectionClient requires at least one connection
-            (0, _) => {
-                return Err(Error::channel_connection_client_missing_connection(
-                    channel.channel_id.clone(),
-                ))
-            }
+            (0, _) => Err(Error::channel_connection_client_missing_connection(
+                channel.channel_id.clone(),
+            )),
 
             // ChannelConnectionClient requires at least one client
-            (_, 0) => {
-                return Err(Error::channel_connection_client_missing_client(
-                    channel.channel_id.clone(),
-                ))
-            }
+            (_, 0) => Err(Error::channel_connection_client_missing_client(
+                channel.channel_id.clone(),
+            )),
 
             // A ChannelConnectionClient with exactly one connection and one client corresponds
             // to a single-hop channel
@@ -344,9 +341,7 @@ pub fn channel_connection_client_no_checks(
             .chain_id()
             .clone();
 
-        let hop_chain = registry
-            .get_or_spawn(&hop_chain_id)
-            .map_err(|e| Error::spawn(e))?;
+        let hop_chain = registry.get_or_spawn(&hop_chain_id).map_err(Error::spawn)?;
 
         let client_id = connection_hop.connection().client_id().clone();
 

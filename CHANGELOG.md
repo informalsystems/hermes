@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## v1.10.1
+
+*July 23th, 2024*
+
+In this release `tendermint-rs` has been updated to the latest version, addressing issues with the `/block_results` response. This ensures compatibility with CometBFT v0.38.10.
+
+And enhancements have been made to the logs regarding packet clearing, providing better insights and warnings for users.
+
+
+### BREAKING CHANGES
+
+- Bump version of `ibc-proto` from `v0.46.0` to `v0.47.0` and
+  version of `tendermint-rs` from `v0.37.0` to `v0.38.1`.
+  ([\#4093](https://github.com/informalsystems/hermes/issues/4093))
+
+### IMPROVEMENTS
+
+- [Integration Test Framework](tools/test-framework)
+  - Add the features `packet-forward` and `ica` to enable
+    Packet Forward Middleware and ICA when running tests with Osmosis
+    ([\#3195](https://github.com/informalsystems/hermes/issues/3195))
+- [Relayer Library](relayer)
+  - Improve logs when clearing packet.
+  * When Hermes doesn't pull packet data it will now warn the user
+    instead of logging `pulled packet data for 0 events out of X`
+  * When ICS20 packets are filtered due to having a receiver or memo
+    field too big, the log will be at `warn` level instead of `debug`.
+    ([\#4072](https://github.com/informalsystems/hermes/issues/4072))
+
 ## v1.10.0
 
 *June 24th, 2024*
