@@ -744,7 +744,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Return value:
     ///   - `Some(..)`: a new operational data from which to retry sending,
     ///   - `None`: all the events in the initial operational data were exhausted (i.e., turned
-    ///   into timeouts), so there is nothing to retry.
+    ///     into timeouts), so there is nothing to retry.
     ///
     /// Side effects: may schedule a new operational data targeting the source chain, comprising
     /// new timeout messages.
@@ -1947,7 +1947,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     }
 }
 
-#[tracing::instrument(skip(data))]
+#[tracing::instrument(skip_all)]
 fn check_ics20_fields_size(
     data: &[u8],
     memo_limit: Ics20FieldSizeLimit,
@@ -1962,9 +1962,9 @@ fn check_ics20_fields_size(
                 (ValidationResult::Valid, ValidationResult::Valid) => true,
 
                 (memo_validity, receiver_validity) => {
-                    debug!("found invalid ICS-20 packet data, not relaying packet!");
-                    debug!("    ICS-20 memo:     {memo_validity}");
-                    debug!("    ICS-20 receiver: {receiver_validity}");
+                    warn!("found invalid ICS-20 packet data, not relaying packet!");
+                    warn!("    ICS-20 memo:     {memo_validity}");
+                    warn!("    ICS-20 receiver: {receiver_validity}");
 
                     false
                 }

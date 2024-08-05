@@ -963,7 +963,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
 
             // In production, this should rarely happen unless there is another
             // relayer racing to update the client state, and that we so happen
-            // to get the the latest client state that was updated between
+            // to get the latest client state that was updated between
             // the time the target height was determined, and the time
             // the client state was fetched.
 
@@ -977,7 +977,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // so that subsequent fetches can be fast.
             let cs_heights = self.fetch_consensus_state_heights()?;
 
-            // Iterate through the available consesnsus heights and find one
+            // Iterate through the available consensus heights and find one
             // that is lower than the target height.
             cs_heights
                 .into_iter()
