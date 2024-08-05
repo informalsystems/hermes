@@ -65,7 +65,7 @@ where
             0,
         )?;
         let provider_native_token = builder.native_tokens[0].clone();
-        let provider_fee = format!("2100000{provider_native_token}");
+        let provider_fee = format!("381000000{provider_native_token}");
 
         // Get consumer chain id
         let chain_type = ChainType::from_str(&builder.command_paths[1])?;

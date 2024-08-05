@@ -7,7 +7,7 @@ use ibc_test_framework::relayer::connection::{
 };
 
 #[test]
-fn test_supervisor() -> Result<(), Error> {
+fn test_supervisor1() -> Result<(), Error> {
     run_binary_chain_test(&SupervisorTest)
 }
 
@@ -116,14 +116,14 @@ impl BinaryChainTest for SupervisorTest {
             &chains.node_a.wallets().relayer(),
             &chains.node_a.wallets().user2().address(),
             &denom_a.with_amount(1000u64).as_ref(),
-            &fee_denom_a.with_amount(210000u64).as_ref(),
+            &fee_denom_a.with_amount(381000000u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().local_transfer_token(
             &chains.node_b.wallets().relayer(),
             &chains.node_b.wallets().user2().address(),
             &chains.node_b.denom().with_amount(1000u64).as_ref(),
-            &fee_denom_b.with_amount(210000u64).as_ref(),
+            &fee_denom_b.with_amount(381000000u64).as_ref(),
         )?;
 
         info!(

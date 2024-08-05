@@ -115,7 +115,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
             &chains.node_a.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
-            &fee_denom_a.with_amount(210000u64).as_ref(),
+            &fee_denom_a.with_amount(381000000u64).as_ref(),
         )?;
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(

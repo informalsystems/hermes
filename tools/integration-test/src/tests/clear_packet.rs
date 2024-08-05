@@ -170,7 +170,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
             &relayer_wallet_b.as_ref(),
             &wallet_b.address(),
             &denom_b1.with_amount(100u64).as_ref(),
-            &fee_denom_b.with_amount(210000u64).as_ref(),
+            &fee_denom_b.with_amount(381000000u64).as_ref(),
         )?;
 
         let amount1 = random_u128_range(1000, 5000);
