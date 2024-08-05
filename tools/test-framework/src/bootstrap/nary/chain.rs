@@ -2,7 +2,7 @@
    Functions for bootstrapping N-ary number of chains.
 */
 
-use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::handle::{ChainHandle, DefaultChainHandle};
 use ibc_relayer::config::Config;
 use ibc_relayer::registry::SharedRegistry;
 
@@ -120,10 +120,10 @@ pub fn boostrap_chains_with_any_nodes(
     Ok((relayer, connected_chains))
 }
 
-fn spawn_chain_handle<Handle: ChainHandle>(
-    registry: &SharedRegistry<Handle>,
+fn spawn_chain_handle(
+    registry: &SharedRegistry,
     node: &FullNode,
-) -> Result<Handle, Error> {
+) -> Result<DefaultChainHandle, Error> {
     let chain_id = &node.chain_driver.chain_id;
     let handle = registry
         .get_or_spawn(chain_id)

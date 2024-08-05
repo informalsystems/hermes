@@ -2,11 +2,11 @@
    Driver for spawning the relayer.
 */
 
-use ibc_relayer::chain::handle::CountingAndCachingChainHandle;
+use std::path::PathBuf;
+
 use ibc_relayer::config::Config;
 use ibc_relayer::registry::SharedRegistry;
 use ibc_relayer::supervisor::{spawn_supervisor, SupervisorHandle, SupervisorOptions};
-use std::path::PathBuf;
 
 use crate::error::Error;
 use crate::types::env::{EnvWriter, ExportEnv};
@@ -41,7 +41,7 @@ pub struct RelayerDriver {
        Use this shared registry when spawning new supervisor using
        [`spawn_supervisor`].
     */
-    pub registry: SharedRegistry<CountingAndCachingChainHandle>,
+    pub registry: SharedRegistry,
 
     /**
        Whether the driver should hang the test when the continuation

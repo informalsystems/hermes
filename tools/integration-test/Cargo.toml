@@ -49,6 +49,7 @@ juno                            = []
 dynamic-gas-fee                 = []
 new-register-interchain-account = []
 authz                           = []
+multihop                        = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"

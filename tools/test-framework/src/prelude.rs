@@ -66,6 +66,7 @@ pub use crate::types::config::TestConfig;
 pub use crate::types::id::*;
 pub use crate::types::nary::chains::NaryConnectedChains;
 pub use crate::types::nary::channel::ConnectedChannels as NaryConnectedChannels;
+pub use crate::types::nary::connection::ConnectedConnections;
 pub use crate::types::nary::connection::ConnectedConnections as NaryConnectedConnections;
 pub use crate::types::single::node::{FullNode, TaggedFullNodeExt};
 pub use crate::types::tagged::{DualTagged, MonoTagged};

@@ -38,7 +38,10 @@ define_error! {
             | e | { format_args!("chain identifiers are expected to be in epoch format {0}", e.id) },
 
         InvalidCounterpartyChannelId
-            |_| { "invalid channel id in counterparty" }
+            |_| { "invalid channel id in counterparty" },
+
+        EmptyConnectionHops
+            |_| { "cannot parse an empty list of connection IDs into connection hops" },
     }
 }
 

@@ -15,6 +15,7 @@ use ibc_relayer_types::{
     Height,
 };
 
+use crate::chain::handle::DefaultChainHandle;
 use crate::{
     chain::{endpoint::HealthCheck, handle::ChainHandle, tracking::TrackingId},
     config::Config,
@@ -85,7 +86,7 @@ pub struct SupervisorOptions {
 */
 pub fn spawn_supervisor(
     config: Config,
-    registry: SharedRegistry<impl ChainHandle>,
+    registry: SharedRegistry,
     rest_rx: Option<rest::Receiver>,
     options: SupervisorOptions,
 ) -> Result<SupervisorHandle, Error> {
@@ -149,9 +150,9 @@ fn should_scan(config: &Config, options: &SupervisorOptions) -> bool {
             && (config.mode.clients.misbehaviour || config.mode.clients.refresh))
 }
 
-pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
+pub fn spawn_supervisor_tasks(
     config: Config,
-    registry: SharedRegistry<Chain>,
+    registry: SharedRegistry,
     rest_rx: Option<rest::Receiver>,
     cmd_rx: Receiver<SupervisorCmd>,
     options: SupervisorOptions,
@@ -220,12 +221,12 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     Ok(tasks)
 }
 
-fn spawn_batch_workers<Chain: ChainHandle>(
+fn spawn_batch_workers(
     config: &Config,
-    registry: SharedRegistry<Chain>,
+    registry: SharedRegistry,
     client_state_filter: Arc<RwLock<FilterPolicy>>,
     workers: Arc<RwLock<WorkerMap>>,
-    subscriptions: Vec<(Chain, Subscription)>,
+    subscriptions: Vec<(DefaultChainHandle, Subscription)>,
 ) -> Vec<TaskHandle> {
     let mut handles = Vec::with_capacity(subscriptions.len());
 
@@ -260,8 +261,8 @@ fn spawn_batch_workers<Chain: ChainHandle>(
     handles
 }
 
-pub fn spawn_cmd_worker<Chain: ChainHandle>(
-    registry: SharedRegistry<Chain>,
+pub fn spawn_cmd_worker(
+    registry: SharedRegistry,
     workers: Arc<RwLock<WorkerMap>>,
     cmd_rx: Receiver<SupervisorCmd>,
 ) -> TaskHandle {
@@ -282,9 +283,9 @@ pub fn spawn_cmd_worker<Chain: ChainHandle>(
     )
 }
 
-pub fn spawn_rest_worker<Chain: ChainHandle>(
+pub fn spawn_rest_worker(
     config: Config,
-    registry: SharedRegistry<Chain>,
+    registry: SharedRegistry,
     workers: Arc<RwLock<WorkerMap>>,
     rest_rx: rest::Receiver,
 ) -> TaskHandle {
@@ -669,10 +670,10 @@ fn health_check<Chain: ChainHandle>(config: &Config, registry: &mut Registry<Cha
 
 /// Subscribe to the events emitted by the chains the supervisor is connected to.
 #[instrument(name = "supervisor.init_subscriptions", level = "error", skip_all)]
-fn init_subscriptions<Chain: ChainHandle>(
+fn init_subscriptions(
     config: &Config,
-    registry: &mut Registry<Chain>,
-) -> Result<Vec<(Chain, Subscription)>, Error> {
+    registry: &mut Registry<DefaultChainHandle>,
+) -> Result<Vec<(DefaultChainHandle, Subscription)>, Error> {
     let chains = &config.chains;
 
     let mut subscriptions = Vec::with_capacity(chains.len());

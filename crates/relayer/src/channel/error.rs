@@ -12,6 +12,7 @@ use ibc_relayer_types::proofs::ProofError;
 
 use crate::error::Error as RelayerError;
 use crate::foreign_client::{ForeignClientError, HasExpiredOrFrozenError};
+use crate::spawn::SpawnError;
 use crate::supervisor::Error as SupervisorError;
 
 define_error! {
@@ -27,6 +28,10 @@ define_error! {
         Client
             [ ClientError ]
             |_| { "ICS02 client error" },
+
+        Spawn
+            [ SpawnError ]
+            | _ | { "spawn error" },
 
         InvalidChannel
             { reason: String }
@@ -61,6 +66,9 @@ define_error! {
         MissingCounterpartyConnection
             |_| { "failed due to missing counterparty connection" },
 
+        MissingCounterpartyConnectionId
+            |_| { "failed due to missing counterparty connection" },
+
         MissingChannelOnDestination
             |_| { "missing channel on destination chain" },
 
@@ -72,10 +80,6 @@ define_error! {
 
         MissingUpgradeErrorReceiptProof
             |_| { "missing upgrade error receipt proof" },
-
-        MalformedProof
-            [ ProofError ]
-            |_| { "malformed proof" },
 
         ChannelProof
             [ RelayerError ]
@@ -111,6 +115,9 @@ define_error! {
             { chain_id: ChainId }
             [ RelayerError ]
             |e| { format_args!("failed during a query to chain '{0}'", e.chain_id) },
+
+        QueriedProofNotFound
+        |_| { "Requested proof with query but no proof was returned." },
 
         ChainQuery
             { chain_id: ChainId }
@@ -154,7 +161,19 @@ define_error! {
 
         ChannelAlreadyExist
             { channel_id: ChannelId }
-            |e| { format_args!("channel '{}' already exist in an incompatible state", e.channel_id) },
+            |e| { format_args!("channel '{}' already exists in an incompatible state", e.channel_id) },
+
+        UnexpectedChannelState
+            { channel_id: ChannelId,
+              chain_id: ChainId,
+              expected_state: State,
+              channel_state: State,
+            }
+            | e | { format_args!("expected state of channel '{}' on chain '{}' to be '{}', but found '{}'", e.channel_id, e.chain_id, e.expected_state, e.channel_state) },
+
+        MalformedProof
+            [ ProofError ]
+            |_| { "malformed proof" },
 
         MismatchChannelEnds
             {
@@ -226,6 +245,48 @@ define_error! {
                 format_args!("error after maximum retry of {} and total delay of {}s: {}",
                     e.tries, e.total_delay.as_secs(), e.description)
             },
+
+        MissingConnectionHops
+        {
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        |e| {
+            format_args!("channel {} on chain {} has no connection hops specified",
+                e.channel_id, e.chain_id)
+        },
+
+        MissingLocalConnectionHops
+        {
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        | e | {
+            format_args!("failed due to missing local connection hops data for channel '{}' on \
+            chain '{}'", e.channel_id, e.chain_id)
+        },
+
+        FailedChannelPathClientUpdate
+        {
+            client_id: ClientId,
+            client_host_chain_id: ChainId,
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        | e | {
+            format_args!("failed to update client '{}' on chain '{}' while updating the channel path \
+             for channel '{}' on chain '{}'", e.client_id, e.client_host_chain_id, e.channel_id, e.chain_id)
+        },
+
+        MissingMultihopProofHeights
+        {
+            channel_id: ChannelId,
+            chain_id: ChainId,
+        }
+        | e | {
+            format_args!("missing proof heights on the path for channel '{}' on chain '{}'",
+            e.channel_id, e.chain_id)
+        },
     }
 }
 
