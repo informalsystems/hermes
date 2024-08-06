@@ -48,7 +48,7 @@ bech32                   = "0.9.1"
 bitcoin                  = "0.31.2"
 bs58                     = "0.5.1"
 byte-unit                = { version = "4.0.19", default-features = false }
-bytes                    = "1.6.1"
+bytes                    = "1.7.1"
 clap                     = "3.2"
 clap_complete            = "3.2"
 color-eyre               = "0.6"
