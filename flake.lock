@@ -217,15 +217,16 @@
         "wasmvm_2_0_0-src": "wasmvm_2_0_0-src"
       },
       "locked": {
-        "lastModified": 1721927677,
-        "narHash": "sha256-fD8yDMOuJWx0WwlgAO07QrhbDwZ+PRl7HMVG4uwgFnk=",
+        "lastModified": 1722851380,
+        "narHash": "sha256-8s8Ag3GuWItX2JVjc66WUZfnkwdn9PZdOtY09XltJ3c=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "826b8ddd3c397306dc67de0646b27dc5656fadf9",
+        "rev": "009a7d82aa6889cca96e1047ad5be019246d13b7",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/update-osmosis-to-v25-2-0",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1378,11 +1379,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1722640603,
-        "narHash": "sha256-TcXjLVNd3VeH1qKPH335Tc4RbFDbZQX+d7rqnDUoRaY=",
+        "lastModified": 1722802969,
+        "narHash": "sha256-bPhyAXNnVerBZusxOuPMhMm0X7hSFLFKcH+7ynfgLjs=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "81610abc161d4021b29199aa464d6a1a521e0cc9",
+        "rev": "785feb91183a50959823ff9ba9ef673105259cd5",
         "type": "github"
       },
       "original": {
@@ -1395,16 +1396,16 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1715157587,
-        "narHash": "sha256-D/CymboICWe73MBGF036W5NT/pyaV8Wvll2bJmYNmHg=",
+        "lastModified": 1719537675,
+        "narHash": "sha256-8Lb2SppNfq3+JwP3uanmCxuCek6tXOO/GcG27XGxRrE=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "15566f1f2945a16af9243dd376ee58a0d691b66a",
+        "rev": "b973bffdf127866f45624d7e5a81f31fdc8e8e0b",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v25.0.0",
+        "ref": "v25.2.0",
         "repo": "osmosis",
         "type": "github"
       }
