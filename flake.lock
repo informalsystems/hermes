@@ -214,18 +214,20 @@
         "wasmvm_1_5_0-src": "wasmvm_1_5_0-src",
         "wasmvm_1_5_2-src": "wasmvm_1_5_2-src",
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src",
-        "wasmvm_2_0_0-src": "wasmvm_2_0_0-src"
+        "wasmvm_2_0_0-src": "wasmvm_2_0_0-src",
+        "wasmvm_2_1_0-src": "wasmvm_2_1_0-src"
       },
       "locked": {
-        "lastModified": 1721927677,
-        "narHash": "sha256-fD8yDMOuJWx0WwlgAO07QrhbDwZ+PRl7HMVG4uwgFnk=",
+        "lastModified": 1722932360,
+        "narHash": "sha256-Xs4ux2hNFwcraW5vzi21Qrb0/rgUAghkRU5Fu5yufwo=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "826b8ddd3c397306dc67de0646b27dc5656fadf9",
+        "rev": "52353c4faef073894d621fa2527be49407971d6e",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/update-migaloo-to-v4-2-0",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1130,16 +1132,16 @@
     "migaloo-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1710414169,
-        "narHash": "sha256-BGOUAw48c92KGpUMvzStiJfd+tgJpTBYk0bAvvUNYL8=",
+        "lastModified": 1720168667,
+        "narHash": "sha256-vOzOBNGaIOhTjTnycLp6sQKGAklkPVZdJLPPqdjufnM=",
         "owner": "White-Whale-Defi-Platform",
         "repo": "migaloo-chain",
-        "rev": "5382bfc56173a0f57dcaef34e99c59c99cf70dda",
+        "rev": "076c6d12ecadcf4db42592a8340cb3be2ed23349",
         "type": "github"
       },
       "original": {
         "owner": "White-Whale-Defi-Platform",
-        "ref": "v4.1.3",
+        "ref": "v4.2.0",
         "repo": "migaloo-chain",
         "type": "github"
       }
@@ -1378,11 +1380,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1722640603,
-        "narHash": "sha256-TcXjLVNd3VeH1qKPH335Tc4RbFDbZQX+d7rqnDUoRaY=",
+        "lastModified": 1722802969,
+        "narHash": "sha256-bPhyAXNnVerBZusxOuPMhMm0X7hSFLFKcH+7ynfgLjs=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "81610abc161d4021b29199aa464d6a1a521e0cc9",
+        "rev": "785feb91183a50959823ff9ba9ef673105259cd5",
         "type": "github"
       },
       "original": {
@@ -1443,15 +1445,16 @@
     "provenance-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-dTX3kg2QUsC9SwsaommP4IFgIdQgWZrGQNtp/B+fzys=",
+        "lastModified": 1721946876,
+        "narHash": "sha256-4RAyX3ORmbojnmDlMQMWF7mdmbaiBbqegZt0SMd9cXE=",
         "owner": "provenance-io",
         "repo": "provenance",
-        "rev": "91b0813de2f93d03cefe8efb226dc32f02690840",
+        "rev": "d1119ab02c423d86a0f485a8f124e73511ec1b9b",
         "type": "github"
       },
       "original": {
         "owner": "provenance-io",
-        "ref": "v1.17.0",
+        "ref": "v1.19.1",
         "repo": "provenance",
         "type": "github"
       }
@@ -1954,6 +1957,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.0.0",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_2_1_0-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1720688907,
+        "narHash": "sha256-Ev/2cUKT0i9ytvfrzh15Ibja4TBXjoeB7RLHn28yRCY=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "d7906b3030061a959c54ee57c88e3256b8e90a0c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.1.0",
         "repo": "wasmvm",
         "type": "github"
       }

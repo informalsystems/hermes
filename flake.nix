@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
     flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix;
+    cosmos-nix.url = github:informalsystems/cosmos.nix/luca_joss/update-migaloo-to-v4-2-0;
   };
 
   outputs = inputs: let
