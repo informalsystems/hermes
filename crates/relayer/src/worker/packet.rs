@@ -342,7 +342,7 @@ fn handle_clear_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     if do_clear {
-        info!("schedule clearing packets");
+        info!("packets clearing triggered, looking for packets to clear");
 
         // Reset the `clear_on_start` flag and attempt packet clearing once now.
         // More clearing will be done at clear interval.
