@@ -218,16 +218,15 @@
         "wasmvm_2_1_0-src": "wasmvm_2_1_0-src"
       },
       "locked": {
-        "lastModified": 1722948788,
-        "narHash": "sha256-Yw1Nr9uqEM3kfraIQ3rhcMx6lgXmQ+Ymwy1qg66VmYA=",
+        "lastModified": 1722963157,
+        "narHash": "sha256-P0RiHRcWfNObnRPCkaUDQ7tbU5H8k2MrDmqLoVIkqqY=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "6040ceff881325127624c1a9cbe1d2f52b767d7e",
+        "rev": "7f693a2a13dff856f520730a7ac1d46c101e2b5d",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/update-neutron-to-v4",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1100,16 +1099,16 @@
     "juno-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1713701044,
-        "narHash": "sha256-AN9g1t/zOZVs5S/ZXP4/MrIC9kN6nUGG/wLNJz5fL6E=",
+        "lastModified": 1720542396,
+        "narHash": "sha256-niG12wn49bt184zqctrGsT73mgKfZUPTZAzSKX+ZLVs=",
         "owner": "CosmosContracts",
         "repo": "juno",
-        "rev": "b0faafbd6df4bb03940d99df13030af7f7bc315b",
+        "rev": "bf140aa60045ba92b83d0cb7f3bc47a2661a4e7e",
         "type": "github"
       },
       "original": {
         "owner": "CosmosContracts",
-        "ref": "v22.0.0",
+        "ref": "v23.0.0",
         "repo": "juno",
         "type": "github"
       }
@@ -1132,16 +1131,16 @@
     "migaloo-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1710414169,
-        "narHash": "sha256-BGOUAw48c92KGpUMvzStiJfd+tgJpTBYk0bAvvUNYL8=",
+        "lastModified": 1720168667,
+        "narHash": "sha256-vOzOBNGaIOhTjTnycLp6sQKGAklkPVZdJLPPqdjufnM=",
         "owner": "White-Whale-Defi-Platform",
         "repo": "migaloo-chain",
-        "rev": "5382bfc56173a0f57dcaef34e99c59c99cf70dda",
+        "rev": "076c6d12ecadcf4db42592a8340cb3be2ed23349",
         "type": "github"
       },
       "original": {
         "owner": "White-Whale-Defi-Platform",
-        "ref": "v4.1.3",
+        "ref": "v4.2.0",
         "repo": "migaloo-chain",
         "type": "github"
       }
@@ -1380,11 +1379,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1722895844,
-        "narHash": "sha256-kGwDuefMQgzdzMXx1BN3+pS7oKafQd6LTDG6XMwcqrU=",
+        "lastModified": 1722926584,
+        "narHash": "sha256-sLA+lfCxTkXf4o3JVxcfe+w9kAzauGfEnJ9roNbNng8=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d3f42bd62aa840084563e3b93e4eab73cb0a0448",
+        "rev": "d33cf80b603b3d0cddb48f9816cae707a59e2334",
         "type": "github"
       },
       "original": {
@@ -1648,16 +1647,16 @@
     "stride-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1711572539,
-        "narHash": "sha256-WOoaijuB/Xziw3RMzVcLgR1iDWv72StuLL8K5JzcdlA=",
+        "lastModified": 1721921071,
+        "narHash": "sha256-EtsK7sjzQ2XfYt3DSV85IbKj7HEMy2Apt0m8kfgCEuk=",
         "owner": "Stride-Labs",
         "repo": "stride",
-        "rev": "093f25e17b1c9fae38a8092f9582af7c84bbaee4",
+        "rev": "d6e4e686e54a6a3c41d3ca0645f91ee1dc3ec441",
         "type": "github"
       },
       "original": {
         "owner": "Stride-Labs",
-        "ref": "v21.0.0",
+        "ref": "v23.0.1",
         "repo": "stride",
         "type": "github"
       }
