@@ -218,16 +218,15 @@
         "wasmvm_2_1_0-src": "wasmvm_2_1_0-src"
       },
       "locked": {
-        "lastModified": 1722932360,
-        "narHash": "sha256-Xs4ux2hNFwcraW5vzi21Qrb0/rgUAghkRU5Fu5yufwo=",
+        "lastModified": 1722948950,
+        "narHash": "sha256-xEguBA7XW21btWLRQRVp/DOuHmrDedgU6feDtJbNzjY=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "52353c4faef073894d621fa2527be49407971d6e",
+        "rev": "c466493a3581c1d18b20261d1cab246683e0a828",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/update-migaloo-to-v4-2-0",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1380,11 +1379,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1722802969,
-        "narHash": "sha256-bPhyAXNnVerBZusxOuPMhMm0X7hSFLFKcH+7ynfgLjs=",
+        "lastModified": 1722895844,
+        "narHash": "sha256-kGwDuefMQgzdzMXx1BN3+pS7oKafQd6LTDG6XMwcqrU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "785feb91183a50959823ff9ba9ef673105259cd5",
+        "rev": "d3f42bd62aa840084563e3b93e4eab73cb0a0448",
         "type": "github"
       },
       "original": {
@@ -1397,16 +1396,16 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1715157587,
-        "narHash": "sha256-D/CymboICWe73MBGF036W5NT/pyaV8Wvll2bJmYNmHg=",
+        "lastModified": 1719537675,
+        "narHash": "sha256-8Lb2SppNfq3+JwP3uanmCxuCek6tXOO/GcG27XGxRrE=",
         "owner": "osmosis-labs",
         "repo": "osmosis",
-        "rev": "15566f1f2945a16af9243dd376ee58a0d691b66a",
+        "rev": "b973bffdf127866f45624d7e5a81f31fdc8e8e0b",
         "type": "github"
       },
       "original": {
         "owner": "osmosis-labs",
-        "ref": "v25.0.0",
+        "ref": "v25.2.0",
         "repo": "osmosis",
         "type": "github"
       }
