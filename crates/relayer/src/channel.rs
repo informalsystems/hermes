@@ -836,11 +836,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .map_err(|e| ChannelError::query_channel(channel_id.clone(), e)),
 
             ChannelConnectionClient::Multihop(chan_conn_client) => {
-                let last_hop_connection = &chan_conn_client.connections.last().ok_or(
-                    ChannelError::channel_connection_client_multihop_missing_connections(
-                        channel_id.clone(),
-                    ),
-                )?;
+                let last_hop_connection =
+                    &chan_conn_client.connections.last().ok_or_else(|| {
+                        ChannelError::channel_connection_client_multihop_missing_connections(
+                            channel_id.clone(),
+                        )
+                    })?;
 
                 channel_state_on_destination(
                     &chan_conn_client.channel,
@@ -992,21 +993,20 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .ok_or(ChannelError::missing_local_channel_id())?;
 
         // Ensure connection_hops is not empty
-        let connection_hops =
-            self.a_side
-                .connection_hops()
-                .ok_or(ChannelError::missing_local_connection_hops(
-                    channel_id.clone(),
-                    self.a_side.chain_id().clone(),
-                ))?;
-
-        // Get the last connection hop in the channel path
-        let last_hop = connection_hops.hops.iter().last().ok_or(
+        let connection_hops = self.a_side.connection_hops().ok_or_else(|| {
             ChannelError::missing_local_connection_hops(
                 channel_id.clone(),
                 self.a_side.chain_id().clone(),
-            ),
-        )?;
+            )
+        })?;
+
+        // Get the last connection hop in the channel path
+        let last_hop = connection_hops.hops.iter().last().ok_or_else(|| {
+            ChannelError::missing_local_connection_hops(
+                channel_id.clone(),
+                self.a_side.chain_id().clone(),
+            )
+        })?;
 
         // Get access to the registry to retrieve or spawn chain handles
         let registry = get_global_registry();
@@ -1188,13 +1188,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
             .ok_or(ChannelError::missing_local_channel_id())?;
 
         // Make sure the connection_hops are not 'None'
-        let connection_hops =
-            self.a_side
-                .connection_hops()
-                .ok_or(ChannelError::missing_local_connection_hops(
-                    channel_id.clone(),
-                    self.a_side.chain_id().clone(),
-                ))?;
+        let connection_hops = self.a_side.connection_hops().ok_or_else(|| {
+            ChannelError::missing_local_connection_hops(
+                channel_id.clone(),
+                self.a_side.chain_id().clone(),
+            )
+        })?;
 
         // Get the sending chain's latest height. This height will be used to query the key proof.
         let query_height = self
@@ -1305,10 +1304,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let connection_hops = &self
             .a_side
             .connection_hops()
-            .ok_or(ChannelError::missing_local_connection_hops(
-                src_channel_id.clone(),
-                self.a_side.chain_id().clone(),
-            ))?
+            .ok_or_else(|| {
+                ChannelError::missing_local_connection_hops(
+                    src_channel_id.clone(),
+                    self.a_side.chain_id().clone(),
+                )
+            })?
             .hops;
 
         // Ensure the number of proof heights matches the number of connection hops in the channel path
@@ -1324,10 +1325,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
         let query_height = QueryHeight::Specific(
             proof_heights
                 .first()
-                .ok_or(ChannelError::missing_multihop_proof_heights(
-                    src_channel_id.clone(),
-                    self.src_chain().id().clone(),
-                ))?
+                .ok_or_else(|| {
+                    ChannelError::missing_multihop_proof_heights(
+                        src_channel_id.clone(),
+                        self.src_chain().id().clone(),
+                    )
+                })?
                 .proof_query_height,
         );
 
@@ -1392,12 +1395,14 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
             // The consensus height of the hop's source chain that must exist and be proved in the
             // correspondent client in the hop's destination chain
-            let consensus_height_to_prove = proof_height.previous_chain_consensus_height.ok_or(
-                ChannelError::missing_multihop_proof_heights(
-                    src_channel_id.clone(),
-                    self.src_chain().id(),
-                ),
-            )?;
+            let consensus_height_to_prove = proof_height
+                .previous_chain_consensus_height
+                .ok_or_else(|| {
+                    ChannelError::missing_multihop_proof_heights(
+                        src_channel_id.clone(),
+                        self.src_chain().id(),
+                    )
+                })?;
 
             let hop_dst_chain = registry
                 .get_or_spawn(&conn_hop.dst_chain_id)
@@ -1555,13 +1560,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Get the proof heights for the last hop in the channel path, which connects the penultimate
         // chain to the destination.
-        let last_hop_heights =
-            proof_heights
-                .last()
-                .ok_or(ChannelError::missing_multihop_proof_heights(
-                    src_channel_id.clone(),
-                    self.src_chain().id(),
-                ))?;
+        let last_hop_heights = proof_heights.last().ok_or_else(|| {
+            ChannelError::missing_multihop_proof_heights(
+                src_channel_id.clone(),
+                self.src_chain().id(),
+            )
+        })?;
 
         // Build the message to update the client on the channel path's destination chain. Because
         // proofs are queried at height 'last_hop_heights.proof_query_height' in the penultimate chain,
@@ -1813,13 +1817,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Get the proof heights for the last hop in the channel path, which connects the penultimate
         // chain to the destination.
-        let last_hop_heights =
-            proof_heights
-                .last()
-                .ok_or(ChannelError::missing_multihop_proof_heights(
-                    src_channel_id.clone(),
-                    self.src_chain().id(),
-                ))?;
+        let last_hop_heights = proof_heights.last().ok_or_else(|| {
+            ChannelError::missing_multihop_proof_heights(
+                src_channel_id.clone(),
+                self.src_chain().id(),
+            )
+        })?;
 
         // Build the message to update the client on the channel path's destination chain. Because
         // proofs are queried at height 'last_hop_heights.proof_query_height' in the penultimate chain,
@@ -2020,13 +2023,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Channel<ChainA, ChainB> {
 
         // Get the proof heights for the last hop in the channel path, which connects the penultimate
         // chain to the destination.
-        let last_hop_heights =
-            proof_heights
-                .last()
-                .ok_or(ChannelError::missing_multihop_proof_heights(
-                    src_channel_id.clone(),
-                    self.src_chain().id(),
-                ))?;
+        let last_hop_heights = proof_heights.last().ok_or_else(|| {
+            ChannelError::missing_multihop_proof_heights(
+                src_channel_id.clone(),
+                self.src_chain().id(),
+            )
+        })?;
 
         // Build the message to update the client on the channel path's destination chain. Because
         // proofs are queried at height 'last_hop_heights.proof_query_height' in the penultimate chain,

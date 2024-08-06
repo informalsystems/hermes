@@ -99,11 +99,11 @@ pub fn spawn_chain_counterparty<Chain: ChainHandle>(
             let last_hop_client = chan_conn_cli
                 .clients
                 .last()
-                .ok_or(
+                .ok_or_else(|| {
                     SupervisorError::channel_connection_client_multihop_missing_client(
                         channel_id.clone(),
-                    ),
-                )
+                    )
+                })
                 .map_err(Error::supervisor)?;
             let counterparty_chain_id = last_hop_client.client_state.chain_id();
             spawn_chain_runtime_generic::<Chain>(config, &counterparty_chain_id)?

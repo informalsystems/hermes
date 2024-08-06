@@ -206,12 +206,9 @@ impl ChannelConnectionClientMultihop {
     }
 
     pub fn dst_chain_id(&self) -> Result<ChainId, Error> {
-        let last_hop_client =
-            self.clients
-                .last()
-                .ok_or(Error::channel_connection_client_missing_client(
-                    self.channel.channel_id.clone(),
-                ))?;
+        let last_hop_client = self.clients.last().ok_or_else(|| {
+            Error::channel_connection_client_missing_client(self.channel.channel_id.clone())
+        })?;
 
         Ok(last_hop_client.client_state.chain_id())
     }
@@ -306,10 +303,7 @@ pub fn channel_connection_client_no_checks(
     let first_hop = channel_hops
         .hops_as_slice()
         .first()
-        .ok_or(Error::missing_connection_hops(
-            channel_id.clone(),
-            chain.id().clone(),
-        ))?;
+        .ok_or_else(|| Error::missing_connection_hops(channel_id.clone(), chain.id().clone()))?;
 
     let client_id = first_hop.connection().client_id().clone();
 
