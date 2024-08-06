@@ -1,9 +1,10 @@
 /*!
    Methods for performing IBC token transfer on a chain.
 */
+use eyre::eyre;
 
 use crate::chain::exec::simple_exec;
-use crate::error::Error;
+use crate::error::{handle_generic_error, Error};
 
 pub fn local_transfer_token(
     chain_id: &str,
@@ -15,7 +16,7 @@ pub fn local_transfer_token(
     token: &str,
     fees: &str,
 ) -> Result<(), Error> {
-    simple_exec(
+    let raw_output = simple_exec(
         chain_id,
         command_path,
         &[
@@ -35,9 +36,33 @@ pub fn local_transfer_token(
             "test",
             "--fees",
             fees,
+            "--output",
+            "json",
             "--yes",
         ],
     )?;
+
+    let output: serde_json::Value =
+        serde_json::from_str(&raw_output.stdout).map_err(handle_generic_error)?;
+
+    let output_code = output
+        .get("code")
+        .and_then(|code| code.as_u64())
+        .ok_or_else(|| {
+            Error::generic(eyre!("failed to extract 'code' from 'tx gov vote' command"))
+        })?;
+
+    if output_code != 0 {
+        let output_logs = output
+            .get("raw_log")
+            .and_then(|code| code.as_str())
+            .ok_or_else(|| {
+                Error::generic(eyre!(
+                    "failed to extract 'raw_logs' from 'tx gov vote' command"
+                ))
+            })?;
+        return Err(Error::generic(eyre!("output code for commande 'tx gov vote' should be 0, but is instead '{output_code}'. Detail: {output_logs}", )));
+    }
 
     Ok(())
 }

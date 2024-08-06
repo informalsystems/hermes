@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia17
+          - package: gaia18
             command: gaiad
             account_prefix: cosmos
             native_token: stake
@@ -171,10 +171,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia17 .#stride
+          - package: .#gaia18 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia17 .#neutron
+          - package: .#gaia18 .#neutron
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
@@ -216,7 +216,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia17 .#stride-no-admin
+          - package: .#gaia18 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -257,7 +257,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia17
+          - package: .#celestia .#gaia18
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake

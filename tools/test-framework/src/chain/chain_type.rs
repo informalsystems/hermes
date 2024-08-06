@@ -11,7 +11,7 @@ const PROVENANCE_HD_PATH: &str = "m/44'/505'/0'/0/0";
 
 #[derive(Clone, Debug)]
 pub enum ChainType {
-    Cosmos,
+    Cosmos { dynamic_fee: bool },
     Osmosis,
     Evmos,
     Provenance,
@@ -21,7 +21,7 @@ pub enum ChainType {
 impl ChainType {
     pub fn hd_path(&self) -> &str {
         match self {
-            Self::Cosmos | Self::Osmosis => COSMOS_HD_PATH,
+            Self::Cosmos { dynamic_fee: _ } | Self::Osmosis => COSMOS_HD_PATH,
             Self::Evmos | Self::Injective => EVMOS_HD_PATH,
             Self::Provenance => PROVENANCE_HD_PATH,
         }
@@ -29,7 +29,7 @@ impl ChainType {
 
     pub fn chain_id(&self, prefix: &str, use_random_id: bool) -> ChainId {
         match self {
-            Self::Cosmos => {
+            Self::Cosmos { dynamic_fee: _ } => {
                 if use_random_id {
                     ChainId::from_string(&format!("ibc-{}-{:x}", prefix, random_u32()))
                 } else {
@@ -54,7 +54,7 @@ impl ChainType {
         let mut res = vec![];
         let json_rpc_port = random_unused_tcp_port();
         match self {
-            Self::Cosmos | Self::Injective | Self::Provenance => {}
+            Self::Cosmos { dynamic_fee: _ } | Self::Injective | Self::Provenance => {}
             Self::Osmosis => {
                 res.push("--reject-config-defaults".to_owned());
             }
@@ -70,7 +70,7 @@ impl ChainType {
     pub fn extra_add_genesis_account_args(&self, chain_id: &ChainId) -> Vec<String> {
         let mut res = vec![];
         match self {
-            Self::Cosmos | Self::Osmosis | Self::Evmos | Self::Provenance => {}
+            Self::Cosmos { dynamic_fee: _ } | Self::Osmosis | Self::Evmos | Self::Provenance => {}
             Self::Injective => {
                 res.push("--chain-id".to_owned());
                 res.push(format!("{chain_id}"));
@@ -81,7 +81,9 @@ impl ChainType {
 
     pub fn address_type(&self) -> AddressType {
         match self {
-            Self::Cosmos | Self::Osmosis | Self::Provenance => AddressType::default(),
+            Self::Cosmos { dynamic_fee: _ } | Self::Osmosis | Self::Provenance => {
+                AddressType::default()
+            }
             Self::Evmos => AddressType::Ethermint {
                 pk_type: "/ethermint.crypto.v1.ethsecp256k1.PubKey".to_string(),
             },
@@ -90,6 +92,10 @@ impl ChainType {
             },
         }
     }
+
+    pub fn enable_dynamic_fee(&self) -> bool {
+        matches!(self, Self::Cosmos { dynamic_fee } if *dynamic_fee)
+    }
 }
 
 impl FromStr for ChainType {
@@ -97,11 +103,12 @@ impl FromStr for ChainType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
+            name if name.contains("gaiad") => Ok(ChainType::Cosmos { dynamic_fee: true }),
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
             name if name.contains("injectived") => Ok(ChainType::Injective),
             name if name.contains("provenanced") => Ok(ChainType::Provenance),
             name if name.contains("osmosisd") => Ok(ChainType::Osmosis),
-            _ => Ok(ChainType::Cosmos),
+            _ => Ok(ChainType::Cosmos { dynamic_fee: false }),
         }
     }
 }
