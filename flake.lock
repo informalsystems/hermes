@@ -1099,16 +1099,16 @@
     "juno-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1713701044,
-        "narHash": "sha256-AN9g1t/zOZVs5S/ZXP4/MrIC9kN6nUGG/wLNJz5fL6E=",
+        "lastModified": 1720542396,
+        "narHash": "sha256-niG12wn49bt184zqctrGsT73mgKfZUPTZAzSKX+ZLVs=",
         "owner": "CosmosContracts",
         "repo": "juno",
-        "rev": "b0faafbd6df4bb03940d99df13030af7f7bc315b",
+        "rev": "bf140aa60045ba92b83d0cb7f3bc47a2661a4e7e",
         "type": "github"
       },
       "original": {
         "owner": "CosmosContracts",
-        "ref": "v22.0.0",
+        "ref": "v23.0.0",
         "repo": "juno",
         "type": "github"
       }
@@ -1379,11 +1379,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1722895844,
-        "narHash": "sha256-kGwDuefMQgzdzMXx1BN3+pS7oKafQd6LTDG6XMwcqrU=",
+        "lastModified": 1722926584,
+        "narHash": "sha256-sLA+lfCxTkXf4o3JVxcfe+w9kAzauGfEnJ9roNbNng8=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d3f42bd62aa840084563e3b93e4eab73cb0a0448",
+        "rev": "d33cf80b603b3d0cddb48f9816cae707a59e2334",
         "type": "github"
       },
       "original": {
