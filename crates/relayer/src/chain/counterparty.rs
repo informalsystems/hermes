@@ -207,7 +207,9 @@ impl ChannelConnectionClientMultihop {
 
     pub fn dst_chain_id(&self) -> Result<ChainId, Error> {
         let last_hop_client = self.clients.last().ok_or_else(|| {
-            Error::channel_connection_client_missing_client(self.channel.channel_id.clone())
+            Error::channel_connection_client_multihop_missing_client(
+                self.channel.channel_id.clone(),
+            )
         })?;
 
         Ok(last_hop_client.client_state.chain_id())
@@ -262,6 +264,13 @@ impl ChannelConnectionClient {
 
                 Ok(Self::Multihop(chan_conn_client_multihop))
             }
+        }
+    }
+
+    pub fn channel(&self) -> &IdentifiedChannelEnd {
+        match self {
+            ChannelConnectionClient::SingleHop(chan_conn_client) => &chan_conn_client.channel,
+            ChannelConnectionClient::Multihop(chan_conn_client) => &chan_conn_client.channel,
         }
     }
 }

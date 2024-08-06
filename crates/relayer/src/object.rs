@@ -442,7 +442,7 @@ impl Object {
             // The channel worker will eventually finish the channel handshake via the retry mechanism.
             match channel_connection_client_no_checks(src_chain, port_id, channel_id) {
                 Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
-                    Ok(chan_conn_client.client.client_state.chain_id())
+                    Ok(chan_conn_client.dst_chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
                     // FIXME(MULTIHOP): Handle the multihop case
@@ -453,7 +453,7 @@ impl Object {
         } else {
             match channel_connection_client(src_chain, port_id, channel_id) {
                 Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
-                    Ok(chan_conn_client.client.client_state.chain_id())
+                    Ok(chan_conn_client.dst_chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
                     // FIXME(MULTIHOP): Handle the multihop case
@@ -488,7 +488,7 @@ impl Object {
             // The channel worker will eventually finish the channel handshake via the retry mechanism.
             match channel_connection_client_no_checks(src_chain, port_id, channel_id) {
                 Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
-                    Ok(chan_conn_client.client.client_state.chain_id())
+                    Ok(chan_conn_client.dst_chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
                     // FIXME(MULTIHOP): Handle the multihop case
@@ -499,7 +499,7 @@ impl Object {
         } else {
             match channel_connection_client(src_chain, port_id, channel_id) {
                 Ok(ChannelConnectionClient::SingleHop(chan_conn_client)) => {
-                    Ok(chan_conn_client.client.client_state.chain_id())
+                    Ok(chan_conn_client.dst_chain_id())
                 }
                 Ok(ChannelConnectionClient::Multihop(_chan_conn_client)) => {
                     // FIXME(MULTIHOP): Handle the multihop case

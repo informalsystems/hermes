@@ -119,24 +119,19 @@ impl QueryPendingPacketsCmd {
     fn execute(&self) -> Result<Summary<PendingPackets>, Error> {
         let config = app_config();
 
-        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_client) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
             &self.channel_id,
         )?;
 
-        // FIXME(MULTIHOP): Perhaps we could add a trait to enable the channel to be retrieved from both
-        // ChannelConnectionClientSingleHop and ChannelConnectionClientMultihop without the need
-        // for pattern matching as the channel field is of the same type in both variants,
-        // unlike connections and clients.
-        let (channel, connection) = match chan_conn_cli {
-            ChannelConnectionClient::SingleHop(chan_conn_cli) => {
-                (chan_conn_cli.channel, chan_conn_cli.connection)
-            }
+        let channel = chan_conn_client.channel().clone();
 
-            ChannelConnectionClient::Multihop(chan_conn_cli) => {
-                let connection = chan_conn_cli
+        let connection = match chan_conn_client {
+            ChannelConnectionClient::SingleHop(chan_conn_client) => chan_conn_client.connection,
+            ChannelConnectionClient::Multihop(chan_conn_client) => {
+                let connection = chan_conn_client
                     .connections
                     .last()
                     .ok_or(
@@ -146,7 +141,7 @@ impl QueryPendingPacketsCmd {
                     )
                     .map_err(Error::supervisor)?;
 
-                (chan_conn_cli.channel, connection.clone())
+                connection.clone()
             }
         };
 

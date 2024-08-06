@@ -1,6 +1,6 @@
 use abscissa_core::clap::Parser;
 
-use ibc_relayer::chain::counterparty::{unreceived_packets, ChannelConnectionClient};
+use ibc_relayer::chain::counterparty::unreceived_packets;
 use ibc_relayer::chain::handle::BaseChainHandle;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer::util::collate::CollatedIterExt;
@@ -51,21 +51,14 @@ impl QueryPendingSendsCmd {
     fn execute(&self) -> Result<Vec<Sequence>, Error> {
         let config = app_config();
 
-        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_client) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
             &self.channel_id,
         )?;
 
-        // FIXME(MULTIHOP): Perhaps we could add a trait to enable the channel to be retrieved from both
-        // ChannelConnectionClientSingleHop and ChannelConnectionClientMultihop without the need
-        // for pattern matching, as the channel field is of the same type in both variants,
-        // unlike connections and clients.
-        let channel = match chan_conn_cli {
-            ChannelConnectionClient::SingleHop(chan_conn_cli) => chan_conn_cli.channel,
-            ChannelConnectionClient::Multihop(chan_conn_cli) => chan_conn_cli.channel,
-        };
+        let channel = chan_conn_client.channel();
 
         debug!(
             "fetched from source chain {} the following channel {:?}",
@@ -73,7 +66,7 @@ impl QueryPendingSendsCmd {
         );
 
         let path_identifiers = PathIdentifiers::from_channel_end(channel.clone())
-            .ok_or_else(|| Error::missing_counterparty_channel_id(channel))?;
+            .ok_or_else(|| Error::missing_counterparty_channel_id(channel.clone()))?;
 
         unreceived_packets(&chains.src, &chains.dst, &path_identifiers)
             .map_err(Error::supervisor)
