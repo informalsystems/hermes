@@ -106,6 +106,7 @@ pub trait ChainBootstrapMethodsExt {
     fn submit_consumer_chain_proposal(
         &self,
         consumer_chain_id: &str,
+        fees: &str,
         spawn_time: &str,
     ) -> Result<(), Error>;
 
@@ -276,6 +277,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
     fn submit_consumer_chain_proposal(
         &self,
         consumer_chain_id: &str,
+        fees: &str,
         _spawn_time: &str,
     ) -> Result<(), Error> {
         let res = simple_exec(
@@ -327,6 +329,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             &self.command_path,
             &self.home_path,
             &self.rpc_listen_address(),
+            fees,
         )
     }
 

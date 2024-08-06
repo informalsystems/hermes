@@ -32,7 +32,7 @@ define_error! {
 
         OutOfGasSimulated
             { code: u32, amount: u64 }
-            |e| { format_args!("the issue might have been caused by the configured max gas which binds the gas used. Please check the Hermes config.toml and increase the configured `max_gas`. Curerent value is `{}`", e.amount) },
+            |e| { format_args!("the issue might have been caused by a misconfiguration of Hermes. Please check the Hermes config.toml and increase either the `max_gas` or `gas_multiplier` settings. Simulated gas was: {}", e.amount) },
 
         InsufficientFee
             { code: u32 }
