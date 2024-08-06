@@ -214,19 +214,19 @@
         "wasmvm_1_5_0-src": "wasmvm_1_5_0-src",
         "wasmvm_1_5_2-src": "wasmvm_1_5_2-src",
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src",
-        "wasmvm_2_0_0-src": "wasmvm_2_0_0-src"
+        "wasmvm_2_0_0-src": "wasmvm_2_0_0-src",
+        "wasmvm_2_1_0-src": "wasmvm_2_1_0-src"
       },
       "locked": {
-        "lastModified": 1722851380,
-        "narHash": "sha256-8s8Ag3GuWItX2JVjc66WUZfnkwdn9PZdOtY09XltJ3c=",
+        "lastModified": 1722941076,
+        "narHash": "sha256-9wO1BVbpUY/aD4tpArtDTgH75x3J7HW2jSXbZTWFVMY=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "009a7d82aa6889cca96e1047ad5be019246d13b7",
+        "rev": "3b2dd00097d6f3576d2e5dfd2ae70b4313de1fcc",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/update-osmosis-to-v25-2-0",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1379,11 +1379,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1722802969,
-        "narHash": "sha256-bPhyAXNnVerBZusxOuPMhMm0X7hSFLFKcH+7ynfgLjs=",
+        "lastModified": 1722895844,
+        "narHash": "sha256-kGwDuefMQgzdzMXx1BN3+pS7oKafQd6LTDG6XMwcqrU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "785feb91183a50959823ff9ba9ef673105259cd5",
+        "rev": "d3f42bd62aa840084563e3b93e4eab73cb0a0448",
         "type": "github"
       },
       "original": {
@@ -1444,15 +1444,16 @@
     "provenance-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-dTX3kg2QUsC9SwsaommP4IFgIdQgWZrGQNtp/B+fzys=",
+        "lastModified": 1721946876,
+        "narHash": "sha256-4RAyX3ORmbojnmDlMQMWF7mdmbaiBbqegZt0SMd9cXE=",
         "owner": "provenance-io",
         "repo": "provenance",
-        "rev": "91b0813de2f93d03cefe8efb226dc32f02690840",
+        "rev": "d1119ab02c423d86a0f485a8f124e73511ec1b9b",
         "type": "github"
       },
       "original": {
         "owner": "provenance-io",
-        "ref": "v1.17.0",
+        "ref": "v1.19.1",
         "repo": "provenance",
         "type": "github"
       }
@@ -1955,6 +1956,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.0.0",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_2_1_0-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1720688907,
+        "narHash": "sha256-Ev/2cUKT0i9ytvfrzh15Ibja4TBXjoeB7RLHn28yRCY=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "d7906b3030061a959c54ee57c88e3256b8e90a0c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.1.0",
         "repo": "wasmvm",
         "type": "github"
       }
