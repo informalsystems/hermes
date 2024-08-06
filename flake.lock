@@ -218,15 +218,16 @@
         "wasmvm_2_1_0-src": "wasmvm_2_1_0-src"
       },
       "locked": {
-        "lastModified": 1722941076,
-        "narHash": "sha256-9wO1BVbpUY/aD4tpArtDTgH75x3J7HW2jSXbZTWFVMY=",
+        "lastModified": 1722948788,
+        "narHash": "sha256-Yw1Nr9uqEM3kfraIQ3rhcMx6lgXmQ+Ymwy1qg66VmYA=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "3b2dd00097d6f3576d2e5dfd2ae70b4313de1fcc",
+        "rev": "6040ceff881325127624c1a9cbe1d2f52b767d7e",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/update-neutron-to-v4",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1164,16 +1165,16 @@
     "neutron-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1713877185,
-        "narHash": "sha256-cslMi835EdyByhSUN1FG9ucXjh5tQxqs3YfCLqGwYLg=",
+        "lastModified": 1722341371,
+        "narHash": "sha256-dhBhWytamqp1hRsQH+xqpq1UJmPi6CRHHDQwveCQ2WQ=",
         "owner": "neutron-org",
         "repo": "neutron",
-        "rev": "73f419c3c60a3b811b08788519063560e84d97a8",
+        "rev": "db33d3302abb45ee3887a97ea3d53923241fc167",
         "type": "github"
       },
       "original": {
         "owner": "neutron-org",
-        "ref": "v3.0.5",
+        "ref": "v4.1.0",
         "repo": "neutron",
         "type": "github"
       }
