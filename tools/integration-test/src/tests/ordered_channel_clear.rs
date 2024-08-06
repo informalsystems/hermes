@@ -47,6 +47,7 @@ impl OrderedChannelClearTest {
 impl TestOverrides for OrderedChannelClearTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         config.mode.packets.tx_confirmation = self.tx_confirmation;
+        config.mode.packets.clear_limit = 150;
         {
             let chain_a = &mut config.chains[0];
             match chain_a {
@@ -149,7 +150,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
 
         // Send the transfer (recv) packets from A to B over the channel.
         let mut relay_path_a_to_b = chain_a_link.a_to_b;
-        relay_path_a_to_b.schedule_packet_clearing(None)?;
+        relay_path_a_to_b
+            .schedule_packet_clearing(None, relayer.config.mode.packets.clear_limit)?;
         relay_path_a_to_b.execute_schedule()?;
 
         sleep(Duration::from_secs(10));
@@ -168,7 +170,8 @@ impl BinaryChannelTest for OrderedChannelClearTest {
 
         // Send the packet acknowledgments from B to A.
         let mut relay_path_b_to_a = chain_b_link.a_to_b;
-        relay_path_b_to_a.schedule_packet_clearing(None)?;
+        relay_path_b_to_a
+            .schedule_packet_clearing(None, relayer.config.mode.packets.clear_limit)?;
         relay_path_b_to_a.execute_schedule()?;
 
         sleep(Duration::from_secs(10));
