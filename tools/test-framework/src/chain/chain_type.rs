@@ -103,7 +103,9 @@ impl FromStr for ChainType {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            name if name.contains("gaiad") => Ok(ChainType::Cosmos { dynamic_fee: true }),
+            name if name.contains("gaiad") || name.contains("neutrond") => {
+                Ok(ChainType::Cosmos { dynamic_fee: true })
+            }
             name if name.contains("evmosd") => Ok(ChainType::Evmos),
             name if name.contains("injectived") => Ok(ChainType::Injective),
             name if name.contains("provenanced") => Ok(ChainType::Provenance),
