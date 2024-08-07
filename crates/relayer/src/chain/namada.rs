@@ -34,7 +34,8 @@ use ibc_relayer_types::core::ics24_host::path::{
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
-use namada_ibc::storage;
+use namada_ibc::core::host::types::path::UPGRADED_IBC_STATE;
+use namada_ibc::{storage, COMMITMENT_PREFIX};
 use namada_parameters::{storage as param_storage, EpochDuration};
 use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
@@ -1163,7 +1164,10 @@ impl ChainEndpoint for NamadaChain {
             settings.max_clock_drift,
             height,
             self.config.proof_specs.clone().unwrap(),
-            vec![],
+            vec![
+                COMMITMENT_PREFIX.to_string(),
+                UPGRADED_IBC_STATE.to_string(),
+            ],
             AllowUpdate {
                 after_expiry: true,
                 after_misbehaviour: true,
