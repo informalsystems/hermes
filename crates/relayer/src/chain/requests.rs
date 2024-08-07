@@ -138,14 +138,14 @@ impl From<PageRequest> for RawPageRequest {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Copy, Debug, Default, Deserialize, Eq, PartialEq, Serialize)]
 pub enum Paginate {
     #[default]
     All,
 
     PerPage {
-        pagination: u64,
-        limit: u64,
+        per_page: u64,
+        total: u64,
     },
 }
 
@@ -154,15 +154,11 @@ impl Paginate {
         !matches!(self, Self::All)
     }
 
-    pub fn get_limit(&self) -> u64 {
-        if let Paginate::PerPage {
-            pagination: _,
-            limit,
-        } = self
-        {
-            return *limit;
+    pub fn get_values(&self) -> (u64, u64) {
+        match self {
+            Paginate::PerPage { total, per_page } => (*per_page, *total),
+            _ => (0, 0),
         }
-        0
     }
 }
 
@@ -170,10 +166,7 @@ impl From<Paginate> for PageRequest {
     fn from(value: Paginate) -> Self {
         match value {
             Paginate::All => PageRequest::all(),
-            Paginate::PerPage {
-                pagination: _,
-                limit,
-            } => PageRequest::per_page(limit),
+            Paginate::PerPage { per_page, .. } => PageRequest::per_page(per_page),
         }
     }
 }

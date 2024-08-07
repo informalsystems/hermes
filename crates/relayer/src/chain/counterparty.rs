@@ -595,7 +595,7 @@ pub fn unreceived_acknowledgements(
     pagination: Paginate,
 ) -> Result<Option<(Vec<Sequence>, Height)>, Error> {
     let (commitments_on_src, _) =
-        commitments_on_chain(chain, &path.port_id, &path.channel_id, pagination.clone())?;
+        commitments_on_chain(chain, &path.port_id, &path.channel_id, pagination)?;
 
     let acks_and_height_on_counterparty = packet_acknowledgements(
         counterparty_chain,

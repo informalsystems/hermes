@@ -241,8 +241,8 @@ impl ChannelScan {
                     chain,
                     &ids,
                     Paginate::PerPage {
-                        pagination: 1,
-                        limit: 1,
+                        per_page: 1,
+                        total: 1,
                     },
                 )
                 .map(|(seq, _)| seq)
@@ -265,8 +265,8 @@ impl ChannelScan {
             chain,
             &ids,
             Paginate::PerPage {
-                pagination: 1,
-                limit: 1,
+                per_page: 1,
+                total: 1,
             },
         )
         .map(|sns| sns.map_or(vec![], |(sns, _)| sns))

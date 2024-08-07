@@ -1944,7 +1944,8 @@ impl ChainEndpoint for CosmosSdkChain {
             let mut results = Vec::new();
             let mut page_key = Vec::new();
 
-            let mut limit = request.pagination.get_limit();
+            let pagination_information = request.pagination.get_values();
+            let mut current_results = 0;
 
             loop {
                 crate::time!(
@@ -1963,6 +1964,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 }
 
                 let mut tonic_request = tonic::Request::new(raw_request);
+                // TODO: This should either be configurable or inferred from the pagination
                 tonic_request.set_timeout(Duration::from_secs(10));
 
                 let response = self.rt.block_on(async {
@@ -1981,6 +1983,7 @@ impl ChainEndpoint for CosmosSdkChain {
                             .map(|p| p.next_key.clone());
 
                         results.push(Ok(inner_response));
+                        current_results += pagination_information.0;
 
                         match next_key {
                             Some(next_key) if !next_key.is_empty() => {
@@ -1994,17 +1997,12 @@ impl ChainEndpoint for CosmosSdkChain {
                         break;
                     }
                 }
-                if limit == 0 {
+                if current_results >= pagination_information.1 {
                     break;
                 }
-                limit -= 1;
             }
 
-            let responses =
-                results.into_iter().collect::<Result<
-                    Vec<ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsResponse>,
-                    _,
-                >>()?;
+            let responses = results.into_iter().collect::<Result<Vec<_>, _>>()?;
 
             let mut commitment_sequences = Vec::new();
 
@@ -2183,6 +2181,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 }
 
                 let mut tonic_request = tonic::Request::new(raw_request);
+                // TODO: This should either be configurable or inferred from the pagination
                 tonic_request.set_timeout(Duration::from_secs(10));
 
                 let response = self.rt.block_on(async {
@@ -2218,10 +2217,7 @@ impl ChainEndpoint for CosmosSdkChain {
                 }
             }
 
-            let responses = results.into_iter().collect::<Result<
-                Vec<ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsResponse>,
-                _,
-            >>()?;
+            let responses = results.into_iter().collect::<Result<Vec<_>, _>>()?;
 
             let mut acks_sequences = Vec::new();
 

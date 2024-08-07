@@ -1,13 +1,13 @@
 use core::fmt;
 
 use abscissa_core::clap::Parser;
-use ibc_relayer::chain::requests::Paginate;
 use serde::Serialize;
 
 use ibc_relayer::chain::counterparty::{
     channel_on_destination, pending_packet_summary, PendingPackets,
 };
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::requests::Paginate;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::cli_utils::spawn_chain_counterparty;
