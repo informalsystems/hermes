@@ -169,19 +169,31 @@ pub fn spawn_worker_tasks<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                     let resubmit = Resubmit::from_clear_interval(clear_interval);
 
+                    let (clear_cmd_tx, clear_cmd_rx) = crossbeam_channel::unbounded();
+                    let clear_task = packet::spawn_clear_cmd_worker(
+                        cmd_rx,
+                        link.clone(),
+                        should_clear_on_start,
+                        clear_interval,
+                        config.mode.packets.clear_limit,
+                        clear_cmd_tx,
+                    );
+                    task_handles.push(clear_task);
+
                     // Only spawn the incentivized worker if a fee filter is specified in the configuration
                     let packet_task = match fee_filter {
                         Some(filter) => packet::spawn_incentivized_packet_cmd_worker(
-                            cmd_rx,
+                            clear_cmd_rx,
                             link.clone(),
                             path.clone(),
                             filter,
                         ),
                         None => packet::spawn_packet_cmd_worker(
-                            cmd_rx,
+                            clear_cmd_rx,
                             link.clone(),
                             should_clear_on_start,
                             clear_interval,
+                            config.mode.packets.clear_limit,
                             path.clone(),
                         ),
                     };

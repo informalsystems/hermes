@@ -195,7 +195,7 @@ pub fn on_timeout_packet<Ctx>(ctx: &Ctx, data: &FungibleTokenPacketData) -> Resu
     refund_packet_token(ctx, data)
 }
 
-/// Responds to the the success or failure of a packet
+/// Responds to the success or failure of a packet
 /// acknowledgement written on the receiving chain. If the acknowledgement
 /// was a success then nothing occurs. If the acknowledgement failed, then
 /// the sender is refunded their tokens.
