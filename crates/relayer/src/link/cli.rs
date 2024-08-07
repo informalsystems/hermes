@@ -11,7 +11,7 @@ use ibc_relayer_types::Height;
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::Qualified;
+use crate::chain::requests::{Paginate, Qualified};
 use crate::chain::tracking::TrackingId;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
@@ -97,6 +97,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             self.a_to_b.dst_chain(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
+            Paginate::All,
         )
         .map_err(LinkError::supervisor)?;
 
@@ -162,6 +163,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             self.a_to_b.dst_chain(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
+            Paginate::All,
         )
         .map_err(LinkError::supervisor)?
         else {

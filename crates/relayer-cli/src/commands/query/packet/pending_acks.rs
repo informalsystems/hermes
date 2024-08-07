@@ -2,6 +2,7 @@ use abscissa_core::clap::Parser;
 
 use ibc_relayer::chain::counterparty::unreceived_acknowledgements;
 use ibc_relayer::chain::handle::BaseChainHandle;
+use ibc_relayer::chain::requests::Paginate;
 use ibc_relayer::path::PathIdentifiers;
 use ibc_relayer::util::collate::CollatedIterExt;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -68,8 +69,9 @@ impl QueryPendingAcksCmd {
         let path_identifiers = PathIdentifiers::from_channel_end(channel.clone())
             .ok_or_else(|| Error::missing_counterparty_channel_id(channel))?;
 
-        let acks = unreceived_acknowledgements(&chains.src, &chains.dst, &path_identifiers)
-            .map_err(Error::supervisor)?;
+        let acks =
+            unreceived_acknowledgements(&chains.src, &chains.dst, &path_identifiers, Paginate::All)
+                .map_err(Error::supervisor)?;
 
         Ok(acks.map_or(vec![], |(sns, _)| sns))
     }

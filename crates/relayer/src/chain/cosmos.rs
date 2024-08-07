@@ -1933,31 +1933,116 @@ impl ChainEndpoint for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
+            .map(|client| {
+                client.max_decoding_message_size(
+                    self.config().max_grpc_decoding_size.get_bytes() as usize
+                )
+            })
             .map_err(Error::grpc_transport)?;
 
-        client = client
-            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+        if request.pagination.is_enabled() {
+            let mut results = Vec::new();
+            let mut page_key = Vec::new();
 
-        let request = tonic::Request::new(request.into());
+            let pagination_information = request.pagination.get_values();
+            let mut current_results = 0;
 
-        let response = self
-            .block_on(client.packet_commitments(request))
-            .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
-            .into_inner();
+            loop {
+                crate::time!(
+                    "query_packet_commitments_loop_iteration",
+                    {
+                        "src_chain": self.config().id.to_string(),
+                    }
+                );
+                let mut raw_request =
+                    ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest::from(
+                        request.clone(),
+                    );
 
-        let mut commitment_sequences: Vec<Sequence> = response
-            .commitments
-            .into_iter()
-            .map(|v| v.sequence.into())
-            .collect();
-        commitment_sequences.sort_unstable();
+                if let Some(pagination) = raw_request.pagination.as_mut() {
+                    pagination.key = page_key;
+                }
 
-        let height = response
-            .height
-            .and_then(|raw_height| raw_height.try_into().ok())
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+                let mut tonic_request = tonic::Request::new(raw_request);
+                // TODO: This should either be configurable or inferred from the pagination
+                tonic_request.set_timeout(Duration::from_secs(10));
 
-        Ok((commitment_sequences, height))
+                let response = self.rt.block_on(async {
+                    client
+                        .packet_commitments(tonic_request)
+                        .await
+                        .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))
+                });
+
+                match response {
+                    Ok(response) => {
+                        let inner_response = response.into_inner().clone();
+                        let next_key = inner_response
+                            .pagination
+                            .as_ref()
+                            .map(|p| p.next_key.clone());
+
+                        results.push(Ok(inner_response));
+                        current_results += pagination_information.0;
+
+                        match next_key {
+                            Some(next_key) if !next_key.is_empty() => {
+                                page_key = next_key;
+                            }
+                            _ => break,
+                        }
+                    }
+                    Err(e) => {
+                        results.push(Err(e));
+                        break;
+                    }
+                }
+                if current_results >= pagination_information.1 {
+                    break;
+                }
+            }
+
+            let responses = results.into_iter().collect::<Result<Vec<_>, _>>()?;
+
+            let mut commitment_sequences = Vec::new();
+
+            for response in &responses {
+                commitment_sequences.extend(
+                    response
+                        .commitments
+                        .iter()
+                        .map(|commit| Sequence::from(commit.sequence)),
+                );
+            }
+
+            let height = responses
+                .first()
+                .and_then(|res| res.height)
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((commitment_sequences, height))
+        } else {
+            let request = tonic::Request::new(request.into());
+            let response = self
+                .block_on(client.packet_commitments(request))
+                .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
+                .into_inner();
+
+            let mut commitment_sequences: Vec<Sequence> = response
+                .commitments
+                .into_iter()
+                .map(|v| v.sequence.into())
+                .collect();
+            commitment_sequences.sort_unstable();
+
+            let height = response
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((commitment_sequences, height))
+        }
     }
 
     fn query_packet_receipt(
@@ -2074,30 +2159,105 @@ impl ChainEndpoint for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
+            .map(|client| {
+                client.max_decoding_message_size(
+                    self.config().max_grpc_decoding_size.get_bytes() as usize
+                )
+            })
             .map_err(Error::grpc_transport)?;
 
-        client = client
-            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+        if request.pagination.is_enabled() {
+            let mut results = Vec::new();
+            let mut page_key = Vec::new();
 
-        let request = tonic::Request::new(request.into());
+            loop {
+                let mut raw_request =
+                    ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest::from(
+                        request.clone(),
+                    );
 
-        let response = self
-            .block_on(client.packet_acknowledgements(request))
-            .map_err(|e| Error::grpc_status(e, "query_packet_acknowledgements".to_owned()))?
-            .into_inner();
+                if let Some(pagination) = raw_request.pagination.as_mut() {
+                    pagination.key = page_key;
+                }
 
-        let acks_sequences = response
-            .acknowledgements
-            .into_iter()
-            .map(|v| v.sequence.into())
-            .collect();
+                let mut tonic_request = tonic::Request::new(raw_request);
+                // TODO: This should either be configurable or inferred from the pagination
+                tonic_request.set_timeout(Duration::from_secs(10));
 
-        let height = response
-            .height
-            .and_then(|raw_height| raw_height.try_into().ok())
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+                let response = self.rt.block_on(async {
+                    client
+                        .packet_acknowledgements(tonic_request)
+                        .await
+                        .map_err(|e| {
+                            Error::grpc_status(e, "query_packet_acknowledgements".to_owned())
+                        })
+                });
 
-        Ok((acks_sequences, height))
+                match response {
+                    Ok(response) => {
+                        let inner_response = response.into_inner().clone();
+                        let next_key = inner_response
+                            .pagination
+                            .as_ref()
+                            .map(|p| p.next_key.clone());
+
+                        results.push(Ok(inner_response));
+
+                        match next_key {
+                            Some(next_key) if !next_key.is_empty() => {
+                                page_key = next_key;
+                            }
+                            _ => break,
+                        }
+                    }
+                    Err(e) => {
+                        results.push(Err(e));
+                        break;
+                    }
+                }
+            }
+
+            let responses = results.into_iter().collect::<Result<Vec<_>, _>>()?;
+
+            let mut acks_sequences = Vec::new();
+
+            for response in &responses {
+                acks_sequences.extend(
+                    response
+                        .acknowledgements
+                        .iter()
+                        .map(|commit| Sequence::from(commit.sequence)),
+                );
+            }
+
+            let height = responses
+                .first()
+                .and_then(|res| res.height)
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((acks_sequences, height))
+        } else {
+            let request = tonic::Request::new(request.into());
+            let response = self
+                .block_on(client.packet_acknowledgements(request))
+                .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
+                .into_inner();
+
+            let mut acks_sequences: Vec<Sequence> = response
+                .acknowledgements
+                .into_iter()
+                .map(|v| v.sequence.into())
+                .collect();
+            acks_sequences.sort_unstable();
+
+            let height = response
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((acks_sequences, height))
+        }
     }
 
     /// Performs a `QueryUnreceivedAcksRequest` gRPC query to fetch the unreceived acknowledgements
