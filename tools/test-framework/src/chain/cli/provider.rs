@@ -1,19 +1,21 @@
+use eyre::eyre;
 use std::collections::HashMap;
 use std::str;
 
 use crate::chain::exec::{simple_exec, ExecOutput};
-use crate::error::Error;
+use crate::error::{handle_generic_error, Error};
 
 pub fn submit_consumer_chain_proposal(
     chain_id: &str,
     command_path: &str,
     home_path: &str,
     rpc_listen_address: &str,
+    fees: &str,
 ) -> Result<(), Error> {
     let proposal_file = format!("{}/consumer_proposal.json", home_path);
 
     // The submission might fail silently if there is not enough gas
-    simple_exec(
+    let raw_output = simple_exec(
         chain_id,
         command_path,
         &[
@@ -34,9 +36,23 @@ pub fn submit_consumer_chain_proposal(
             "test",
             "--gas",
             "2000000",
+            "--fees",
+            fees,
+            "--output",
+            "json",
             "--yes",
         ],
     )?;
+
+    let output: serde_json::Value =
+        serde_json::from_str(&raw_output.stdout).map_err(handle_generic_error)?;
+
+    let output_code = output.get("code").and_then(|code| code.as_u64()).ok_or_else(|| Error::generic(eyre!("failed to extract 'code' from 'tx gov submit-legacy-proposal consumer-addition' command")))?;
+
+    if output_code != 0 {
+        let output_logs = output.get("raw_log").and_then(|code| code.as_str()).ok_or_else(|| Error::generic(eyre!("failed to extract 'raw_logs' from 'tx gov submit-legacy-proposal consumer-addition' command")))?;
+        return Err(Error::generic(eyre!("output code for commande 'tx gov submit-legacy-proposal consumer-addition' should be 0, but is instead '{output_code}'. Detail: {output_logs}", )));
+    }
 
     Ok(())
 }
