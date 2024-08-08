@@ -56,7 +56,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         now: Time,
     ) -> Result<Verified<TmHeader>, Error> {
         crate::time!(
-            "header_and_minimal_set",
+            "light_client.tendermint.header_and_minimal_set",
             {
                 "src_chain": self.chain_id.to_string(),
             }
@@ -88,7 +88,7 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         now: Time,
     ) -> Result<Verified<LightBlock>, Error> {
         crate::time!(
-            "tendermint_verify",
+            "light_client.tendermint.verify",
             {
                 "src_chain": self.chain_id.to_string(),
             }
