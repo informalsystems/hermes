@@ -55,6 +55,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         client_state: &AnyClientState,
         now: Time,
     ) -> Result<Verified<TmHeader>, Error> {
+        crate::time!(
+            "header_and_minimal_set",
+            {
+                "src_chain": self.chain_id.to_string(),
+            }
+        );
         let Verified { target, supporting } =
             self.verify(trusted_height, target_height, client_state, now)?;
 
@@ -81,6 +87,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
         client_state: &AnyClientState,
         now: Time,
     ) -> Result<Verified<LightBlock>, Error> {
+        crate::time!(
+            "tendermint_verify",
+            {
+                "src_chain": self.chain_id.to_string(),
+            }
+        );
         trace!(%trusted_height, %target_height, "light client verification");
 
         if !self.enable_verification {

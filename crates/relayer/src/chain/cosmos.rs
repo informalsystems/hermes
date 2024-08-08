@@ -577,11 +577,6 @@ impl CosmosSdkChain {
         height_query: QueryHeight,
         prove: bool,
     ) -> Result<QueryResponse, Error> {
-        crate::time!("query",
-        {
-            "src_chain": self.config().id.to_string(),
-        });
-
         let data = data.into();
         if !data.is_provable() & prove {
             return Err(Error::private_store());
@@ -1197,6 +1192,12 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
+        crate::time!(
+            "query_balance",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let key = match key_name {
@@ -1212,6 +1213,12 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
+        crate::time!(
+            "query_all_balances",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let key = match key_name {
@@ -1893,6 +1900,12 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketCommitmentRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        crate::time!(
+            "query_packet_commitment",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let res = self.query(
             CommitmentsPath {
                 port_id: request.port_id,
@@ -1965,6 +1978,12 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketReceiptRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        crate::time!(
+            "query_packet_receipt",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let res = self.query(
             ReceiptsPath {
                 port_id: request.port_id,
@@ -2030,6 +2049,12 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketAcknowledgementRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        crate::time!(
+            "query_packet_acknowledgement",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let res = self.query(
             AcksPath {
                 port_id: request.port_id,
@@ -2187,10 +2212,6 @@ impl ChainEndpoint for CosmosSdkChain {
     /// 1. Client Update request - returns a vector with at most one update client event
     /// 2. Transaction event request - returns all IBC events resulted from a Tx execution
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
-        crate::time!("query_txs",
-        {
-            "src_chain": self.config().id.to_string(),
-        });
         crate::telemetry!(query, self.id(), "query_txs");
 
         self.block_on(query_txs(
@@ -2286,6 +2307,12 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
+        crate::time!(
+            "query_host_consensus_state",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let height = match request.height {
             QueryHeight::Latest => TmHeight::from(0u32),
             QueryHeight::Specific(ibc_height) => TmHeight::from(ibc_height),
@@ -2316,6 +2343,12 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
+        crate::time!(
+            "build_client_state",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let ClientSettings::Tendermint(settings) = settings;
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = settings
