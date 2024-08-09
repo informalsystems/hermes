@@ -4,9 +4,10 @@ use abscissa_core::clap::Parser;
 use serde::Serialize;
 
 use ibc_relayer::chain::counterparty::{
-    channel_on_destination, pending_packet_summary, PendingPackets,
+    channel_on_destination, pending_packet_summary, ChannelConnectionClient, PendingPackets,
 };
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::supervisor::Error as SupervisorError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::cli_utils::spawn_chain_counterparty;
@@ -118,28 +119,43 @@ impl QueryPendingPacketsCmd {
     fn execute(&self) -> Result<Summary<PendingPackets>, Error> {
         let config = app_config();
 
-        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_client) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
             &self.channel_id,
         )?;
 
+        let channel = chan_conn_client.channel().clone();
+
+        let connection = match chan_conn_client {
+            ChannelConnectionClient::SingleHop(chan_conn_client) => chan_conn_client.connection,
+            ChannelConnectionClient::Multihop(chan_conn_client) => {
+                let connection = chan_conn_client
+                    .connections
+                    .last()
+                    .ok_or(
+                        SupervisorError::channel_connection_client_multihop_missing_connection(
+                            self.channel_id.clone(),
+                        ),
+                    )
+                    .map_err(Error::supervisor)?;
+
+                connection.clone()
+            }
+        };
+
         debug!(
             "fetched from source chain {} the following channel {:?}",
-            self.chain_id, chan_conn_cli.channel
+            self.chain_id, channel
         );
 
-        let src_summary = pending_packet_summary(&chains.src, &chains.dst, &chan_conn_cli.channel)
+        let src_summary = pending_packet_summary(&chains.src, &chains.dst, &channel)
             .map_err(Error::supervisor)?;
 
-        let counterparty_channel = channel_on_destination(
-            &chan_conn_cli.channel,
-            &chan_conn_cli.connection,
-            &chains.dst,
-        )
-        .map_err(Error::supervisor)?
-        .ok_or_else(|| Error::missing_counterparty_channel_id(chan_conn_cli.channel))?;
+        let counterparty_channel = channel_on_destination(&channel, &connection, &chains.dst)
+            .map_err(Error::supervisor)?
+            .ok_or_else(|| Error::missing_counterparty_channel_id(channel))?;
 
         let dst_summary = pending_packet_summary(&chains.dst, &chains.src, &counterparty_channel)
             .map_err(Error::supervisor)?;

@@ -16,7 +16,7 @@ use ibc_relayer_types::core::{
 use crate::{
     chain::{
         counterparty::{channel_on_destination, connection_state_on_destination},
-        handle::ChainHandle,
+        handle::{ChainHandle, DefaultChainHandle},
         requests::{
             IncludeProof, PageRequest, QueryChannelRequest, QueryClientConnectionsRequest,
             QueryClientStateRequest, QueryClientStatesRequest, QueryConnectionChannelsRequest,
@@ -29,7 +29,7 @@ use crate::{
         ChainConfig, Config,
     },
     path::PathIdentifiers,
-    registry::Registry,
+    registry::SharedRegistry,
     supervisor::client_state_filter::{FilterPolicy, Permission},
 };
 
@@ -266,17 +266,17 @@ pub enum ScanMode {
     Full,
 }
 
-pub struct ChainScanner<'a, Chain: ChainHandle> {
+pub struct ChainScanner<'a> {
     config: &'a Config,
-    registry: &'a mut Registry<Chain>,
+    registry: &'a SharedRegistry,
     client_state_filter: &'a mut FilterPolicy,
     scan_mode: ScanMode,
 }
 
-impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
+impl<'a> ChainScanner<'a> {
     pub fn new(
         config: &'a Config,
-        registry: &'a mut Registry<Chain>,
+        registry: &'a SharedRegistry,
         client_state_filter: &'a mut FilterPolicy,
         scan_mode: ScanMode,
     ) -> Self {
@@ -342,7 +342,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
     pub fn query_allowed_channels(
         &mut self,
-        chain: &Chain,
+        chain: &DefaultChainHandle,
         filters: &ChannelFilters,
         scan: &mut ChainScan,
     ) -> Result<(), Error> {
@@ -397,7 +397,11 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         Ok(())
     }
 
-    pub fn scan_all_clients(&mut self, chain: &Chain, scan: &mut ChainScan) -> Result<(), Error> {
+    pub fn scan_all_clients(
+        &mut self,
+        chain: &DefaultChainHandle,
+        scan: &mut ChainScan,
+    ) -> Result<(), Error> {
         info!("scanning all clients...");
 
         let clients = query_all_clients(chain)?;
@@ -435,7 +439,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
     fn scan_client(
         &mut self,
-        chain: &Chain,
+        chain: &DefaultChainHandle,
         client: IdentifiedAnyClientState,
     ) -> Result<Option<ClientScan>, Error> {
         let span = error_span!("scan.client", client = %client.client_id);
@@ -483,7 +487,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
     fn scan_connection(
         &mut self,
-        chain: &Chain,
+        chain: &DefaultChainHandle,
         client: &IdentifiedAnyClientState,
         connection: IdentifiedConnectionEnd,
     ) -> Result<Option<ConnectionScan>, Error> {
@@ -594,7 +598,11 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         }
     }
 
-    fn client_allowed(&mut self, chain: &Chain, client: &IdentifiedAnyClientState) -> bool {
+    fn client_allowed(
+        &mut self,
+        chain: &DefaultChainHandle,
+        client: &IdentifiedAnyClientState,
+    ) -> bool {
         if !self.filtering_enabled() {
             return true;
         };
@@ -610,7 +618,7 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
 
     fn connection_allowed(
         &mut self,
-        chain: &Chain,
+        chain: &DefaultChainHandle,
         client: &IdentifiedAnyClientState,
         connection: &IdentifiedConnectionEnd,
     ) -> bool {
@@ -653,7 +661,11 @@ impl<'a, Chain: ChainHandle> ChainScanner<'a, Chain> {
         }
     }
 
-    fn channel_allowed(&mut self, chain: &Chain, channel: &IdentifiedChannelEnd) -> bool {
+    fn channel_allowed(
+        &mut self,
+        chain: &DefaultChainHandle,
+        channel: &IdentifiedChannelEnd,
+    ) -> bool {
         self.config
             .packets_on_channel_allowed(&chain.id(), &channel.port_id, &channel.channel_id)
     }
@@ -667,9 +679,9 @@ struct ScannedChannel {
     client: IdentifiedAnyClientState,
 }
 
-fn scan_allowed_channel<Chain: ChainHandle>(
-    registry: &'_ mut Registry<Chain>,
-    chain: &Chain,
+fn scan_allowed_channel(
+    registry: &'_ SharedRegistry,
+    chain: &DefaultChainHandle,
     port_id: &PortId,
     channel_id: &ChannelId,
 ) -> Result<ScannedChannel, Error> {

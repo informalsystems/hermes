@@ -214,6 +214,22 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self.channel
     }
 
+    pub fn is_multihop(&self) -> bool {
+        if let Some(connection_hops) = self.channel.a_side.connection_hops() {
+            if connection_hops.hops.len() > 1 {
+                return true;
+            }
+        }
+
+        if let Some(connection_hops) = self.channel.b_side.connection_hops() {
+            if connection_hops.hops.len() > 1 {
+                return true;
+            }
+        }
+
+        false
+    }
+
     fn src_channel(&self, height_query: QueryHeight) -> Result<ChannelEnd, LinkError> {
         self.src_chain()
             .query_channel(

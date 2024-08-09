@@ -1,6 +1,7 @@
 use flex_error::define_error;
 
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty;
+use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
 
 use crate::error::Error as RelayerError;
@@ -42,6 +43,16 @@ define_error! {
                     e.connection_id, e.channel_id, e.chain_id)
             },
 
+        ClientIsFrozen
+            {
+                client_id: ClientId,
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format_args!("client '{}' on the path for channel '{}' on chain '{}' is frozen", e.client_id, e.channel_id, e.chain_id)
+            },
+
         MissingConnectionHops
             {
                 channel_id: ChannelId,
@@ -75,6 +86,72 @@ define_error! {
 
         HandleRecv
             |_| { "failed to receive the result of a command from the supervisor through a channel" },
+
+        ChannelConnectionClientMissingConnection
+            {
+                channel_id: ChannelId,
+            }
+            |e| {
+                format_args!("ChannelConnectionClient constructor failed due to a missing \
+                value for the connection field of channel '{}'",
+                e.channel_id)
+            },
+
+        ChannelConnectionClientMissingClient
+            {
+                channel_id: ChannelId,
+            }
+            |e| {
+                format_args!("ChannelConnectionClient constructor failed due to a missing \
+                value for the client field of channel '{}'",
+                e.channel_id)
+            },
+
+        ChannelConnectionClientMultihopMissingClient
+            {
+                channel_id: ChannelId,
+            }
+            |e| {
+                format_args!("failed due to missing clients for channel '{}'", e.channel_id)
+            },
+
+        ChannelConnectionClientMultihopMissingConnection
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("failed due to missing connections for channel '{}'", e.channel_id)
+        },
+
+        ChannelConnectionClientMultihopConstructorMissingClients
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("ChannelConnectionClientMultihop constructor failed due to missing
+            values for the client field of channel '{}'",
+            e.channel_id)
+        },
+
+        ChannelConnectionClientMultihopConstructorMissingConnections
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("ChannelConnectionClientMultihop constructor failed due to a missing \
+            value for the client field of channel '{}'",
+            e.channel_id)
+        },
+
+        ChannelConnectionClientMultihopConstructorLengthMismatch
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("ChannelConnectionClientMultihop constructor failed due to a mismatch \
+            in the number of connections and clients in the channel path for channel '{}'",
+            e.channel_id)
+        },
     }
 }
 

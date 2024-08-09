@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use ibc_relayer_types::{
     core::{
+        ics02_client::client_state::ClientState,
         ics03_connection::connection::{
             ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
         },
@@ -31,8 +32,10 @@ use crate::chain::requests::QueryHeight;
 use crate::channel::ChannelError;
 use crate::client_state::IdentifiedAnyClientState;
 use crate::path::PathIdentifiers;
+use crate::registry::get_global_registry;
 use crate::supervisor::Error;
 use crate::telemetry;
+use crate::util::multihop::build_hops_from_connection_ids;
 
 pub fn counterparty_chain_from_connection(
     src_chain: &impl ChainHandle,
@@ -133,13 +136,13 @@ pub fn connection_state_on_destination(
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ChannelConnectionClient {
+pub struct ChannelConnectionClientSingleHop {
     pub channel: IdentifiedChannelEnd,
     pub connection: IdentifiedConnectionEnd,
     pub client: IdentifiedAnyClientState,
 }
 
-impl ChannelConnectionClient {
+impl ChannelConnectionClientSingleHop {
     pub fn new(
         channel: IdentifiedChannelEnd,
         connection: IdentifiedConnectionEnd,
@@ -149,6 +152,126 @@ impl ChannelConnectionClient {
             channel,
             connection,
             client,
+        }
+    }
+
+    pub fn dst_chain_id(&self) -> ChainId {
+        self.client.client_state.chain_id()
+    }
+}
+
+pub struct ChannelConnectionClientMultihop {
+    pub channel: IdentifiedChannelEnd,
+    pub connections: Vec<IdentifiedConnectionEnd>,
+    pub clients: Vec<IdentifiedAnyClientState>,
+}
+
+impl ChannelConnectionClientMultihop {
+    pub fn new(
+        channel: IdentifiedChannelEnd,
+        connections: Vec<IdentifiedConnectionEnd>,
+        clients: Vec<IdentifiedAnyClientState>,
+    ) -> Result<Self, Error> {
+        // Multihop channels must have at least two connections in the channel path
+        if connections.len() < 2 {
+            return Err(
+                Error::channel_connection_client_multihop_constructor_missing_connections(
+                    channel.channel_id.clone(),
+                ),
+            );
+        }
+
+        // Multihop channels must have at least two clients along the channel path
+        if clients.len() < 2 {
+            return Err(
+                Error::channel_connection_client_multihop_constructor_missing_connections(
+                    channel.channel_id.clone(),
+                ),
+            );
+        }
+
+        // The number of connections and clients along the channel path must match
+        if connections.len() != clients.len() {
+            return Err(
+                Error::channel_connection_client_multihop_constructor_length_mismatch(
+                    channel.channel_id.clone(),
+                ),
+            );
+        }
+
+        Ok(Self {
+            channel,
+            connections,
+            clients,
+        })
+    }
+
+    pub fn dst_chain_id(&self) -> Result<ChainId, Error> {
+        let last_hop_client = self.clients.last().ok_or_else(|| {
+            Error::channel_connection_client_multihop_missing_client(
+                self.channel.channel_id.clone(),
+            )
+        })?;
+
+        Ok(last_hop_client.client_state.chain_id())
+    }
+}
+
+#[allow(clippy::large_enum_variant)]
+pub enum ChannelConnectionClient {
+    SingleHop(ChannelConnectionClientSingleHop),
+    Multihop(ChannelConnectionClientMultihop),
+}
+
+impl ChannelConnectionClient {
+    pub fn new(
+        channel: IdentifiedChannelEnd,
+        connection: impl Into<Vec<IdentifiedConnectionEnd>>,
+        client: impl Into<Vec<IdentifiedAnyClientState>>,
+    ) -> Result<Self, Error> {
+        let connection_vec: Vec<IdentifiedConnectionEnd> = connection.into();
+        let client_vec: Vec<IdentifiedAnyClientState> = client.into();
+
+        match (connection_vec.len(), client_vec.len()) {
+            // ChannelConnectionClient requires at least one connection
+            (0, _) => Err(Error::channel_connection_client_missing_connection(
+                channel.channel_id.clone(),
+            )),
+
+            // ChannelConnectionClient requires at least one client
+            (_, 0) => Err(Error::channel_connection_client_missing_client(
+                channel.channel_id.clone(),
+            )),
+
+            // A ChannelConnectionClient with exactly one connection and one client corresponds
+            // to a single-hop channel
+            (1, 1) => Ok(Self::SingleHop(ChannelConnectionClientSingleHop::new(
+                channel,
+                connection_vec
+                    .first()
+                    .expect("connection_vec is never empty")
+                    .clone(),
+                client_vec
+                    .first()
+                    .expect("client_vec is never empty")
+                    .clone(),
+            ))),
+
+            // A ChannelConnectionClient with multiple connections and clients corresponds to
+            // a multihop channel
+            (_, _) => {
+                let chan_conn_client_multihop =
+                    ChannelConnectionClientMultihop::new(channel, connection_vec, client_vec)?;
+
+                Ok(Self::Multihop(chan_conn_client_multihop))
+            }
+        }
+    }
+
+    pub fn channel(&self) -> &IdentifiedChannelEnd {
+        match self {
+            ChannelConnectionClient::SingleHop(chan_conn_client) => &chan_conn_client.channel,
+            ChannelConnectionClient::Multihop(chan_conn_client) => &chan_conn_client.channel,
         }
     }
 }
@@ -179,22 +302,21 @@ pub fn channel_connection_client_no_checks(
         ));
     }
 
-    let connection_id = channel_end
-        .connection_hops()
-        .first()
-        .ok_or_else(|| Error::missing_connection_hops(channel_id.clone(), chain.id()))?;
-
-    let (connection_end, _) = chain
-        .query_connection(
-            QueryConnectionRequest {
-                connection_id: connection_id.clone(),
-                height: QueryHeight::Latest,
-            },
-            IncludeProof::No,
-        )
+    let channel_hops = build_hops_from_connection_ids(chain, channel_end.connection_hops())
         .map_err(Error::relayer)?;
 
-    let client_id = connection_end.client_id();
+    let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
+    let mut connections = Vec::new();
+    let mut clients = Vec::new();
+
+    // Retrieve the first connection hop in the channel
+    let first_hop = channel_hops
+        .hops_as_slice()
+        .first()
+        .ok_or_else(|| Error::missing_connection_hops(channel_id.clone(), chain.id().clone()))?;
+
+    let client_id = first_hop.connection().client_id().clone();
+
     let (client_state, _) = chain
         .query_client_state(
             QueryClientStateRequest {
@@ -205,16 +327,53 @@ pub fn channel_connection_client_no_checks(
         )
         .map_err(Error::relayer)?;
 
-    let client = IdentifiedAnyClientState::new(client_id.clone(), client_state);
-    let connection = IdentifiedConnectionEnd::new(connection_id.clone(), connection_end);
-    let channel = IdentifiedChannelEnd::new(port_id.clone(), channel_id.clone(), channel_end);
+    connections.push(first_hop.connection.clone());
 
-    Ok(ChannelConnectionClient::new(channel, connection, client))
+    clients.push(IdentifiedAnyClientState::new(
+        client_id.clone(),
+        client_state,
+    ));
+
+    let registry = get_global_registry();
+
+    for connection_hop in channel_hops.hops.iter().skip(1) {
+        // Retrieve the identifier of the chain to which the previous hop leads to
+        let hop_chain_id = clients
+            .last()
+            .expect("clients is never empty")
+            .client_state
+            .chain_id()
+            .clone();
+
+        let hop_chain = registry.get_or_spawn(&hop_chain_id).map_err(Error::spawn)?;
+
+        let client_id = connection_hop.connection().client_id().clone();
+
+        let (client_state, _) = hop_chain
+            .query_client_state(
+                QueryClientStateRequest {
+                    client_id: client_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(Error::relayer)?;
+
+        connections.push(connection_hop.connection.clone());
+        clients.push(IdentifiedAnyClientState::new(
+            client_id.clone(),
+            client_state,
+        ));
+    }
+
+    let chan_conn_client = ChannelConnectionClient::new(channel, connections, clients)?;
+    Ok(chan_conn_client)
 }
 
 /// Returns the [`ChannelConnectionClient`] associated with the
 /// provided port and channel id.
-/// It checks that the connection is open.
+/// It checks that the connection(s) are open and that the client(s)
+/// are not frozen.
 pub fn channel_connection_client(
     chain: &impl ChainHandle,
     port_id: &PortId,
@@ -223,17 +382,52 @@ pub fn channel_connection_client(
     let channel_connection_client =
         channel_connection_client_no_checks(chain, port_id, channel_id)?;
 
-    if !channel_connection_client
-        .connection
-        .connection_end
-        .is_open()
-    {
-        return Err(Error::connection_not_open(
-            channel_connection_client.connection.connection_id,
-            channel_id.clone(),
-            chain.id(),
-        ));
+    match &channel_connection_client {
+        ChannelConnectionClient::SingleHop(chan_conn_client) => {
+            // Ensure the channel's connection is open
+            if !chan_conn_client.connection.connection_end.is_open() {
+                return Err(Error::connection_not_open(
+                    chan_conn_client.connection.connection_id.clone(),
+                    channel_id.clone(),
+                    chain.id(),
+                ));
+            }
+
+            // Ensure the client is not frozen
+            if chan_conn_client.client.client_state.is_frozen() {
+                return Err(Error::client_is_frozen(
+                    chan_conn_client.client.client_id.clone(),
+                    channel_id.clone(),
+                    chain.id().clone(),
+                ));
+            }
+        }
+
+        ChannelConnectionClient::Multihop(chan_conn_client) => {
+            // Ensure all connections along the channel path are open
+            for connection in chan_conn_client.connections.iter() {
+                if !connection.connection_end.is_open() {
+                    return Err(Error::connection_not_open(
+                        connection.connection_id.clone(),
+                        channel_id.clone(),
+                        chain.id().clone(),
+                    ));
+                }
+            }
+
+            // Ensure that none of the clients along the channel path are frozen
+            for client in chan_conn_client.clients.iter() {
+                if client.client_state.is_frozen() {
+                    return Err(Error::client_is_frozen(
+                        client.client_id.clone(),
+                        channel_id.clone(),
+                        chain.id().clone(),
+                    ));
+                }
+            }
+        }
     }
+
     Ok(channel_connection_client)
 }
 
@@ -242,8 +436,17 @@ pub fn counterparty_chain_from_channel(
     src_channel_id: &ChannelId,
     src_port_id: &PortId,
 ) -> Result<ChainId, Error> {
-    channel_connection_client(src_chain, src_port_id, src_channel_id)
-        .map(|c| c.client.client_state.chain_id())
+    let channel_connection_client =
+        channel_connection_client(src_chain, src_port_id, src_channel_id)?;
+
+    match channel_connection_client {
+        ChannelConnectionClient::SingleHop(chan_conn_client) => Ok(chan_conn_client.dst_chain_id()),
+
+        ChannelConnectionClient::Multihop(chan_conn_client) => {
+            let chain_id = chan_conn_client.dst_chain_id()?;
+            Ok(chain_id)
+        }
+    }
 }
 
 fn fetch_channel_on_destination(
@@ -342,6 +545,7 @@ pub fn check_channel_counterparty(
         .map_err(|e| ChannelError::query(target_chain.id(), e))?;
 
     let counterparty = channel_end_dst.remote;
+
     match counterparty.channel_id {
         Some(actual_channel_id) => {
             let actual = PortChannelId {

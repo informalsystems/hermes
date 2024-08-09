@@ -10,6 +10,7 @@ use abscissa_core::{
     terminal::ColorChoice,
     Application, Configurable, FrameworkError, FrameworkErrorKind, StandardPaths,
 };
+use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer::{
     config::{Config, TracingServerConfig},
     util::debug_section::DebugSection,
@@ -151,6 +152,9 @@ impl Application for CliApp {
         };
 
         tracing::info!("running Hermes v{}", clap::crate_version!());
+
+        // Set global registry to get or spawn chain handles
+        set_global_registry(SharedRegistry::new(config.clone()));
 
         self.config.set_once(config);
 

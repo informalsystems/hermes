@@ -4,7 +4,7 @@
 
 use ibc_relayer::chain::handle::{ChainHandle, DefaultChainHandle};
 use ibc_relayer::config::Config;
-use ibc_relayer::registry::SharedRegistry;
+use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 
 use crate::bootstrap::binary::chain::{
     add_chain_config, add_keys_to_chain_handle, new_registry, save_relayer_config,
@@ -81,6 +81,7 @@ pub fn boostrap_chains_with_any_nodes(
     save_relayer_config(&config, &config_path)?;
 
     let registry = new_registry(config.clone());
+    set_global_registry(registry.clone());
 
     let mut chain_handles = Vec::new();
 

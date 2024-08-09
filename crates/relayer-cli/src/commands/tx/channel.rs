@@ -9,7 +9,6 @@ use ibc_relayer::chain::requests::{
 };
 use ibc_relayer::channel::{Channel, ChannelError, ChannelSide};
 use ibc_relayer::connection::ConnectionError;
-use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
@@ -202,7 +201,7 @@ impl Runnable for TxChanOpenInitCmd {
             dst_chain_id: dst_conn_client_state.chain_id().clone(),
         });
 
-        // FIXME: We are not currently checking for cycles in channel paths, e.g, the following channel hops are valid:
+        // FIXME(MULTIHOP): We are not currently checking for cycles in channel paths, e.g, the following channel hops are valid:
         // ChainA -> ChainB -> ChainA -> ChainB. Still unsure if this should be allowed or not. Need to think about
         // possible ramifications.
 
@@ -266,7 +265,7 @@ impl Runnable for TxChanOpenInitCmd {
             .exit()
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
@@ -383,9 +382,6 @@ pub struct TxChanOpenTryCmd {
 impl Runnable for TxChanOpenTryCmd {
     fn run(&self) {
         let config = app_config();
-
-        // Set a global registry to retrieve or spawn chain handles
-        set_global_registry(SharedRegistry::new((*app_config()).clone()));
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
@@ -606,7 +602,7 @@ impl Runnable for TxChanOpenTryCmd {
             }
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
@@ -732,9 +728,6 @@ pub struct TxChanOpenAckCmd {
 impl Runnable for TxChanOpenAckCmd {
     fn run(&self) {
         let config = app_config();
-
-        // Set a global registry to retrieve or spawn chain handles
-        set_global_registry(SharedRegistry::new((*app_config()).clone()));
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
@@ -958,7 +951,7 @@ impl Runnable for TxChanOpenAckCmd {
             }
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
@@ -1084,9 +1077,6 @@ pub struct TxChanOpenConfirmCmd {
 impl Runnable for TxChanOpenConfirmCmd {
     fn run(&self) {
         let config = app_config();
-
-        // Set a global registry to retrieve or spawn chain handles
-        set_global_registry(SharedRegistry::new((*app_config()).clone()));
 
         let chains = match ChainHandlePair::spawn(&config, &self.src_chain_id, &self.dst_chain_id) {
             Ok(chains) => chains,
@@ -1295,7 +1285,7 @@ impl Runnable for TxChanOpenConfirmCmd {
             }
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.

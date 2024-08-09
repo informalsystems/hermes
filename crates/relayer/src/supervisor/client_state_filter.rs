@@ -17,7 +17,7 @@ use crate::chain::requests::{
 use crate::client_state::AnyClientState;
 use crate::error::Error as RelayerError;
 use crate::object;
-use crate::registry::Registry;
+use crate::registry::SharedRegistry;
 use crate::spawn::SpawnError;
 
 /// The lower bound trust threshold value. Clients with a trust threshold less
@@ -93,9 +93,9 @@ impl FilterPolicy {
     ///
     /// May encounter errors caused by failed queries. Any such error
     /// is propagated and nothing is cached.
-    pub fn control_connection_end_and_client<Chain: ChainHandle>(
+    pub fn control_connection_end_and_client(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &SharedRegistry,
         chain_id: &ChainId, // Chain hosting the client & connection
         client_state: &AnyClientState,
         connection: &ConnectionEnd,
@@ -222,9 +222,9 @@ impl FilterPolicy {
         permission
     }
 
-    pub fn control_client_object<Chain: ChainHandle>(
+    pub fn control_client_object(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &SharedRegistry,
         obj: &object::Client,
     ) -> Result<Permission, FilterError> {
         let identifier = CacheKey::Client(obj.dst_chain_id.clone(), obj.dst_client_id.clone());
@@ -259,9 +259,9 @@ impl FilterPolicy {
         Ok(self.control_client(&obj.dst_chain_id, &obj.dst_client_id, &client_state))
     }
 
-    pub fn control_conn_object<Chain: ChainHandle>(
+    pub fn control_conn_object(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &SharedRegistry,
         obj: &object::Connection,
     ) -> Result<Permission, FilterError> {
         let identifier =
@@ -313,9 +313,9 @@ impl FilterPolicy {
         )
     }
 
-    fn control_channel<Chain: ChainHandle>(
+    fn control_channel(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &SharedRegistry,
         chain_id: &ChainId,
         port_id: &PortId,
         channel_id: &ChannelId,
@@ -391,9 +391,9 @@ impl FilterPolicy {
         Ok(permission)
     }
 
-    pub fn control_chan_object<Chain: ChainHandle>(
+    pub fn control_chan_object(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &SharedRegistry,
         obj: &object::Channel,
     ) -> Result<Permission, FilterError> {
         self.control_channel(
@@ -404,9 +404,9 @@ impl FilterPolicy {
         )
     }
 
-    pub fn control_packet_object<Chain: ChainHandle>(
+    pub fn control_packet_object(
         &mut self,
-        registry: &mut Registry<Chain>,
+        registry: &SharedRegistry,
         obj: &object::Packet,
     ) -> Result<Permission, FilterError> {
         self.control_channel(

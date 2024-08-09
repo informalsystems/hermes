@@ -137,7 +137,7 @@ class QueryUnreceivedPackets(Cmd[List[int]]):
     channel: ChannelId
 
     def args(self) -> List[str]:
-        return ["--chain", self.chain, "--port", self.port, "--chan", self.channel]
+        return ["--chain", self.chain, "--port", self.port, "--channel", self.channel]
 
     def process(self, result: Any) -> List[int]:
         return from_dict(List[int], result)

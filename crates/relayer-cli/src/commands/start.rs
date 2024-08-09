@@ -1,3 +1,4 @@
+use ibc_relayer::registry::get_global_registry;
 use ibc_relayer::supervisor::SupervisorOptions;
 use ibc_relayer::util::debug_section::DebugSection;
 use std::error::Error;
@@ -7,7 +8,6 @@ use abscissa_core::clap::Parser;
 use crossbeam_channel::Sender;
 
 use ibc_relayer::config::Config;
-use ibc_relayer::registry::{set_global_registry, SharedRegistry};
 use ibc_relayer::rest;
 use ibc_relayer::supervisor::{cmd::SupervisorCmd, spawn_supervisor, SupervisorHandle};
 
@@ -204,8 +204,7 @@ fn make_supervisor(
     config: Config,
     options: SupervisorOptions,
 ) -> Result<SupervisorHandle, Box<dyn Error + Send + Sync>> {
-    let registry = SharedRegistry::new(config.clone());
-    set_global_registry(registry.clone());
+    let registry = get_global_registry();
 
     spawn_telemetry_server(&config);
 

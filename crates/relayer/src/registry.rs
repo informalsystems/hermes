@@ -10,12 +10,11 @@ use tracing::{trace, warn};
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::chain::handle::DefaultChainHandle;
 use crate::{
-    chain::handle::ChainHandle,
+    chain::handle::{ChainHandle, DefaultChainHandle},
     config::Config,
     spawn::{spawn_chain_runtime, SpawnError},
-    util::lock::RwArc,
+    util::lock::{LockExt, RwArc},
 };
 
 /// Registry for keeping track of [`ChainHandle`]s indexed by a `ChainId`.
@@ -26,11 +25,6 @@ pub struct Registry<Chain: ChainHandle> {
     config: Config,
     handles: HashMap<ChainId, Chain>,
     rt: Arc<TokioRuntime>,
-}
-
-#[derive(Clone)]
-pub struct SharedRegistry {
-    pub registry: RwArc<Registry<DefaultChainHandle>>,
 }
 
 impl<Chain: ChainHandle> Registry<Chain> {
@@ -108,6 +102,11 @@ pub fn get_global_registry() -> SharedRegistry {
         .clone()
 }
 
+#[derive(Clone)]
+pub struct SharedRegistry {
+    pub registry: RwArc<Registry<DefaultChainHandle>>,
+}
+
 impl SharedRegistry {
     pub fn new(config: Config) -> Self {
         let registry = Registry::new(config);
@@ -117,23 +116,52 @@ impl SharedRegistry {
         }
     }
 
-    pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
-        self.registry.write().unwrap().get_or_spawn(chain_id)
+    pub fn is_empty(&self) -> bool {
+        self.read().size() == 0
     }
 
-    pub fn spawn(&self, chain_id: &ChainId) -> Result<bool, SpawnError> {
-        self.write().spawn(chain_id)
+    pub fn get_or_spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
+        let read_reg = self.read();
+
+        if let Some(handle) = read_reg.handles.get(chain_id) {
+            Ok(handle.clone())
+        } else {
+            drop(read_reg);
+            self.spawn(chain_id)
+        }
+    }
+
+    pub fn spawn(&self, chain_id: &ChainId) -> Result<DefaultChainHandle, SpawnError> {
+        let mut write_reg = self.write();
+
+        if let Some(handle) = write_reg.handles.get(chain_id) {
+            return Ok(handle.clone());
+        }
+
+        let rt = Arc::clone(&write_reg.rt);
+        let handle: DefaultChainHandle = spawn_chain_runtime(&write_reg.config, chain_id, rt)?;
+
+        write_reg.handles.insert(chain_id.clone(), handle.clone());
+        drop(write_reg);
+
+        trace!(chain = %chain_id, "spawned chain runtime");
+
+        Ok(handle)
     }
 
     pub fn shutdown(&self, chain_id: &ChainId) {
-        self.write().shutdown(chain_id)
+        if let Some(handle) = self.write().handles.remove(chain_id) {
+            if let Err(e) = handle.shutdown() {
+                warn!(chain = %chain_id, "chain runtime might have failed to shutdown properly: {}", e);
+            }
+        }
     }
 
     pub fn write(&self) -> RwLockWriteGuard<'_, Registry<DefaultChainHandle>> {
-        self.registry.write().unwrap()
+        self.registry.acquire_write()
     }
 
     pub fn read(&self) -> RwLockReadGuard<'_, Registry<DefaultChainHandle>> {
-        self.registry.read().unwrap()
+        self.registry.acquire_read()
     }
 }

@@ -630,6 +630,13 @@ define_error! {
         InvalidChannelString
             { channel: String }
             |e| { format!("invalid channel string {}", e.channel) },
+
+        SpawnError
+            { chain_id: ChainId }
+            |e| { format!("failed to spawn chain runtime for chain '{}'", e.chain_id)},
+
+        EmptyConnectionHopIds
+            |_| { "cannot build connection hops from an empty list of connection ids".to_string() },
     }
 }
 

@@ -80,6 +80,12 @@ impl From<IdentifiedConnectionEnd> for RawIdentifiedConnection {
     }
 }
 
+impl From<IdentifiedConnectionEnd> for Vec<IdentifiedConnectionEnd> {
+    fn from(value: IdentifiedConnectionEnd) -> Self {
+        vec![value]
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ConnectionEnd {
     pub state: State,

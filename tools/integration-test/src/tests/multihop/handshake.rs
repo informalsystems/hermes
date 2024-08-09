@@ -1,5 +1,4 @@
 use ibc_relayer::channel::{extract_channel_id, Channel, ChannelSide};
-use ibc_relayer::registry::set_global_registry;
 use ibc_relayer_types::core::ics33_multihop::channel_path::ConnectionHops;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_multihop_channel_established;
@@ -26,7 +25,7 @@ impl TestOverrides for MultihopChannelHandshakeTest {
     }
 }
 
-/// FIXME: Currently in order to have the correct channel at each step
+/// FIXME(MULTIHOP): Currently in order to have the correct channel at each step
 /// the Channel is built manually.
 /// Once the restore_from_event has been updated to be compatible with
 /// multihop this test can be improved by using restore_from_event at each
@@ -35,12 +34,10 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
     fn run<Handle: ChainHandle>(
         &self,
         _config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: NaryConnectedChains<Handle, 3>,
         connections: ConnectedConnections<Handle, 3>,
     ) -> Result<(), Error> {
-        let registry = SharedRegistry::new(relayer.config.clone());
-        set_global_registry(registry.clone());
         let chain_handle_a = chains.chain_handle_at::<0>()?;
         let chain_handle_b = chains.chain_handle_at::<1>()?;
         let chain_handle_c = chains.chain_handle_at::<2>()?;
@@ -106,7 +103,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
         };
 
         let event = channel_a_to_c.build_chan_open_init_and_send()?;
-        // FIXME: restore_from_event does not work with multihop
+        // FIXME(MULTIHOP): restore_from_event does not work with multihop
         //   * Will not fill multihop field
         //   * Uses counterparty connection for dst connection, but this results in an intermediary connection.
         //   * Potentially same issue with client

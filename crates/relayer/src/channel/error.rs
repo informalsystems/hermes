@@ -41,7 +41,7 @@ define_error! {
             },
 
         InvalidChannelUpgradeOrdering
-            |_| { "attempted to upgrade a channel to a more strict ordring, which is not allowed" },
+            |_| { "attempted to upgrade a channel to a more strict ordering, which is not allowed" },
 
         InvalidChannelUpgradeState
             { expected: String, actual: String }
@@ -286,6 +286,16 @@ define_error! {
         | e | {
             format_args!("missing proof heights on the path for channel '{}' on chain '{}'",
             e.channel_id, e.chain_id)
+        },
+
+        ChannelConnectionClientMultihopMissingConnections
+        {
+            channel_id: ChannelId,
+        }
+        |e| {
+            format_args!("failed due to missing connections on ChannelConnectionClientMultihop \
+             for Channel '{}'",
+            e.channel_id)
         },
     }
 }
