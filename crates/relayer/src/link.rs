@@ -7,10 +7,11 @@ use ibc_relayer_types::core::{
 };
 use tracing::info;
 
-use crate::chain::{counterparty::check_channel_counterparty, requests::QueryConnectionRequest};
+use crate::chain::counterparty::check_channel_counterparty;
 use crate::chain::{handle::ChainHandle, requests::IncludeProof};
 use crate::channel::{Channel, ChannelSide};
 use crate::link::error::LinkError;
+use crate::util::multihop::build_hops_from_connection_ids;
 use crate::{
     chain::requests::{QueryChannelRequest, QueryHeight},
     config::types::ics20_field_size_limit::Ics20FieldSizeLimit,
@@ -105,10 +106,35 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
 
         let b_port_id = a_channel.counterparty().port_id.clone();
 
+        let (b_channel, _) = b_chain
+            .query_channel(
+                QueryChannelRequest {
+                    port_id: b_port_id.clone(),
+                    channel_id: b_channel_id.clone(),
+                    height: QueryHeight::Latest,
+                },
+                IncludeProof::No,
+            )
+            .map_err(|e| {
+                LinkError::channel_not_found(
+                    b_port_id.clone(),
+                    b_channel_id.clone(),
+                    b_chain.id(),
+                    e,
+                )
+            })?;
+
         if a_channel.connection_hops().is_empty() {
-            return Err(LinkError::no_connection_hop(
+            return Err(LinkError::no_connection_hops(
                 a_channel_id.clone(),
                 a_chain.id(),
+            ));
+        }
+
+        if b_channel.connection_hops().is_empty() {
+            return Err(LinkError::no_connection_hops(
+                b_channel_id.clone(),
+                b_chain.id(),
             ));
         }
 
@@ -126,46 +152,59 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         )
         .map_err(LinkError::initialization)?;
 
-        // Check the underlying connection
-        let a_connection_id = a_channel.connection_hops()[0].clone();
-        let (a_connection, _) = a_chain
-            .query_connection(
-                QueryConnectionRequest {
-                    connection_id: a_connection_id.clone(),
-                    height: QueryHeight::Latest,
-                },
-                IncludeProof::No,
-            )
+        // Build connection hops and query all the connections along the channel path
+        let a_side_hops = build_hops_from_connection_ids(&a_chain, a_channel.connection_hops())
             .map_err(LinkError::relayer)?;
 
-        if !a_connection.state_matches(&ConnectionState::Open) {
-            return Err(LinkError::channel_not_opened(
-                a_channel_id.clone(),
-                a_chain.id(),
-            ));
+        let b_side_hops = build_hops_from_connection_ids(&b_chain, b_channel.connection_hops())
+            .map_err(LinkError::relayer)?;
+
+        // Ensure all connections along the channel path are in the Open state
+        for connection_hop in a_side_hops.hops_as_slice() {
+            if !connection_hop
+                .connection()
+                .state_matches(&ConnectionState::Open)
+            {
+                return Err(LinkError::channel_not_opened(
+                    a_channel_id.clone(),
+                    a_chain.id(),
+                ));
+            }
         }
+
+        let a_connection = a_side_hops
+            .hops_as_slice()
+            .first()
+            .ok_or_else(|| LinkError::no_connection_hops(a_channel_id.clone(), a_chain.id()))?
+            .clone();
+
+        let b_connection = b_side_hops
+            .hops_as_slice()
+            .first()
+            .ok_or_else(|| LinkError::no_connection_hops(b_channel_id.clone(), b_chain.id()))?
+            .clone();
 
         let channel = Channel {
             ordering: a_channel.ordering,
             a_side: ChannelSide::new(
                 a_chain.clone(),
-                a_connection.client_id().clone(),
-                a_connection_id,
-                None, // FIXME(MULTIHOP): Unsure about what to add here ('None' for now)
+                a_connection.connection().client_id().clone(),
+                a_connection.connection_id().clone(),
+                Some(a_side_hops),
                 opts.src_port_id.clone(),
                 Some(opts.src_channel_id.clone()),
                 None,
             ),
             b_side: ChannelSide::new(
                 b_chain.clone(),
-                a_connection.counterparty().client_id().clone(),
-                a_connection.counterparty().connection_id().unwrap().clone(),
-                None, // FIXME(MULTIHOP): Unsure about what to add here ('None' for now)
+                b_connection.connection().client_id().clone(),
+                b_connection.connection_id().clone(),
+                Some(b_side_hops),
                 a_channel.counterparty().port_id.clone(),
                 Some(b_channel_id.clone()),
                 None,
             ),
-            connection_delay: a_connection.delay_period(),
+            connection_delay: a_connection.connection().delay_period(),
         };
 
         if auto_register_counterparty_payee && a_channel.version.supports_fee() {

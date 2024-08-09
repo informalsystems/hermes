@@ -1,6 +1,7 @@
 use flex_error::define_error;
 
 use ibc_relayer_types::core::ics03_connection::connection::Counterparty;
+use ibc_relayer_types::core::ics24_host::identifier::ClientId;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId, PortId};
 
 use crate::error::Error as RelayerError;
@@ -40,6 +41,16 @@ define_error! {
             |e| {
                 format_args!("connection {0} (underlying channel {1}) on chain {2} is not open",
                     e.connection_id, e.channel_id, e.chain_id)
+            },
+
+        ClientIsFrozen
+            {
+                client_id: ClientId,
+                channel_id: ChannelId,
+                chain_id: ChainId,
+            }
+            |e| {
+                format_args!("client '{}' on the path for channel '{}' on chain '{}' is frozen", e.client_id, e.channel_id, e.chain_id)
             },
 
         MissingConnectionHops

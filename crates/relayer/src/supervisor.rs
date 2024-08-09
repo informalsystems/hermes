@@ -823,7 +823,6 @@ fn process_batch<Chain: ChainHandle>(
             continue;
         }
 
-        dbg!(&object);
         let Ok(src_chain) = registry.get_or_spawn(object.src_chain_id()) else {
             trace!(
                 "skipping events for '{}': source chain '{}' is not registered",

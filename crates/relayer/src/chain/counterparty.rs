@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 use ibc_relayer_types::{
     core::{
+        ics02_client::client_state::ClientState,
         ics03_connection::connection::{
             ConnectionEnd, IdentifiedConnectionEnd, State as ConnectionState,
         },
@@ -371,7 +372,8 @@ pub fn channel_connection_client_no_checks(
 
 /// Returns the [`ChannelConnectionClient`] associated with the
 /// provided port and channel id.
-/// It checks that the connection is open.
+/// It checks that the connection(s) are open and that the client(s)
+/// are not frozen.
 pub fn channel_connection_client(
     chain: &impl ChainHandle,
     port_id: &PortId,
@@ -382,7 +384,7 @@ pub fn channel_connection_client(
 
     match &channel_connection_client {
         ChannelConnectionClient::SingleHop(chan_conn_client) => {
-            // Check if the channel's connection is open
+            // Ensure the channel's connection is open
             if !chan_conn_client.connection.connection_end.is_open() {
                 return Err(Error::connection_not_open(
                     chan_conn_client.connection.connection_id.clone(),
@@ -390,23 +392,41 @@ pub fn channel_connection_client(
                     chain.id(),
                 ));
             }
+
+            // Ensure the client is not frozen
+            if chan_conn_client.client.client_state.is_frozen() {
+                return Err(Error::client_is_frozen(
+                    chan_conn_client.client.client_id.clone(),
+                    channel_id.clone(),
+                    chain.id().clone(),
+                ));
+            }
         }
 
         ChannelConnectionClient::Multihop(chan_conn_client) => {
-            // Check if all connections along the channel path are open
+            // Ensure all connections along the channel path are open
             for connection in chan_conn_client.connections.iter() {
                 if !connection.connection_end.is_open() {
                     return Err(Error::connection_not_open(
                         connection.connection_id.clone(),
                         channel_id.clone(),
-                        chain.id(),
+                        chain.id().clone(),
+                    ));
+                }
+            }
+
+            // Ensure that none of the clients along the channel path are frozen
+            for client in chan_conn_client.clients.iter() {
+                if client.client_state.is_frozen() {
+                    return Err(Error::client_is_frozen(
+                        client.client_id.clone(),
+                        channel_id.clone(),
+                        chain.id().clone(),
                     ));
                 }
             }
         }
     }
-
-    // FIXME(MULTIHOP): Also check that the clients are not frozen before returning channel_connection_client
 
     Ok(channel_connection_client)
 }
@@ -525,8 +545,6 @@ pub fn check_channel_counterparty(
         .map_err(|e| ChannelError::query(target_chain.id(), e))?;
 
     let counterparty = channel_end_dst.remote;
-
-    dbg!(&counterparty);
 
     match counterparty.channel_id {
         Some(actual_channel_id) => {
