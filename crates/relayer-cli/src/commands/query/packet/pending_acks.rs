@@ -51,14 +51,14 @@ impl QueryPendingAcksCmd {
     fn execute(&self) -> Result<Vec<Sequence>, Error> {
         let config = app_config();
 
-        let (chains, chan_conn_cli) = spawn_chain_counterparty::<BaseChainHandle>(
+        let (chains, chan_conn_client) = spawn_chain_counterparty::<BaseChainHandle>(
             &config,
             &self.chain_id,
             &self.port_id,
             &self.channel_id,
         )?;
 
-        let channel = chan_conn_cli.channel;
+        let channel = chan_conn_client.channel();
 
         debug!(
             "fetched from source chain {} the following channel {:?}",
@@ -66,7 +66,7 @@ impl QueryPendingAcksCmd {
         );
 
         let path_identifiers = PathIdentifiers::from_channel_end(channel.clone())
-            .ok_or_else(|| Error::missing_counterparty_channel_id(channel))?;
+            .ok_or_else(|| Error::missing_counterparty_channel_id(channel.clone()))?;
 
         let acks = unreceived_acknowledgements(&chains.src, &chains.dst, &path_identifiers)
             .map_err(Error::supervisor)?;

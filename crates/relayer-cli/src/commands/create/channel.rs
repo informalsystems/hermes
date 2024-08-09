@@ -464,10 +464,10 @@ impl CreateChannelCommand {
             self.order,
             self.port_a.clone(),
             self.port_b.clone(),
-            a_side_hops, // FIXME: Unsure about what to add here ('None' for now)
-            b_side_hops, // FIXME: Unsure about what to add here ('None' for now)
+            a_side_hops, // FIXME(MULTIHOP): Unsure about what to add here ('None' for now)
+            b_side_hops, // FIXME(MULTIHOP): Unsure about what to add here ('None' for now)
             self.version.clone(),
-            core::time::Duration::from_secs(0), // FIXME: We need to figure out how to determine the connection delay for multi-hop channels
+            core::time::Duration::from_secs(0), // FIXME(MULTIHOP): We need to figure out how to determine the connection delay for multi-hop channels
         )
         .unwrap_or_else(exit_with_unrecoverable_error);
 

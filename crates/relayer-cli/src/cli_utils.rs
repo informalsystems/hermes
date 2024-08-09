@@ -87,9 +87,18 @@ pub fn spawn_chain_counterparty<Chain: ChainHandle>(
     let chain = spawn_chain_runtime_generic::<Chain>(config, chain_id)?;
     let channel_connection_client =
         channel_connection_client(&chain, port_id, channel_id).map_err(Error::supervisor)?;
-    let counterparty_chain = {
-        let counterparty_chain_id = channel_connection_client.client.client_state.chain_id();
-        spawn_chain_runtime_generic::<Chain>(config, &counterparty_chain_id)?
+
+    let counterparty_chain = match channel_connection_client {
+        ChannelConnectionClient::SingleHop(ref chan_conn_client) => {
+            let counterparty_chain_id = chan_conn_client.dst_chain_id();
+            spawn_chain_runtime_generic::<Chain>(config, &counterparty_chain_id)?
+        }
+
+        ChannelConnectionClient::Multihop(ref chan_conn_client) => {
+            let counterparty_chain_id =
+                chan_conn_client.dst_chain_id().map_err(Error::supervisor)?;
+            spawn_chain_runtime_generic::<Chain>(config, &counterparty_chain_id)?
+        }
     };
 
     Ok((

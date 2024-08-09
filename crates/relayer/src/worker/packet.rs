@@ -377,7 +377,7 @@ fn retrieve_all_fees_from_incentivized_packet(
     incentivized_packet
         .total_recv_fee
         .iter()
-        .group_by(|a| &a.denom)
+        .chunk_by(|a| &a.denom)
         .into_iter()
         .map(|(key, group)| {
             let total_amount: Amount = group.map(|v| v.amount).sum::<Amount>();

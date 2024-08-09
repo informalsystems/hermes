@@ -29,7 +29,7 @@ use crate::prelude::*;
 ///
 /// The macro takes the following arguments:
 /// - `$dbg_string`: a string literal that will be used to identify the subcommand
-///  in debug logs
+///   in debug logs
 /// - `$func`: the method that will be called to build and send the `Channel` message
 /// - `$self`: the type that `Runnable` is being implemented for
 /// - `$chan`: a closure that specifies how to build the `Channel` object
@@ -201,7 +201,7 @@ impl Runnable for TxChanOpenInitCmd {
             dst_chain_id: dst_conn_client_state.chain_id().clone(),
         });
 
-        // FIXME: We are not currently checking for cycles in channel paths, e.g, the following channel hops are valid:
+        // FIXME(MULTIHOP): We are not currently checking for cycles in channel paths, e.g, the following channel hops are valid:
         // ChainA -> ChainB -> ChainA -> ChainB. Still unsure if this should be allowed or not. Need to think about
         // possible ramifications.
 
@@ -265,7 +265,7 @@ impl Runnable for TxChanOpenInitCmd {
             .exit()
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
@@ -602,7 +602,7 @@ impl Runnable for TxChanOpenTryCmd {
             }
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
@@ -951,7 +951,7 @@ impl Runnable for TxChanOpenAckCmd {
             }
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.
@@ -1285,7 +1285,7 @@ impl Runnable for TxChanOpenConfirmCmd {
             }
         }
 
-        // FIXME: For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
         // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
         // the new `connection_hops` field. When multiple hops are present, pass Some(_) to connection_hops and use that.
         // When a single hop is present, pass None to connection_hops and use the connection_id stored in `ChannelSide`.

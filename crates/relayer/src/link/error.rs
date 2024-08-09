@@ -136,7 +136,7 @@ define_error! {
                     e.channel_id)
             },
 
-        NoConnectionHop
+        NoConnectionHops
             {
                 channel_id: ChannelId,
                 chain_id: ChainId,

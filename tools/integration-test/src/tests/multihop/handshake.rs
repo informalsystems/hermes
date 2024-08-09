@@ -25,7 +25,7 @@ impl TestOverrides for MultihopChannelHandshakeTest {
     }
 }
 
-/// FIXME: Currently in order to have the correct channel at each step
+/// FIXME(MULTIHOP): Currently in order to have the correct channel at each step
 /// the Channel is built manually.
 /// Once the restore_from_event has been updated to be compatible with
 /// multihop this test can be improved by using restore_from_event at each
@@ -103,7 +103,7 @@ impl NaryConnectionTest<3> for MultihopChannelHandshakeTest {
         };
 
         let event = channel_a_to_c.build_chan_open_init_and_send()?;
-        // FIXME: restore_from_event does not work with multihop
+        // FIXME(MULTIHOP): restore_from_event does not work with multihop
         //   * Will not fill multihop field
         //   * Uses counterparty connection for dst connection, but this results in an intermediary connection.
         //   * Potentially same issue with client
