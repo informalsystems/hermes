@@ -1213,6 +1213,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         target_height: Height,
         maybe_trusted_height: Option<Height>,
     ) -> Result<Vec<MsgUpdateClient>, ForeignClientError> {
+        crate::time!(
+            "build_update_client_with_trusted",
+            {
+                "src_chain": self.src_chain().id(),
+                "dst_chain": self.dst_chain().id(),
+            }
+        );
         // Get the latest client state on destination.
         let (client_state, _) = self.validated_client_state()?;
 

@@ -1,4 +1,5 @@
 use ibc_relayer::chain::counterparty::{channel_on_destination, pending_packet_summary};
+use ibc_relayer::chain::requests::Paginate;
 use ibc_relayer::link::{Link, LinkParameters};
 
 use ibc_test_framework::prelude::*;
@@ -87,8 +88,12 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             channel.port_a.as_ref(),
         )?;
 
-        let summary =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
+        let summary = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end.value(),
+            Paginate::All,
+        )?;
 
         assert_eq!(summary.unreceived_packets, [1.into()]);
         assert!(summary.unreceived_acks.is_empty());
@@ -96,8 +101,12 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         // Receive the packet on the destination chain
         link.relay_recv_packet_and_timeout_messages(vec![])?;
 
-        let summary =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
+        let summary = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end.value(),
+            Paginate::All,
+        )?;
 
         assert!(summary.unreceived_packets.is_empty());
         assert_eq!(summary.unreceived_acks, [1.into()]);
@@ -114,8 +123,12 @@ impl BinaryChannelTest for QueryPacketPendingTest {
 
         rev_link.relay_ack_packet_messages(vec![])?;
 
-        let summary =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end.value())?;
+        let summary = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end.value(),
+            Paginate::All,
+        )?;
 
         assert!(summary.unreceived_packets.is_empty());
         assert!(summary.unreceived_acks.is_empty());
@@ -154,6 +167,7 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             chains.handle_b(),
             chains.handle_a(),
             &counterparty_channel_end,
+            Paginate::All,
         )?;
 
         assert_eq!(summary.unreceived_packets, [1.into()]);
