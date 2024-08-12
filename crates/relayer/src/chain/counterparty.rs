@@ -274,6 +274,21 @@ impl ChannelConnectionClient {
             ChannelConnectionClient::Multihop(chan_conn_client) => &chan_conn_client.channel,
         }
     }
+
+    /// Checks if any client associated with the channel is in a frozen state.
+    /// Returns `true` if the channel contains one or more frozen clients and
+    /// returns `false` otherwise.
+    pub fn has_frozen_client(&self) -> bool {
+        match self {
+            ChannelConnectionClient::SingleHop(chan_conn_client) => {
+                chan_conn_client.client.client_state.is_frozen()
+            }
+            ChannelConnectionClient::Multihop(chan_conn_client) => chan_conn_client
+                .clients
+                .iter()
+                .any(|client| client.client_state.is_frozen()),
+        }
+    }
 }
 
 /// Returns the [`ChannelConnectionClient`] associated with the
@@ -392,15 +407,6 @@ pub fn channel_connection_client(
                     chain.id(),
                 ));
             }
-
-            // Ensure the client is not frozen
-            if chan_conn_client.client.client_state.is_frozen() {
-                return Err(Error::client_is_frozen(
-                    chan_conn_client.client.client_id.clone(),
-                    channel_id.clone(),
-                    chain.id().clone(),
-                ));
-            }
         }
 
         ChannelConnectionClient::Multihop(chan_conn_client) => {
@@ -409,17 +415,6 @@ pub fn channel_connection_client(
                 if !connection.connection_end.is_open() {
                     return Err(Error::connection_not_open(
                         connection.connection_id.clone(),
-                        channel_id.clone(),
-                        chain.id().clone(),
-                    ));
-                }
-            }
-
-            // Ensure that none of the clients along the channel path are frozen
-            for client in chan_conn_client.clients.iter() {
-                if client.client_state.is_frozen() {
-                    return Err(Error::client_is_frozen(
-                        client.client_id.clone(),
                         channel_id.clone(),
                         chain.id().clone(),
                     ));
