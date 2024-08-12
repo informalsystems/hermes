@@ -184,13 +184,39 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .ok_or_else(|| LinkError::no_connection_hops(b_channel_id.clone(), b_chain.id()))?
             .clone();
 
+        // FIXME(MULTIHOP): For now, pass Some(_) to connection_hops if there are multiple hops and None if there is a single one.
+        // This allows us to keep using existing structs as they are defined (with the single `connection_id` field) while also including
+        // the new `connection_hops` field. When multiple hops are present, pass Some(_) to a_side_hops and b_side_hops and use that.
+        // When a single hop is present, pass None to a_side_hops and b_side_hops and use the connection_id stored in `ChannelSide`.
+        let a_side_hops = match a_side_hops.hops_as_slice().len() {
+            0 => {
+                return Err(LinkError::no_connection_hops(
+                    a_channel_id.clone(),
+                    a_chain.id(),
+                ))
+            }
+            1 => None,
+            _ => Some(a_side_hops),
+        };
+
+        let b_side_hops = match b_side_hops.hops_as_slice().len() {
+            0 => {
+                return Err(LinkError::no_connection_hops(
+                    b_channel_id.clone(),
+                    b_chain.id(),
+                ))
+            }
+            1 => None,
+            _ => Some(b_side_hops),
+        };
+
         let channel = Channel {
             ordering: a_channel.ordering,
             a_side: ChannelSide::new(
                 a_chain.clone(),
                 a_connection.connection().client_id().clone(),
                 a_connection.connection_id().clone(),
-                Some(a_side_hops),
+                a_side_hops,
                 opts.src_port_id.clone(),
                 Some(opts.src_channel_id.clone()),
                 None,
@@ -199,7 +225,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 b_chain.clone(),
                 b_connection.connection().client_id().clone(),
                 b_connection.connection_id().clone(),
-                Some(b_side_hops),
+                b_side_hops,
                 a_channel.counterparty().port_id.clone(),
                 Some(b_channel_id.clone()),
                 None,
