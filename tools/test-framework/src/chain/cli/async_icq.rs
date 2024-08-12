@@ -1,5 +1,4 @@
-use std::str;
-
+use crate::chain::cli::query::query_tx_hash;
 use crate::chain::exec::simple_exec;
 use crate::error::Error;
 
@@ -11,7 +10,7 @@ pub fn update_oracle(
     account: &str,
     relayer: &str,
 ) -> Result<(), Error> {
-    simple_exec(
+    let raw_output = simple_exec(
         chain_id,
         command_path,
         &[
@@ -21,8 +20,8 @@ pub fn update_oracle(
             chain_id,
             "--node",
             rpc_listen_address,
-            "-b",
-            "block",
+            "--keyring-backend",
+            "test",
             "tx",
             "oracle",
             "update",
@@ -33,8 +32,24 @@ pub fn update_oracle(
             relayer,
             "--fees",
             "381000000nhash",
+            "--title",
+            "Update oracle",
+            "--summary",
+            "Update oracle",
+            "--output",
+            "json",
             "--yes",
         ],
+    )?;
+
+    std::thread::sleep(core::time::Duration::from_secs(1));
+
+    query_tx_hash(
+        chain_id,
+        command_path,
+        home_path,
+        rpc_listen_address,
+        &raw_output.stdout,
     )?;
 
     Ok(())
@@ -49,7 +64,7 @@ pub fn async_icq(
     query_json: &str,
     from: &str,
 ) -> Result<(), Error> {
-    simple_exec(
+    let raw_output = simple_exec(
         chain_id,
         command_path,
         &[
@@ -59,19 +74,31 @@ pub fn async_icq(
             chain_id,
             "--node",
             rpc_listen_address,
+            "--keyring-backend",
+            "test",
             "tx",
             "oracle",
             "send-query",
             channel_id,
             query_json,
-            "-b",
-            "block",
             "--from",
             from,
             "--fees",
             "381000000nhash",
+            "--output",
+            "json",
             "--yes",
         ],
+    )?;
+
+    std::thread::sleep(core::time::Duration::from_secs(1));
+
+    query_tx_hash(
+        chain_id,
+        command_path,
+        home_path,
+        rpc_listen_address,
+        &raw_output.stdout,
     )?;
 
     Ok(())

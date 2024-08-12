@@ -292,3 +292,190 @@ pub fn query_auth_module(
 
     Ok(res.to_owned())
 }
+
+pub fn query_tx_hash(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    command_output: &str,
+) -> Result<(), Error> {
+    let json_output: serde_json::Value =
+        serde_json::from_str(command_output).map_err(handle_generic_error)?;
+
+    let output_tx_hash = json_output
+        .get("txhash")
+        .and_then(|code| code.as_str())
+        .ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to extract 'txhash' from command output: {command_output}"
+            ))
+        })?;
+
+    let raw_output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--chain-id",
+            chain_id,
+            "--node",
+            rpc_listen_address,
+            "query",
+            "tx",
+            output_tx_hash,
+            "--output",
+            "json",
+        ],
+    )?;
+
+    let json_output: serde_json::Value =
+        serde_json::from_str(&raw_output.stdout).map_err(handle_generic_error)?;
+
+    let code = json_output
+        .get("code")
+        .and_then(|code| code.as_u64())
+        .ok_or_else(|| eyre!("Failed to retrieve 'code' from 'query tx' command output"))?;
+
+    if code != 0 {
+        let raw_log = json_output
+            .get("raw_log")
+            .and_then(|code| code.as_str())
+            .ok_or_else(|| eyre!("Failed to retrieve 'raw_log' from 'query tx' command output"))?;
+        return Err(Error::generic(eyre!(
+            "command failed with error code {code}. Detail: {raw_log}"
+        )));
+    }
+
+    Ok(())
+}
+
+pub fn instantiate_wasm_contract(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    address: &str,
+    fees: &str,
+    code: &str,
+    init_args: &str,
+) -> Result<(), Error> {
+    let exec_output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--chain-id",
+            chain_id,
+            "--node",
+            rpc_listen_address,
+            "--keyring-backend",
+            "test",
+            "tx",
+            "wasm",
+            "instantiate",
+            code,
+            init_args,
+            "--from",
+            address,
+            "--yes",
+            "--label",
+            "echo",
+            "--no-admin",
+            "--fees",
+            fees,
+            "--output",
+            "json",
+        ],
+    )?;
+
+    std::thread::sleep(core::time::Duration::from_secs(1));
+
+    query_tx_hash(
+        chain_id,
+        command_path,
+        home_path,
+        rpc_listen_address,
+        &exec_output.stdout,
+    )?;
+
+    Ok(())
+}
+
+pub fn query_wasm_list_code(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+) -> Result<String, Error> {
+    let exec_output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--chain-id",
+            chain_id,
+            "--node",
+            rpc_listen_address,
+            "query",
+            "wasm",
+            "list-codes",
+            "--output",
+            "json",
+        ],
+    )?;
+
+    let json_output: serde_json::Value =
+        serde_json::from_str(&exec_output.stdout).map_err(handle_generic_error)?;
+
+    let code_id = json_output
+        .get("code_infos")
+        .and_then(|code_infos| code_infos.as_array())
+        .and_then(|code_infos| code_infos.first())
+        .and_then(|code_info| code_info.get("code_id"))
+        .and_then(|code_infos| code_infos.as_str())
+        .ok_or_else(|| eyre!("Failed to retrieve wasm code ID"))?;
+
+    Ok(code_id.to_string())
+}
+
+pub fn query_wasm_list_contracts_by_code(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+) -> Result<String, Error> {
+    let exec_output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--chain-id",
+            chain_id,
+            "--node",
+            rpc_listen_address,
+            "query",
+            "wasm",
+            "list-contract-by-code",
+            "1",
+            "--output",
+            "json",
+        ],
+    )?;
+
+    let json_output: serde_json::Value =
+        serde_json::from_str(&exec_output.stdout).map_err(handle_generic_error)?;
+
+    let contrat = json_output
+        .get("contracts")
+        .and_then(|contracts| contracts.as_array())
+        .and_then(|contracts| contracts.first())
+        .and_then(|contract| contract.as_str())
+        .ok_or_else(|| eyre!("Failed to retrieve wasm contract address"))?;
+
+    Ok(contrat.to_string())
+}
