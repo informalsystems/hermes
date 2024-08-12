@@ -230,17 +230,17 @@ impl NaryConnectionTest<3> for MultihopTransferTest {
         let channel_id_c = TaggedChannelId::new(channel_a_to_c.b_channel_id().unwrap().clone());
         let port_c = DualTagged::new(channel_a_to_c.b_side.port_id().clone());
 
-        node_a.chain_driver().ibc_transfer_token(
-            &port_a.as_ref(),
-            &channel_id_a.as_ref(),
-            &wallet_a.as_ref(),
-            &wallet_c.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
-        )?;
-
-        let denom_c = derive_ibc_denom(&port_c.as_ref(), &channel_id_c.as_ref(), &denom_a)?;
-
         relayer.with_supervisor(|| {
+            node_a.chain_driver().ibc_transfer_token(
+                &port_a.as_ref(),
+                &channel_id_a.as_ref(),
+                &wallet_a.as_ref(),
+                &wallet_c.address(),
+                &denom_a.with_amount(a_to_b_amount).as_ref(),
+            )?;
+
+            let denom_c = derive_ibc_denom(&port_c.as_ref(), &channel_id_c.as_ref(), &denom_a)?;
+
             info!(
                 "Waiting for user on chain B to receive IBC transferred amount of {}",
                 a_to_b_amount
