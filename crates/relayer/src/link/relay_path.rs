@@ -30,6 +30,7 @@ use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::Paginate;
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::requests::QueryClientEventRequest;
 use crate::chain::requests::QueryHeight;
@@ -1163,9 +1164,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         .entered();
 
         // Pull the s.n. of all packets that the destination chain has not yet received.
-        let (sequences, src_response_height) =
-            unreceived_packets(self.dst_chain(), self.src_chain(), &self.path_id)
-                .map_err(LinkError::supervisor)?;
+        let (sequences, src_response_height) = unreceived_packets(
+            self.dst_chain(),
+            self.src_chain(),
+            &self.path_id,
+            Paginate::All,
+        )
+        .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -1232,9 +1237,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         )
         .entered();
 
-        let sequences_and_height =
-            unreceived_acknowledgements(self.dst_chain(), self.src_chain(), &self.path_id)
-                .map_err(LinkError::supervisor)?;
+        let sequences_and_height = unreceived_acknowledgements(
+            self.dst_chain(),
+            self.src_chain(),
+            &self.path_id,
+            Paginate::All,
+        )
+        .map_err(LinkError::supervisor)?;
 
         let Some((sequences, src_response_height)) = sequences_and_height else {
             return Ok(());
