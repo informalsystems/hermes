@@ -1537,7 +1537,6 @@ dependencies = [
  "prost",
  "serde",
  "serde_json",
- "tempfile",
  "tendermint",
  "tendermint-rpc",
  "time",
