@@ -36,7 +36,6 @@ ordered                         = []
 ica                             = []
 ics29-fee                       = []
 experimental                    = []
-mbt                             = []
 forward-packet                  = []
 ics31                           = []
 clean-workers                   = []
@@ -54,6 +53,3 @@ benchmark                       = []
 [[bin]]
 name = "test_setup_with_binary_channel"
 doc  = true
-
-[dev-dependencies]
-tempfile = { workspace = true }
