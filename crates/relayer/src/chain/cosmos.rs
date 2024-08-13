@@ -1,5 +1,6 @@
 use alloc::sync::Arc;
 use core::{future::Future, str::FromStr, time::Duration};
+use query::connection::query_connection_params;
 use std::{cmp::Ordering, thread};
 
 use bytes::{Buf, Bytes};
@@ -8,7 +9,7 @@ use num_bigint::BigInt;
 use tokio::runtime::Runtime as TokioRuntime;
 use tonic::codegen::http::Uri;
 use tonic::metadata::AsciiMetadataValue;
-use tracing::{debug, error, info, instrument, trace, warn};
+use tracing::{debug, error, instrument, trace, warn};
 
 use ibc_proto::cosmos::base::node::v1beta1::ConfigResponse;
 use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
@@ -113,7 +114,6 @@ use crate::util::pretty::{
 use crate::HERMES_VERSION;
 
 use self::gas::dynamic_gas_price;
-use self::types::app_state::GenesisAppState;
 use self::types::gas::GasConfig;
 use self::version::Specs;
 
@@ -296,27 +296,27 @@ impl CosmosSdkChain {
             ));
         }
 
-        // Query /genesis RPC endpoint to retrieve the `max_expected_time_per_block` value to use as `max_block_time`.
-        // If it is not found, keep the configured `max_block_time`.
-        match self.block_on(self.rpc_client.genesis::<GenesisAppState>()) {
-            Ok(genesis_reponse) => {
-                let old_max_block_time = self.config.max_block_time;
-                let new_max_block_time =
-                    Duration::from_nanos(genesis_reponse.app_state.max_expected_time_per_block());
-
-                if old_max_block_time.as_secs() != new_max_block_time.as_secs() {
-                    self.config.max_block_time = new_max_block_time;
-
-                    info!(
-                        "Updated `max_block_time` using /genesis endpoint. Old value: `{}s`, new value: `{}s`",
-                        old_max_block_time.as_secs(),
+        // Query Connection Params with gRPC endpoint to retrieve the `max_expected_time_per_block` value and verify the
+        // configured `max_block_time`.
+        // If it is not found, the verification for the configured `max_block_time` is skipped.
+        match self.block_on(query_connection_params(&self.grpc_addr)) {
+            Ok(params) => {
+                warn!("raw max block time: {}", params.max_expected_time_per_block);
+                let queried_max_expected_time_per_block_as_secs =
+                    params.max_expected_time_per_block / 1_000_000_000;
+                if queried_max_expected_time_per_block_as_secs
+                    != self.config.max_block_time.as_secs()
+                {
+                    warn!(
+                        "Queried `max_block_time` has value: `{}s`, while configured `max_block_time` has value: `{}s`",
+                        queried_max_expected_time_per_block_as_secs,
                         self.config.max_block_time.as_secs()
                     );
                 }
             }
             Err(e) => {
                 warn!(
-                    "Will use fallback value for max_block_time: `{}s`. Error: {e}",
+                    "Configured value for max_block_time: `{}s` could not be verified. Error: {e}",
                     self.config.max_block_time.as_secs()
                 );
             }
