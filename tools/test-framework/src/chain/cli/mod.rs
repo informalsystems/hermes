@@ -10,4 +10,4 @@ pub mod query;
 pub mod transfer;
 pub mod upgrade;
 pub mod version;
-pub mod wasm_client;
+pub mod wasm;

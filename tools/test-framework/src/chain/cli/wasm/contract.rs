@@ -1,9 +1,9 @@
 use std::path::Path;
 
+use crate::chain::cli::query::query_tx_hash;
 use crate::chain::exec::simple_exec;
-use crate::prelude::{ChainDriver, Error};
-
-use super::query::query_tx_hash;
+use crate::error::Error;
+use crate::prelude::ChainDriver;
 
 pub fn store_wasm_contract(
     driver: &ChainDriver,
@@ -106,4 +106,57 @@ pub fn store_wasm_client_code(
     )?;
 
     Ok(output.stdout)
+}
+
+pub fn instantiate_wasm_contract(
+    chain_id: &str,
+    command_path: &str,
+    home_path: &str,
+    rpc_listen_address: &str,
+    address: &str,
+    fees: &str,
+    code: &str,
+    init_args: &str,
+) -> Result<(), Error> {
+    let exec_output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--chain-id",
+            chain_id,
+            "--node",
+            rpc_listen_address,
+            "--keyring-backend",
+            "test",
+            "tx",
+            "wasm",
+            "instantiate",
+            code,
+            init_args,
+            "--from",
+            address,
+            "--yes",
+            "--label",
+            "echo",
+            "--no-admin",
+            "--fees",
+            fees,
+            "--output",
+            "json",
+        ],
+    )?;
+
+    std::thread::sleep(core::time::Duration::from_secs(1));
+
+    query_tx_hash(
+        chain_id,
+        command_path,
+        home_path,
+        rpc_listen_address,
+        &exec_output.stdout,
+    )?;
+
+    Ok(())
 }

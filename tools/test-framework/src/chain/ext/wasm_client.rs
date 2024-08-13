@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::chain::cli::wasm_client::{store_wasm_client_code, store_wasm_contract};
+use crate::chain::cli::wasm::contract::{store_wasm_client_code, store_wasm_contract};
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
 use crate::types::tagged::*;
