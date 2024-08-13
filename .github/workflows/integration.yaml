@@ -84,7 +84,7 @@ jobs:
             command: provenanced
             account_prefix: pb
             native_token: nhash
-            features: fee-grant,authz
+            features: fee-grant,authz,async-icq
           - package: migaloo
             command: migalood
             account_prefix: migaloo
