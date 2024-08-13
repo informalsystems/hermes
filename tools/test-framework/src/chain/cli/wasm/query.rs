@@ -46,6 +46,7 @@ pub fn query_wasm_list_contracts_by_code(
     command_path: &str,
     home_path: &str,
     rpc_listen_address: &str,
+    code_id: &str,
 ) -> Result<String, Error> {
     let exec_output = simple_exec(
         chain_id,
@@ -60,7 +61,7 @@ pub fn query_wasm_list_contracts_by_code(
             "query",
             "wasm",
             "list-contract-by-code",
-            "1",
+            code_id,
             "--output",
             "json",
         ],

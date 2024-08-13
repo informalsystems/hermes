@@ -37,6 +37,7 @@ impl<'a, Chain: Send> AsyncIcqMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
             &driver.command_path,
             &driver.home_path,
             &driver.rpc_listen_address(),
+            &wasm_code,
         )?;
 
         update_oracle(
