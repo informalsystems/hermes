@@ -318,8 +318,6 @@ pub fn query_tx_hash(
         &[
             "--home",
             home_path,
-            "--chain-id",
-            chain_id,
             "--node",
             rpc_listen_address,
             "query",
