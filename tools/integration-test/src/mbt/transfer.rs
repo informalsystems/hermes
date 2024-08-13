@@ -204,7 +204,7 @@ impl BinaryChannelTest for IbcTransferMBT {
                         *target,
                         *denom,
                         *amount,
-                        &fee_denom_a.with_amount(1200u64).as_ref(),
+                        &fee_denom_a.with_amount(381000000u64).as_ref(),
                     )?;
                     info!("[LocalTransfer] Done");
                 }

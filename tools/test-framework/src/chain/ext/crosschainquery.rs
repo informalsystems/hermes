@@ -71,7 +71,7 @@ impl<'a, Chain: Send> CrossChainQueryMethodsExt<Chain> for MonoTagged<Chain, &'a
                     &self.0.rpc_listen_address(),
                 )?;
 
-                // Verify that the there are no more pending Cross Chain Queries.
+                // Verify that there are no more pending Cross Chain Queries.
                 if !json::from_str::<json::Value>(&output)
                     .map_err(handle_generic_error)?
                     .get("pending_queries")

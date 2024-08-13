@@ -3,6 +3,7 @@
 */
 use eyre::eyre;
 
+use crate::chain::cli::query::query_tx_hash;
 use crate::chain::exec::simple_exec;
 use crate::prelude::*;
 
@@ -14,7 +15,7 @@ pub fn vote_proposal(
     fees: &str,
     proposal_id: &str,
 ) -> Result<(), Error> {
-    simple_exec(
+    let output = simple_exec(
         chain_id,
         command_path,
         &[
@@ -35,8 +36,20 @@ pub fn vote_proposal(
             "validator",
             "--fees",
             fees,
+            "--output",
+            "json",
             "--yes",
         ],
+    )?;
+
+    std::thread::sleep(core::time::Duration::from_secs(1));
+
+    query_tx_hash(
+        chain_id,
+        command_path,
+        home_path,
+        rpc_listen_address,
+        &output.stdout,
     )?;
 
     Ok(())

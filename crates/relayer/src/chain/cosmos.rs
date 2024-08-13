@@ -589,11 +589,6 @@ impl CosmosSdkChain {
         height_query: QueryHeight,
         prove: bool,
     ) -> Result<QueryResponse, Error> {
-        crate::time!("query",
-        {
-            "src_chain": self.config().id.to_string(),
-        });
-
         let data = data.into();
         if !data.is_provable() & prove {
             return Err(Error::private_store());
@@ -795,13 +790,19 @@ impl CosmosSdkChain {
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
+        let memo_prefix = if let Some(memo_overwrite) = &self.config.memo_overwrite {
+            memo_overwrite.clone()
+        } else {
+            self.config.memo_prefix.clone()
+        };
+
         if self.config.sequential_batch_tx {
             sequential_send_batched_messages_and_wait_commit(
                 &self.rpc_client,
                 &self.tx_config,
                 &key_pair,
                 account,
-                &self.config.memo_prefix,
+                &memo_prefix,
                 proto_msgs,
             )
             .await
@@ -811,7 +812,7 @@ impl CosmosSdkChain {
                 &self.tx_config,
                 &key_pair,
                 account,
-                &self.config.memo_prefix,
+                &memo_prefix,
                 proto_msgs,
             )
             .await
@@ -846,12 +847,18 @@ impl CosmosSdkChain {
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
 
+        let memo_prefix = if let Some(memo_overwrite) = &self.config.memo_overwrite {
+            memo_overwrite.clone()
+        } else {
+            self.config.memo_prefix.clone()
+        };
+
         send_batched_messages_and_wait_check_tx(
             &self.rpc_client,
             &self.tx_config,
             &key_pair,
             account,
-            &self.config.memo_prefix,
+            &memo_prefix,
             proto_msgs,
         )
         .await
@@ -1197,6 +1204,12 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
+        crate::time!(
+            "query_balance",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let key = match key_name {
@@ -1212,6 +1225,12 @@ impl ChainEndpoint for CosmosSdkChain {
     }
 
     fn query_all_balances(&self, key_name: Option<&str>) -> Result<Vec<Balance>, Error> {
+        crate::time!(
+            "query_all_balances",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         // If a key_name is given, extract the account hash.
         // Else retrieve the account from the configuration file.
         let key = match key_name {
@@ -1893,6 +1912,12 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketCommitmentRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        crate::time!(
+            "query_packet_commitment",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let res = self.query(
             CommitmentsPath {
                 port_id: request.port_id,
@@ -1933,31 +1958,116 @@ impl ChainEndpoint for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
+            .map(|client| {
+                client.max_decoding_message_size(
+                    self.config().max_grpc_decoding_size.get_bytes() as usize
+                )
+            })
             .map_err(Error::grpc_transport)?;
 
-        client = client
-            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+        if request.pagination.is_enabled() {
+            let mut results = Vec::new();
+            let mut page_key = Vec::new();
 
-        let request = tonic::Request::new(request.into());
+            let pagination_information = request.pagination.get_values();
+            let mut current_results = 0;
 
-        let response = self
-            .block_on(client.packet_commitments(request))
-            .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
-            .into_inner();
+            loop {
+                crate::time!(
+                    "query_packet_commitments_loop_iteration",
+                    {
+                        "src_chain": self.config().id.to_string(),
+                    }
+                );
+                let mut raw_request =
+                    ibc_proto::ibc::core::channel::v1::QueryPacketCommitmentsRequest::from(
+                        request.clone(),
+                    );
 
-        let mut commitment_sequences: Vec<Sequence> = response
-            .commitments
-            .into_iter()
-            .map(|v| v.sequence.into())
-            .collect();
-        commitment_sequences.sort_unstable();
+                if let Some(pagination) = raw_request.pagination.as_mut() {
+                    pagination.key = page_key;
+                }
 
-        let height = response
-            .height
-            .and_then(|raw_height| raw_height.try_into().ok())
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+                let mut tonic_request = tonic::Request::new(raw_request);
+                // TODO: This should either be configurable or inferred from the pagination
+                tonic_request.set_timeout(Duration::from_secs(10));
 
-        Ok((commitment_sequences, height))
+                let response = self.rt.block_on(async {
+                    client
+                        .packet_commitments(tonic_request)
+                        .await
+                        .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))
+                });
+
+                match response {
+                    Ok(response) => {
+                        let inner_response = response.into_inner().clone();
+                        let next_key = inner_response
+                            .pagination
+                            .as_ref()
+                            .map(|p| p.next_key.clone());
+
+                        results.push(Ok(inner_response));
+                        current_results += pagination_information.0;
+
+                        match next_key {
+                            Some(next_key) if !next_key.is_empty() => {
+                                page_key = next_key;
+                            }
+                            _ => break,
+                        }
+                    }
+                    Err(e) => {
+                        results.push(Err(e));
+                        break;
+                    }
+                }
+                if current_results >= pagination_information.1 {
+                    break;
+                }
+            }
+
+            let responses = results.into_iter().collect::<Result<Vec<_>, _>>()?;
+
+            let mut commitment_sequences = Vec::new();
+
+            for response in &responses {
+                commitment_sequences.extend(
+                    response
+                        .commitments
+                        .iter()
+                        .map(|commit| Sequence::from(commit.sequence)),
+                );
+            }
+
+            let height = responses
+                .first()
+                .and_then(|res| res.height)
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((commitment_sequences, height))
+        } else {
+            let request = tonic::Request::new(request.into());
+            let response = self
+                .block_on(client.packet_commitments(request))
+                .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
+                .into_inner();
+
+            let mut commitment_sequences: Vec<Sequence> = response
+                .commitments
+                .into_iter()
+                .map(|v| v.sequence.into())
+                .collect();
+            commitment_sequences.sort_unstable();
+
+            let height = response
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((commitment_sequences, height))
+        }
     }
 
     fn query_packet_receipt(
@@ -1965,6 +2075,12 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketReceiptRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        crate::time!(
+            "query_packet_receipt",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let res = self.query(
             ReceiptsPath {
                 port_id: request.port_id,
@@ -2030,6 +2146,12 @@ impl ChainEndpoint for CosmosSdkChain {
         request: QueryPacketAcknowledgementRequest,
         include_proof: IncludeProof,
     ) -> Result<(Vec<u8>, Option<MerkleProof>), Error> {
+        crate::time!(
+            "query_packet_acknowledgement",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let res = self.query(
             AcksPath {
                 port_id: request.port_id,
@@ -2074,30 +2196,105 @@ impl ChainEndpoint for CosmosSdkChain {
                     self.grpc_addr.clone(),
                 ),
             )
+            .map(|client| {
+                client.max_decoding_message_size(
+                    self.config().max_grpc_decoding_size.get_bytes() as usize
+                )
+            })
             .map_err(Error::grpc_transport)?;
 
-        client = client
-            .max_decoding_message_size(self.config().max_grpc_decoding_size.get_bytes() as usize);
+        if request.pagination.is_enabled() {
+            let mut results = Vec::new();
+            let mut page_key = Vec::new();
 
-        let request = tonic::Request::new(request.into());
+            loop {
+                let mut raw_request =
+                    ibc_proto::ibc::core::channel::v1::QueryPacketAcknowledgementsRequest::from(
+                        request.clone(),
+                    );
 
-        let response = self
-            .block_on(client.packet_acknowledgements(request))
-            .map_err(|e| Error::grpc_status(e, "query_packet_acknowledgements".to_owned()))?
-            .into_inner();
+                if let Some(pagination) = raw_request.pagination.as_mut() {
+                    pagination.key = page_key;
+                }
 
-        let acks_sequences = response
-            .acknowledgements
-            .into_iter()
-            .map(|v| v.sequence.into())
-            .collect();
+                let mut tonic_request = tonic::Request::new(raw_request);
+                // TODO: This should either be configurable or inferred from the pagination
+                tonic_request.set_timeout(Duration::from_secs(10));
 
-        let height = response
-            .height
-            .and_then(|raw_height| raw_height.try_into().ok())
-            .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+                let response = self.rt.block_on(async {
+                    client
+                        .packet_acknowledgements(tonic_request)
+                        .await
+                        .map_err(|e| {
+                            Error::grpc_status(e, "query_packet_acknowledgements".to_owned())
+                        })
+                });
 
-        Ok((acks_sequences, height))
+                match response {
+                    Ok(response) => {
+                        let inner_response = response.into_inner().clone();
+                        let next_key = inner_response
+                            .pagination
+                            .as_ref()
+                            .map(|p| p.next_key.clone());
+
+                        results.push(Ok(inner_response));
+
+                        match next_key {
+                            Some(next_key) if !next_key.is_empty() => {
+                                page_key = next_key;
+                            }
+                            _ => break,
+                        }
+                    }
+                    Err(e) => {
+                        results.push(Err(e));
+                        break;
+                    }
+                }
+            }
+
+            let responses = results.into_iter().collect::<Result<Vec<_>, _>>()?;
+
+            let mut acks_sequences = Vec::new();
+
+            for response in &responses {
+                acks_sequences.extend(
+                    response
+                        .acknowledgements
+                        .iter()
+                        .map(|commit| Sequence::from(commit.sequence)),
+                );
+            }
+
+            let height = responses
+                .first()
+                .and_then(|res| res.height)
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((acks_sequences, height))
+        } else {
+            let request = tonic::Request::new(request.into());
+            let response = self
+                .block_on(client.packet_acknowledgements(request))
+                .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
+                .into_inner();
+
+            let mut acks_sequences: Vec<Sequence> = response
+                .acknowledgements
+                .into_iter()
+                .map(|v| v.sequence.into())
+                .collect();
+            acks_sequences.sort_unstable();
+
+            let height = response
+                .height
+                .and_then(|raw_height| raw_height.try_into().ok())
+                .ok_or_else(|| Error::grpc_response_param("height".to_string()))?;
+
+            Ok((acks_sequences, height))
+        }
     }
 
     /// Performs a `QueryUnreceivedAcksRequest` gRPC query to fetch the unreceived acknowledgements
@@ -2187,10 +2384,6 @@ impl ChainEndpoint for CosmosSdkChain {
     /// 1. Client Update request - returns a vector with at most one update client event
     /// 2. Transaction event request - returns all IBC events resulted from a Tx execution
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
-        crate::time!("query_txs",
-        {
-            "src_chain": self.config().id.to_string(),
-        });
         crate::telemetry!(query, self.id(), "query_txs");
 
         self.block_on(query_txs(
@@ -2286,6 +2479,12 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryHostConsensusStateRequest,
     ) -> Result<Self::ConsensusState, Error> {
+        crate::time!(
+            "query_host_consensus_state",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let height = match request.height {
             QueryHeight::Latest => TmHeight::from(0u32),
             QueryHeight::Specific(ibc_height) => TmHeight::from(ibc_height),
@@ -2316,6 +2515,12 @@ impl ChainEndpoint for CosmosSdkChain {
         height: ICSHeight,
         settings: ClientSettings,
     ) -> Result<Self::ClientState, Error> {
+        crate::time!(
+            "build_client_state",
+            {
+                "src_chain": self.config().id.to_string(),
+            }
+        );
         let ClientSettings::Tendermint(settings) = settings;
         let unbonding_period = self.unbonding_period()?;
         let trusting_period = settings
@@ -2391,12 +2596,18 @@ impl ChainEndpoint for CosmosSdkChain {
         let address = self.get_signer()?;
         let key_pair = self.key()?;
 
+        let memo_prefix = if let Some(memo_overwrite) = &self.config.memo_overwrite {
+            memo_overwrite.clone()
+        } else {
+            self.config.memo_prefix.clone()
+        };
+
         self.rt.block_on(maybe_register_counterparty_payee(
             &self.rpc_client,
             &self.tx_config,
             &key_pair,
             &mut self.account,
-            &self.config.memo_prefix,
+            &memo_prefix,
             channel_id,
             port_id,
             &address,

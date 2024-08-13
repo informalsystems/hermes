@@ -1,5 +1,7 @@
 //! Custom `serde` deserializer for `FilterMatch`
 
+#![allow(clippy::mutable_key_type)]
+
 use core::fmt;
 use core::str::FromStr;
 use itertools::Itertools;
