@@ -68,16 +68,16 @@
     "celestia-app-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1717487173,
-        "narHash": "sha256-/17ysw5QX8hHdMPkp05eNqJFPYKU7NIn1jTFw688Fjg=",
+        "lastModified": 1722019080,
+        "narHash": "sha256-NN3O1nN+LTxDzYBzXjksfKl9DMCbFy+MsuxPBKgv9Dc=",
         "owner": "celestiaorg",
         "repo": "celestia-app",
-        "rev": "21b5bc747c8500e4888474df7d828e66c33f332d",
+        "rev": "b6db108a444c234e4b4656031d876bc45421c5f3",
         "type": "github"
       },
       "original": {
         "owner": "celestiaorg",
-        "ref": "v1.11.0",
+        "ref": "v1.14.0",
         "repo": "celestia-app",
         "type": "github"
       }
@@ -174,6 +174,7 @@
         "ibc-go-v6-src": "ibc-go-v6-src",
         "ibc-go-v7-src": "ibc-go-v7-src",
         "ibc-go-v8-src": "ibc-go-v8-src",
+        "ibc-go-v9-src": "ibc-go-v9-src",
         "ibc-rs-src": "ibc-rs-src",
         "ica-src": "ica-src",
         "ignite-cli-src": "ignite-cli-src",
@@ -218,11 +219,11 @@
         "wasmvm_2_1_0-src": "wasmvm_2_1_0-src"
       },
       "locked": {
-        "lastModified": 1723019846,
-        "narHash": "sha256-FcTJj2nGC9Jr9JmQPZATKxQ9kDIE5eHSwZvqqJI8Y50=",
+        "lastModified": 1723637281,
+        "narHash": "sha256-PVodBpj6BF+Cv8d8/tHZmWh29bAEHeAlalJdQTmBBP4=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "fbece4c8894ff01329f401021a2b8e4c661eb79e",
+        "rev": "5115762f60f6c700d9b211a3e7d10f4c909843dd",
         "type": "github"
       },
       "original": {
@@ -984,6 +985,23 @@
         "type": "github"
       }
     },
+    "ibc-go-v9-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1723037346,
+        "narHash": "sha256-ba8gbJ0l4l8ZRT9XVN3hTcnxZSb5Fn20p1xiEG4/54c=",
+        "owner": "cosmos",
+        "repo": "ibc-go",
+        "rev": "66ebf864d7bfe2193a96c972a9e74196b2ddf104",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "v9.0.0-beta.1",
+        "repo": "ibc-go",
+        "type": "github"
+      }
+    },
     "ibc-rs-src": {
       "flake": false,
       "locked": {
@@ -1332,11 +1350,11 @@
     },
     "nixpkgs_3": {
       "locked": {
-        "lastModified": 1717868076,
-        "narHash": "sha256-c83Y9t815Wa34khrux81j8K8ET94ESmCuwORSKm2bQY=",
+        "lastModified": 1722895844,
+        "narHash": "sha256-kGwDuefMQgzdzMXx1BN3+pS7oKafQd6LTDG6XMwcqrU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "cd18e2ae9ab8e2a0a8d715b60c91b54c0ac35ff9",
+        "rev": "d3f42bd62aa840084563e3b93e4eab73cb0a0448",
         "type": "github"
       },
       "original": {
@@ -1379,11 +1397,11 @@
     },
     "nixpkgs_6": {
       "locked": {
-        "lastModified": 1722957468,
-        "narHash": "sha256-SQ0TCC4aklOhN/OzcztrKqDLY8SjpIZcyvTulzhDXs0=",
+        "lastModified": 1723603349,
+        "narHash": "sha256-VMg6N7MryOuvSJ8Sj6YydarnUCkL7cvMdrMcnsJnJCE=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "2a13929e1f191b3690dd2f2db13098b04adb9043",
+        "rev": "daf7bb95821b789db24fc1ac21f613db0c1bf2cb",
         "type": "github"
       },
       "original": {
