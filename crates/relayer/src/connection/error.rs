@@ -112,7 +112,7 @@ define_error! {
                 destination_chain_id: ChainId
             }
             |e| {
-                format!("the source chain of client a ({}) does not not match the destination chain of client b ({})",
+                format!("the source chain of client a ({}) does not match the destination chain of client b ({})",
                     e.source_chain_id, e.destination_chain_id)
             },
 
