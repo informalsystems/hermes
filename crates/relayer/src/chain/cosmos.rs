@@ -301,11 +301,15 @@ impl CosmosSdkChain {
         // If it is not found, the verification for the configured `max_block_time` is skipped.
         match self.block_on(query_connection_params(&self.grpc_addr)) {
             Ok(params) => {
+                debug!(
+                    "queried `max_expected_time_per_block`: `{}ns`",
+                    params.max_expected_time_per_block
+                );
                 let new_max_block_time = Duration::from_nanos(params.max_expected_time_per_block);
 
                 if new_max_block_time != self.config.max_block_time {
                     warn!(
-                        "Configured `max_block_time` value of `{}s` does not match queried value of `{}s`. \
+                        "configured `max_block_time` value of `{}s` does not match queried value of `{}s`. \
                         `max_block_time` will be updated with queried value",
                         self.config.max_block_time.as_secs(),
                         new_max_block_time.as_secs(),
