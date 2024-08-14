@@ -18,7 +18,18 @@ This release brings significant performance improvements and introduces a new co
     
 
 ### IMPROVEMENTS
-
+- [Relayer Library](relayer)
+  - Add a new configuration `clear_limit` to specify the maximum number
+    of packets cleared every time packet clearing is triggered.
+    Defaults to 50.
+    ([\#4071](https://github.com/informalsystems/hermes/issues/4071))
+  - Paginate results of `query_packet_commitments` and `query_packet_acknowledgements`
+    queries to speed up the scanning phase.
+    ([\#4101](https://github.com/informalsystems/hermes/issues/4101))
+  - Use the `ibc.core.connection.v1.ConnectionParams` gRPC query to retrieve  `maxExpectedTimePerBlock`
+    and check it against the configured `max_block_time` instead of using the `/genesis` endpoint.
+    This improves both startup times and reliability for most chains.
+    ([\#4143](https://github.com/informalsystems/hermes/issues/4143))
 - [Integration Test Framework](tools/test-framework)
   - Update the version of Gaia running the integration tests in the CI from `v17.2.1`
     to `v18.1.0` ([\#4114](https://github.com/informalsystems/hermes/issues/4114))
@@ -36,18 +47,6 @@ This release brings significant performance improvements and introduces a new co
     to `v23.0.1` ([\#4121](https://github.com/informalsystems/hermes/issues/4121))
   - Update the version of Neutron running the integration tests in the CI from `v3.0.5`
     to `v4.1.0` ([\#4122](https://github.com/informalsystems/hermes/issues/4122))
-- [Relayer Library](relayer)
-  - Add a new configuration `clear_limit` to specify the maximum number
-    of packets cleared every time packet clearing is triggered.
-    Defaults to 50.
-    ([\#4071](https://github.com/informalsystems/hermes/issues/4071))
-  - Paginate results of `query_packet_commitments` and `query_packet_acknowledgements`
-    queries to speed up the scanning phase.
-    ([\#4101](https://github.com/informalsystems/hermes/issues/4101))
-  - Use the `ibc.core.connection.v1.ConnectionParams` gRPC query to retrieve  `maxExpectedTimePerBlock`
-    and check it against the configured `max_block_time` instead of using the `/genesis` endpoint.
-    This improves both startup times and reliability for most chains.
-    ([\#4143](https://github.com/informalsystems/hermes/issues/4143))
 
 ## v1.10.1
 
