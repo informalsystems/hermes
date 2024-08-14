@@ -415,7 +415,7 @@ impl TelemetryState {
                 .init(),
 
             dynamic_gas_queried_success_fees: meter
-                .f64_observable_gauge("dynamic_gas_queried_fees")
+                .f64_observable_gauge("dynamic_gas_queried_success_fees")
                 .with_description("The EIP-1559 base fee successfully queried")
                 .init(),
 
