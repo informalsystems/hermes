@@ -308,7 +308,7 @@ impl CosmosSdkChain {
                     != self.config.max_block_time.as_secs()
                 {
                     warn!(
-                        "Queried `max_block_time` has value: `{}s`, while configured `max_block_time` has value: `{}s`",
+                        "queried `max_block_time` has value: `{}s`, while configured `max_block_time` has value: `{}s`",
                         queried_max_expected_time_per_block_as_secs,
                         self.config.max_block_time.as_secs()
                     );
@@ -316,7 +316,7 @@ impl CosmosSdkChain {
             }
             Err(e) => {
                 warn!(
-                    "Configured value for max_block_time: `{}s` could not be verified. Error: {e}",
+                    "configured value for max_block_time: `{}s` could not be verified. Error: {e}",
                     self.config.max_block_time.as_secs()
                 );
             }
