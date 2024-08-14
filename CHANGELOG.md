@@ -1,5 +1,54 @@
 # CHANGELOG
 
+## v1.10.2
+
+*August 14th, 2024*
+
+This release brings significant performance improvements and introduces a new configuration options for better control over packet clearing. Enhancements include faster startup times through optimized queries and the introduction of a `clear_limit` setting for packet clearing. Additionally, bug fixes and updates to the integration test framework ensure greater stability and compatibility across various environments.
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fix the `memo_overwrite` configuration to correctly apply the
+    overwrite if it is configured.
+    ([\#4104](https://github.com/informalsystems/hermes/issues/4104))
+- [Telemetry & Metrics](telemetry)
+  - Fix the `dynamic_gas_queried_success_fees` Prometheus metric name.
+    ([\#4104](https://github.com/informalsystems/hermes/issues/4104))
+    
+
+### IMPROVEMENTS
+
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Gaia running the integration tests in the CI from `v17.2.1`
+    to `v18.1.0` ([\#4114](https://github.com/informalsystems/hermes/issues/4114))
+  - Update the version of Provenance running the integration tests in the CI from `v1.17.0`
+    to `v1.19.1` ([\#4115](https://github.com/informalsystems/hermes/issues/4115))
+  - Update the version of Osmosis running the integration tests in the CI from `v25.0.0`
+    to `v25.2.0` ([\#4116](https://github.com/informalsystems/hermes/issues/4116))
+  - Update the version of Juno running the integration tests in the CI from `v22.0.0`
+    to `v23.0.0` ([\#4117](https://github.com/informalsystems/hermes/issues/4117))
+  - Update the version of Migaloo Chain running the integration tests in the CI from `v4.1.3`
+    to `v4.2.0` ([\#4118](https://github.com/informalsystems/hermes/issues/4118))
+  - Update the version of `wasmd` running the integration tests in the CI from `v0.51.0`
+    to `v0.52.0` ([\#4120](https://github.com/informalsystems/hermes/issues/4120))
+  - Update the version of Stride running the integration tests in the CI from `v21.0.0`
+    to `v23.0.1` ([\#4121](https://github.com/informalsystems/hermes/issues/4121))
+  - Update the version of Neutron running the integration tests in the CI from `v3.0.5`
+    to `v4.1.0` ([\#4122](https://github.com/informalsystems/hermes/issues/4122))
+- [Relayer Library](relayer)
+  - Add a new configuration `clear_limit` to specify the maximum number
+    of packets cleared every time packet clearing is triggered.
+    Defaults to 50.
+    ([\#4071](https://github.com/informalsystems/hermes/issues/4071))
+  - Paginate results of `query_packet_commitments` and `query_packet_acknowledgements`
+    queries to speed up the scanning phase.
+    ([\#4101](https://github.com/informalsystems/hermes/issues/4101))
+  - Use the `ibc.core.connection.v1.ConnectionParams` gRPC query to retrieve  `maxExpectedTimePerBlock`
+    and check it against the configured `max_block_time` instead of using the `/genesis` endpoint.
+    This improves both startup times and reliability for most chains.
+    ([\#4143](https://github.com/informalsystems/hermes/issues/4143))
+
 ## v1.10.1
 
 *July 23th, 2024*
