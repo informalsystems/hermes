@@ -96,11 +96,6 @@ jobs:
             account_prefix: migaloo
             native_token: stake
             features: ics29-fee,ica,forward-packet
-          - package: injective
-            command: injectived
-            account_prefix: inj
-            native_token: stake
-            features: forward-packet,fee-grant
 
     steps:
       - uses: actions/checkout@v4
