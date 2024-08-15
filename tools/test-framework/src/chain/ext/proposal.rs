@@ -58,8 +58,8 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             .query_upgrade_proposal_height(grpc_address, proposal_id)
     }
 
-    fn vote_proposal(&self, proposal_id: &str, fees: &str) -> Result<(), Error> {
-        self.value().vote_proposal(proposal_id, fees)
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error> {
+        self.value().vote_proposal(fees, proposal_id)
     }
 
     fn deposit_proposal(
@@ -107,7 +107,7 @@ impl<'a, Chain: Send> ChannelProposalMethodsExt for MonoTagged<Chain, &'a ChainD
         self.value()
             .assert_proposal_status(ProposalStatus::VotingPeriod, proposal_id)?;
 
-        self.value().vote_proposal(proposal_id, "1200stake")?;
+        self.value().vote_proposal("1200stake", proposal_id)?;
 
         self.value()
             .assert_proposal_status(ProposalStatus::Passed, proposal_id)?;
@@ -137,7 +137,7 @@ impl<'a, Chain: Send> ChannelProposalMethodsExt for MonoTagged<Chain, &'a ChainD
         self.value()
             .assert_proposal_status(ProposalStatus::VotingPeriod, proposal_id)?;
 
-        self.value().vote_proposal(proposal_id, "1200stake")?;
+        self.value().vote_proposal("1200stake", proposal_id)?;
 
         self.value()
             .assert_proposal_status(ProposalStatus::Passed, proposal_id)?;
@@ -156,8 +156,8 @@ impl ChainProposalMethodsExt for ChainDriver {
             .block_on(query_upgrade_proposal_height(grpc_address, proposal_id))
     }
 
-    fn vote_proposal(&self, proposal_id: &str, fees: &str) -> Result<(), Error> {
-        vote_proposal(self, proposal_id, fees)
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error> {
+        vote_proposal(self, fees, proposal_id)
     }
 
     fn deposit_proposal(

@@ -9,7 +9,7 @@ use crate::chain::exec::simple_exec;
 use crate::error::Error;
 use crate::prelude::{handle_generic_error, ChainDriver};
 
-pub fn vote_proposal(driver: &ChainDriver, proposal_id: &str, fees: &str) -> Result<(), Error> {
+pub fn vote_proposal(driver: &ChainDriver, fees: &str, proposal_id: &str) -> Result<(), Error> {
     let output = simple_exec(
         driver.chain_id.as_str(),
         &driver.command_path,
