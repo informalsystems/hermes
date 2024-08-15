@@ -18,7 +18,7 @@ use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 use ibc_test_framework::chain::config::add_allow_message_interchainaccounts;
-use ibc_test_framework::chain::ext::ica::register_interchain_account;
+use ibc_test_framework::chain::ext::ica::register_ordered_interchain_account;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::assert_eventually_channel_established;
@@ -74,8 +74,11 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         let fee_denom_a: MonoTagged<ChainA, Denom> =
             MonoTagged::new(Denom::base(config.native_token(0)));
         let connection_b_to_a = channel.connection.clone().flip();
-        let (wallet, channel_id, port_id) =
-            register_interchain_account(&chains.node_b, chains.handle_b(), &connection_b_to_a)?;
+        let (wallet, channel_id, port_id) = register_ordered_interchain_account(
+            &chains.node_b,
+            chains.handle_b(),
+            &connection_b_to_a,
+        )?;
 
         relayer.with_supervisor(|| {
             // Check that the corresponding ICA channel is eventually established.
