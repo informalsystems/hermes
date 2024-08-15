@@ -51,6 +51,7 @@ new-register-interchain-account = []
 authz                           = []
 benchmark                       = []
 wasm                            = []
+no-denom-trace                  = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"

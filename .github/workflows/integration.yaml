@@ -66,6 +66,11 @@ jobs:
             account_prefix: cosmos
             native_token: stake
             features: ica,ics29-fee,new-register-interchain-account,channel-upgrade,authz
+          - package: ibc-go-v9-simapp
+            command: simd
+            account_prefix: cosmos
+            native_token: stake
+            features: ica,ics29-fee,new-register-interchain-account,channel-upgrade,authz,no-denom-trace
           - package: wasmd
             command: wasmd
             account_prefix: wasm

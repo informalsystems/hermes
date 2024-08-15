@@ -18,7 +18,7 @@ use ibc_relayer_types::tx_msg::Msg;
 
 use ibc_test_framework::chain::{
     config::add_allow_message_interchainaccounts,
-    ext::ica::{register_interchain_account, register_ordered_interchain_account},
+    ext::ica::{register_ordered_interchain_account, register_unordered_interchain_account},
 };
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
@@ -99,7 +99,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         // Register an interchain account on behalf of
         // controller wallet `user1` where the counterparty chain is the interchain accounts host.
         let (wallet, channel_id, port_id) =
-            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
+            register_unordered_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
 
         // Check that the corresponding ICA channel is eventually established.
         let _counterparty_channel_id = assert_eventually_channel_established(
@@ -211,7 +211,7 @@ impl BinaryConnectionTest for IcaFilterTestDeny {
         // Register an interchain account on behalf of controller wallet `user1`
         // where the counterparty chain is the interchain accounts host.
         let (_, channel_id, port_id) =
-            register_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
+            register_unordered_interchain_account(&chains.node_a, chains.handle_a(), &connection)?;
 
         // Wait a bit, the relayer will refuse to complete the channel handshake
         // because the port is explicitly disallowed by the filter.
