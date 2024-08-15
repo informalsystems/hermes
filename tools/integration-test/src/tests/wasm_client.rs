@@ -16,7 +16,8 @@ use ibc_test_framework::bootstrap::binary::chain::{
     spawn_chain_handle,
 };
 use ibc_test_framework::chain::config::{
-    add_allowed_client, set_max_body_bytes, set_max_deposit_period, set_voting_period,
+    add_allowed_client, set_max_body_bytes, set_max_deposit_period, set_min_deposit_amount,
+    set_voting_period,
 };
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use ibc_test_framework::chain::ext::wasm_client::StoreWasmClientCodeMethodsExt;
@@ -31,6 +32,7 @@ fn test_create_and_update_wasm_client() -> Result<(), Error> {
 }
 
 const WASM_PATH_ENV: &str = "IBC_CLIENT_WASM_FILE";
+const MIN_DEPOSIT: u64 = 100000;
 
 fn ibc_client_wasm_path() -> PathBuf {
     PathBuf::from(std::env::var(WASM_PATH_ENV).expect("IBC_CLIENT_WASM_FILE not set"))
@@ -71,6 +73,7 @@ impl TestOverrides for CreateAndUpdateWasmClientTest {
         set_max_deposit_period(genesis, "10s")?;
         set_voting_period(genesis, 10)?;
         add_allowed_client(genesis, "08-wasm")?;
+        set_min_deposit_amount(genesis, MIN_DEPOSIT)?;
 
         Ok(())
     }
@@ -147,17 +150,6 @@ fn store_wasm_contract(node_a: FullNode, test_config: &TestConfig) -> Result<(),
         "tmp",
         "tmp",
         "validator",
-    )?;
-
-    node_a
-        .chain_driver
-        .assert_proposal_status(ProposalStatus::DepositPeriod, "1")?;
-
-    node_a.chain_driver.deposit_proposal(
-        &format!("381000000{}", fee_denom_a),
-        "1",
-        &format!("381000000{}", fee_denom_a),
-        "100000",
     )?;
 
     node_a
