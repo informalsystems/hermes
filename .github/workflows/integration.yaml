@@ -258,7 +258,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#ibc-go-v7-wasm-simapp
+          - package: .#ibc-go-v9-simapp
             command: simd
             account_prefix: cosmos
             native_token: stake
