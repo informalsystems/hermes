@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-integration-test"
-version      = "0.29.0"
+version      = "0.29.2"
 edition      = "2021"
 rust-version = "1.76.0"
 license      = "Apache-2.0"
@@ -30,31 +30,28 @@ toml           = { workspace = true }
 tonic          = { workspace = true, features = ["tls", "tls-roots"] }
 
 [features]
-default             = []
-example             = []
-manual              = []
-ordered             = []
-ica                 = []
-ics29-fee           = []
-experimental        = []
-mbt                 = []
-forward-packet      = []
-ics31               = []
-clean-workers       = []
-fee-grant           = []
+default                         = []
+example                         = []
+manual                          = []
+ordered                         = []
+ica                             = []
+ics29-fee                       = []
+experimental                    = []
+forward-packet                  = []
+ics31                           = []
+clean-workers                   = []
+fee-grant                       = []
 channel-upgrade                 = []
-interchain-security = []
-celestia            = []
-async-icq           = []
-juno                = []
-dynamic-gas-fee     = []
+interchain-security             = []
+celestia                        = []
+async-icq                       = []
+juno                            = []
+dynamic-gas-fee                 = []
 new-register-interchain-account = []
 authz                           = []
-wasm                = []
+benchmark                       = []
+wasm                            = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
 doc  = true
-
-[dev-dependencies]
-tempfile = { workspace = true }

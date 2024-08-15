@@ -141,6 +141,7 @@ impl BinaryNodeTest for CreateAndUpdateWasmClientTest {
 }
 
 fn store_wasm_contract(node_a: FullNode, test_config: &TestConfig) -> Result<(), Error> {
+    let fee_denom_a = test_config.native_token(0);
     node_a.chain_driver.store_wasm_client_code(
         &ibc_client_wasm_path(),
         "tmp",
@@ -152,18 +153,20 @@ fn store_wasm_contract(node_a: FullNode, test_config: &TestConfig) -> Result<(),
         .chain_driver
         .assert_proposal_status(ProposalStatus::DepositPeriod, "1")?;
 
-    node_a
-        .chain_driver
-        .deposit_proposal("1", "100000000stake")?;
+    node_a.chain_driver.deposit_proposal(
+        &format!("381000000{}", fee_denom_a),
+        "1",
+        &format!("381000000{}", fee_denom_a),
+        "100000",
+    )?;
 
     node_a
         .chain_driver
         .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
-    let fee_denom_a = test_config.native_token(0);
     node_a
         .chain_driver
-        .vote_proposal("1", &format!("381000000{}", fee_denom_a))?;
+        .vote_proposal(&format!("381000000{}", fee_denom_a), "1")?;
 
     node_a
         .chain_driver

@@ -4,15 +4,18 @@
 use eyre::eyre;
 use tracing::warn;
 
+use crate::chain::cli::query::query_tx_hash;
 use crate::chain::exec::simple_exec;
 use crate::error::Error;
 use crate::prelude::{handle_generic_error, ChainDriver};
 
 pub fn vote_proposal(driver: &ChainDriver, proposal_id: &str, fees: &str) -> Result<(), Error> {
-    simple_exec(
+    let output = simple_exec(
         driver.chain_id.as_str(),
         &driver.command_path,
         &[
+            "--node",
+            &driver.rpc_listen_address(),
             "tx",
             "gov",
             "vote",
@@ -22,29 +25,33 @@ pub fn vote_proposal(driver: &ChainDriver, proposal_id: &str, fees: &str) -> Res
             driver.chain_id.as_str(),
             "--home",
             &driver.home_path,
-            "--node",
-            &driver.rpc_listen_address(),
             "--keyring-backend",
             "test",
             "--from",
             "validator",
             "--fees",
             fees,
-            "--yes",
             "--output",
             "json",
+            "--yes",
         ],
     )?;
+
+    std::thread::sleep(core::time::Duration::from_secs(1));
+
+    query_tx_hash(driver, &output.stdout)?;
 
     Ok(())
 }
 
 pub fn deposit_proposal(
     driver: &ChainDriver,
-    proposal_id: &str,
     amount: &str,
+    proposal_id: &str,
+    fees: &str,
+    gas: &str,
 ) -> Result<(), Error> {
-    simple_exec(
+    let output = simple_exec(
         driver.chain_id.as_str(),
         &driver.command_path,
         &[
@@ -64,12 +71,18 @@ pub fn deposit_proposal(
             "--from",
             "validator",
             "--gas",
-            "auto",
+            gas,
             "--yes",
             "--output",
             "json",
+            "--fees",
+            fees,
         ],
     )?;
+
+    std::thread::sleep(core::time::Duration::from_secs(1));
+
+    query_tx_hash(driver, &output.stdout)?;
 
     Ok(())
 }

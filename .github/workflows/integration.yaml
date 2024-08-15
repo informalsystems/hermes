@@ -46,7 +46,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia17
+          - package: gaia18
             command: gaiad
             account_prefix: cosmos
             native_token: stake
@@ -85,12 +85,12 @@ jobs:
             command: provenanced
             account_prefix: pb
             native_token: nhash
-            features: fee-grant,async-icq,authz
+            features: fee-grant,authz,async-icq
           - package: migaloo
             command: migalood
             account_prefix: migaloo
             native_token: stake
-            features: ics29-fee
+            features: ics29-fee,ica,forward-packet
           - package: injective
             command: injectived
             account_prefix: inj
@@ -172,10 +172,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia17 .#stride
+          - package: .#gaia18 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia17 .#neutron
+          - package: .#gaia18 .#neutron
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
@@ -217,7 +217,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia17 .#stride-no-admin
+          - package: .#gaia18 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -305,7 +305,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia17
+          - package: .#celestia .#gaia18
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake
@@ -342,42 +342,3 @@ jobs:
           nix shell .#python ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             --features celestia
-
-  model-based-test:
-    runs-on: ubuntu-20.04
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        gaiad:
-          - gaia6
-    steps:
-      - uses: actions/checkout@v4
-      - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@main
-        with: 
-          extra-conf: |
-            substituters = https://cache.nixos.org
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
-      - name: Install Cachix
-        uses: cachix/cachix-action@v15
-        with: 
-          name: cosmos-nix
-      - uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: stable
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: -p ibc-integration-test --features mbt --no-fail-fast --no-run
-      # Disable running MBT tests until flakiness is addressed
-      # - env:
-      #     RUST_LOG: debug
-      #     RUST_BACKTRACE: 1
-      #     NO_COLOR_LOG: 1
-      #   run: |
-      #     nix shell \
-      #       .#${{ matrix.gaiad }} \
-      #       .#apalache \
-      #       -c cargo \
-      #       test -p ibc-integration-test --features mbt --no-fail-fast -- \
-      #       --failure-output final --test-threads=2 --test-threads=1 mbt

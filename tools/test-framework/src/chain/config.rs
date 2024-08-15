@@ -496,6 +496,41 @@ pub fn set_retry_delay_period(
     Ok(())
 }
 
+pub fn set_floor_gas_price(
+    genesis: &mut serde_json::Value,
+    amount: &str,
+    denom: &str,
+    nhash_per_usd_mil: &str,
+) -> Result<(), Error> {
+    let params = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("msgfees"))
+        .and_then(|msgfees| msgfees.get_mut("params"))
+        .and_then(|params| params.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get `msgfees params` in genesis file"))?;
+
+    params.insert(
+        "nhash_per_usd_mil".to_owned(),
+        serde_json::Value::String(nhash_per_usd_mil.to_string()),
+    );
+
+    let floor_gas_price = params
+        .get_mut("floor_gas_price")
+        .and_then(|floor_gas_price| floor_gas_price.as_object_mut())
+        .ok_or_else(|| eyre!("failed to get `floor_gas_price` params in genesis file"))?;
+
+    floor_gas_price.insert(
+        "amount".to_owned(),
+        serde_json::Value::String(amount.to_string()),
+    );
+    floor_gas_price.insert(
+        "denom".to_owned(),
+        serde_json::Value::String(denom.to_string()),
+    );
+
+    Ok(())
+}
+
 /// Look up a key in a JSON object, falling back to the second key if the first one cannot be found.
 ///
 /// This lets us support both Tendermint 0.34 and 0.37, which sometimes use different keys for the

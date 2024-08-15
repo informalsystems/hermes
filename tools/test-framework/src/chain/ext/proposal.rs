@@ -17,9 +17,15 @@ pub trait ChainProposalMethodsExt {
         proposal_id: u64,
     ) -> Result<u64, Error>;
 
-    fn vote_proposal(&self, proposal_id: &str, fees: &str) -> Result<(), Error>;
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error>;
 
-    fn deposit_proposal(&self, proposal_id: &str, amount: &str) -> Result<(), Error>;
+    fn deposit_proposal(
+        &self,
+        amount: &str,
+        proposal_id: &str,
+        fees: &str,
+        gas: &str,
+    ) -> Result<(), Error>;
 }
 
 pub trait ChannelProposalMethodsExt {
@@ -56,8 +62,15 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
         self.value().vote_proposal(proposal_id, fees)
     }
 
-    fn deposit_proposal(&self, proposal_id: &str, amount: &str) -> Result<(), Error> {
-        self.value().deposit_proposal(proposal_id, amount)
+    fn deposit_proposal(
+        &self,
+        amount: &str,
+        proposal_id: &str,
+        fees: &str,
+        gas: &str,
+    ) -> Result<(), Error> {
+        self.value()
+            .deposit_proposal(amount, proposal_id, fees, gas)
     }
 }
 
@@ -147,8 +160,14 @@ impl ChainProposalMethodsExt for ChainDriver {
         vote_proposal(self, proposal_id, fees)
     }
 
-    fn deposit_proposal(&self, proposal_id: &str, amount: &str) -> Result<(), Error> {
-        deposit_proposal(self, proposal_id, amount)
+    fn deposit_proposal(
+        &self,
+        amount: &str,
+        proposal_id: &str,
+        fees: &str,
+        gas: &str,
+    ) -> Result<(), Error> {
+        deposit_proposal(self, amount, proposal_id, fees, gas)
     }
 }
 

@@ -153,7 +153,6 @@ impl TryFrom<RawClientState> for ClientState {
         Ok(ClientState {
             checksum: value.checksum,
             latest_height: raw_height
-                .clone()
                 .try_into()
                 .map_err(|_| Error::invalid_raw_height(raw_height))?,
             underlying: decode_underlying_client_state(&value.data)?,
