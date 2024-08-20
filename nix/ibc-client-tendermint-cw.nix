@@ -20,14 +20,9 @@ rustWasmPlatform.buildRustPackage {
     rev = "68268ec16c218421964de022699e51e4f40f8c84";
     hash = "sha256-cgHBluU6T2nNOhd3CmKBiENJ6O/TE9rc+RbUmaCj1rQ=";
   };
+  sourceRoot = "source/cosmwasm";
 
-  cargoLock = {
-    lockFile = ./ibc-rs.Cargo.lock;
-  };
-
-  postPatch = ''
-    ln -s ${./ibc-rs.Cargo.lock} Cargo.lock
-  '';
+  cargoHash = "sha256-UvCLS4CQyoq8OhC/tsv0vjc8OT6jKFYGEcvuGhuyHNY=";
 
   doCheck = false;
 
