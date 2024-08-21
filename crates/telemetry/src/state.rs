@@ -171,7 +171,7 @@ pub struct TelemetryState {
     backlog_oldest_sequence: ObservableGauge<u64>,
 
     /// Record the timestamp of the last time the `backlog_*` metrics have been updated.
-    /// The timestamp is the time passed since since the unix epoch in seconds.
+    /// The timestamp is the time passed since the unix epoch in seconds.
     backlog_latest_update_timestamp: ObservableGauge<u64>,
 
     /// Records the length of the backlog, i.e., how many packets are pending.
@@ -415,7 +415,7 @@ impl TelemetryState {
                 .init(),
 
             dynamic_gas_queried_success_fees: meter
-                .f64_observable_gauge("dynamic_gas_queried_fees")
+                .f64_observable_gauge("dynamic_gas_queried_success_fees")
                 .with_description("The EIP-1559 base fee successfully queried")
                 .init(),
 

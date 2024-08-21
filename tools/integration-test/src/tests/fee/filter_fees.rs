@@ -1,3 +1,5 @@
+#![allow(clippy::mutable_key_type)]
+
 use std::collections::HashMap;
 
 use ibc_relayer::config::filter::{ChannelPolicy, FeePolicy, FilterPattern, MinFee};

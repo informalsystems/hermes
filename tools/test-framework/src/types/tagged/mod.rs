@@ -70,7 +70,7 @@
    a `ChannelId` value that is used on `ChainA` to identify a channel
    that is connected to `ChainB`. With the tagged identifier, it is
    more unlikely for us to accidentally use the `ChannelId` coming from
-   counterparty chain, as it would have the the type
+   counterparty chain, as it would have the type
    `DualTagged<ChainB, ChainA, ChannelId>` and thus result in
    type error.
 

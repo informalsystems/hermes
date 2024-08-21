@@ -250,6 +250,10 @@ pub mod default {
     pub fn allow_ccq() -> bool {
         true
     }
+
+    pub fn clear_limit() -> usize {
+        50
+    }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Serialize)]
@@ -424,6 +428,8 @@ pub struct Packets {
     pub ics20_max_memo_size: Ics20FieldSizeLimit,
     #[serde(default = "default::ics20_max_receiver_size")]
     pub ics20_max_receiver_size: Ics20FieldSizeLimit,
+    #[serde(default = "default::clear_limit")]
+    pub clear_limit: usize,
 
     #[serde(skip)]
     pub force_disable_clear_on_start: bool,
@@ -439,6 +445,7 @@ impl Default for Packets {
             auto_register_counterparty_payee: default::auto_register_counterparty_payee(),
             ics20_max_memo_size: default::ics20_max_memo_size(),
             ics20_max_receiver_size: default::ics20_max_receiver_size(),
+            clear_limit: default::clear_limit(),
             force_disable_clear_on_start: false,
         }
     }

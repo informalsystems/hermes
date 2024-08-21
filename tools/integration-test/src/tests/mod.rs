@@ -14,6 +14,7 @@ pub mod client_settings;
 pub mod client_upgrade;
 pub mod connection_delay;
 pub mod consensus_states;
+#[cfg(not(feature = "no-denom-trace"))]
 pub mod denom_trace;
 pub mod error_events;
 pub mod execute_schedule;
@@ -74,3 +75,6 @@ pub mod interchain_security;
 
 #[cfg(any(doc, feature = "dynamic-gas-fee"))]
 pub mod dynamic_gas_fee;
+
+#[cfg(any(doc, feature = "benchmark"))]
+pub mod benchmark;

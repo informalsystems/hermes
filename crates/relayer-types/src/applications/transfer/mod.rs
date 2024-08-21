@@ -10,6 +10,8 @@ pub mod error;
 pub mod events;
 pub mod msgs;
 pub mod packet;
+pub mod v1;
+pub mod v2;
 
 pub use amount::*;
 pub use coin::*;

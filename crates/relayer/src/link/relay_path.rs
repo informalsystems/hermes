@@ -33,6 +33,7 @@ use crate::chain::counterparty::unreceived_acknowledgements;
 use crate::chain::counterparty::unreceived_packets;
 use crate::chain::endpoint::ChainStatus;
 use crate::chain::handle::ChainHandle;
+use crate::chain::requests::Paginate;
 use crate::chain::requests::QueryChannelRequest;
 use crate::chain::requests::QueryClientEventRequest;
 use crate::chain::requests::QueryHeight;
@@ -432,7 +433,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         TrackedEvents::new(result, tracking_id)
     }
 
-    fn relay_pending_packets(&self, height: Option<Height>) -> Result<(), LinkError> {
+    fn relay_pending_packets(
+        &self,
+        height: Option<Height>,
+        clear_limit: usize,
+    ) -> Result<(), LinkError> {
         let _span = span!(Level::ERROR, "relay_pending_packets", ?height).entered();
 
         let tracking_id = TrackingId::new_packet_clearing();
@@ -442,10 +447,15 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let chunk_size = src_config.query_packets_chunk_size();
 
         for i in 1..=MAX_RETRIES {
-            let cleared_recv =
-                self.schedule_recv_packet_and_timeout_msgs(height, chunk_size, tracking_id);
+            let cleared_recv = self.schedule_recv_packet_and_timeout_msgs(
+                height,
+                chunk_size,
+                clear_limit,
+                tracking_id,
+            );
 
-            let cleared_ack = self.schedule_packet_ack_msgs(height, chunk_size, tracking_id);
+            let cleared_ack =
+                self.schedule_packet_ack_msgs(height, chunk_size, clear_limit, tracking_id);
 
             match cleared_recv.and(cleared_ack) {
                 Ok(()) => return Ok(()),
@@ -461,14 +471,18 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
     /// Clears any packets that were sent before `height`.
     /// If no height is passed in, then the latest height of the source chain is used.
-    pub fn schedule_packet_clearing(&self, height: Option<Height>) -> Result<(), LinkError> {
+    pub fn schedule_packet_clearing(
+        &self,
+        height: Option<Height>,
+        clear_limit: usize,
+    ) -> Result<(), LinkError> {
         let _span = span!(Level::ERROR, "schedule_packet_clearing", ?height).entered();
 
         let clear_height = height
             .map(|h| h.decrement().map_err(|e| LinkError::decrement_height(h, e)))
             .transpose()?;
 
-        self.relay_pending_packets(clear_height)?;
+        self.relay_pending_packets(clear_height, clear_limit)?;
 
         debug!(height = ?clear_height, "done relaying pending packets at clear height");
 
@@ -749,7 +763,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
     /// Return value:
     ///   - `Some(..)`: a new operational data from which to retry sending,
     ///   - `None`: all the events in the initial operational data were exhausted (i.e., turned
-    ///   into timeouts), so there is nothing to retry.
+    ///     into timeouts), so there is nothing to retry.
     ///
     /// Side effects: may schedule a new operational data targeting the source chain, comprising
     /// new timeout messages.
@@ -1144,6 +1158,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         opt_query_height: Option<Height>,
         chunk_size: usize,
+        clear_limit: usize,
         tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
         let _span = span!(
@@ -1154,9 +1169,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         .entered();
 
         // Pull the s.n. of all packets that the destination chain has not yet received.
-        let (sequences, src_response_height) =
-            unreceived_packets(self.dst_chain(), self.src_chain(), &self.path_id)
-                .map_err(LinkError::supervisor)?;
+        let (sequences, src_response_height) = unreceived_packets(
+            self.dst_chain(),
+            self.src_chain(),
+            &self.path_id,
+            Paginate::All,
+        )
+        .map_err(LinkError::supervisor)?;
 
         let query_height = opt_query_height.unwrap_or(src_response_height);
 
@@ -1166,10 +1185,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Retain only sequences which should not be filtered out
-        let sequences: Vec<Sequence> = sequences
+        let raw_sequences: Vec<Sequence> = sequences
             .into_iter()
             .filter(|sequence| !self.exclude_src_sequences.contains(sequence))
             .collect();
+
+        let sequences = &raw_sequences[..raw_sequences.len().min(clear_limit)];
 
         debug!(
             dst_chain = %self.dst_chain().id(),
@@ -1182,7 +1203,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         // Chunk-up the list of sequence nrs. into smaller parts,
         // and schedule operational data incrementally across each chunk.
         for events_chunk in query_packet_events_with(
-            &sequences,
+            sequences,
             Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,
@@ -1211,6 +1232,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         &self,
         opt_query_height: Option<Height>,
         chunk_size: usize,
+        clear_limit: usize,
         tracking_id: TrackingId,
     ) -> Result<(), LinkError> {
         let _span = span!(
@@ -1220,9 +1242,13 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         )
         .entered();
 
-        let sequences_and_height =
-            unreceived_acknowledgements(self.dst_chain(), self.src_chain(), &self.path_id)
-                .map_err(LinkError::supervisor)?;
+        let sequences_and_height = unreceived_acknowledgements(
+            self.dst_chain(),
+            self.src_chain(),
+            &self.path_id,
+            Paginate::All,
+        )
+        .map_err(LinkError::supervisor)?;
 
         let Some((sequences, src_response_height)) = sequences_and_height else {
             return Ok(());
@@ -1236,10 +1262,12 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         }
 
         // Retain only sequences which should not be filtered out
-        let sequences: Vec<Sequence> = sequences
+        let raw_sequences: Vec<Sequence> = sequences
             .into_iter()
             .filter(|sequence| !self.exclude_src_sequences.contains(sequence))
             .collect();
+
+        let sequences = &raw_sequences[..raw_sequences.len().min(clear_limit)];
 
         debug!(
             dst_chain = %self.dst_chain().id(),
@@ -1251,7 +1279,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
 
         // Incrementally process all the available sequence numbers in chunks
         for events_chunk in query_packet_events_with(
-            &sequences,
+            sequences,
             Qualified::SmallerEqual(query_height),
             self.src_chain(),
             &self.path_id,

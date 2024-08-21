@@ -104,6 +104,7 @@ impl From<MsgTransfer> for RawMsgTransfer {
             timeout_timestamp: domain_msg.timeout_timestamp.nanoseconds(),
             memo,
             tokens: domain_msg.tokens,
+            forwarding: None, // TODO: fill with correct value
         }
     }
 }

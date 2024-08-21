@@ -72,7 +72,8 @@ impl BinaryChannelTest for ExecuteScheduleTest {
                 &chains.node_a.denom().with_amount(amount1).as_ref(),
             )?;
 
-            relay_path_a_to_b.schedule_packet_clearing(None)?;
+            relay_path_a_to_b
+                .schedule_packet_clearing(None, relayer.config.mode.packets.clear_limit)?;
 
             info!("Performing IBC send packet with a token transfer #{} from chain A to be received by chain B", i);
         }

@@ -1,12 +1,14 @@
 use eyre::eyre;
 use http::Uri;
 use ibc_relayer::config::default::max_grpc_decoding_size;
+use ibc_relayer::upgrade_chain::UpgradeProposal;
 use prost::Message;
 
 use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
-use ibc_proto::ibc::core::client::v1::{MsgIbcSoftwareUpgrade, UpgradeProposal};
+use ibc_proto::ibc::core::client::v1::MsgIbcSoftwareUpgrade;
 use ibc_relayer::error::Error as RelayerError;
 
+use crate::chain::cli::proposal::deposit_proposal;
 use crate::chain::cli::upgrade::{submit_gov_proposal, vote_proposal};
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
@@ -24,6 +26,14 @@ pub trait ChainProposalMethodsExt {
     ) -> Result<u64, Error>;
 
     fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error>;
+
+    fn deposit_proposal(
+        &self,
+        amount: &str,
+        proposal_id: &str,
+        fees: &str,
+        gas: &str,
+    ) -> Result<(), Error>;
 
     fn initialise_channel_upgrade(
         &self,
@@ -64,6 +74,17 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             fees,
             proposal_id,
         )?;
+        Ok(())
+    }
+
+    fn deposit_proposal(
+        &self,
+        amount: &str,
+        proposal_id: &str,
+        fees: &str,
+        gas: &str,
+    ) -> Result<(), Error> {
+        deposit_proposal(self.value(), amount, proposal_id, fees, gas)?;
         Ok(())
     }
 

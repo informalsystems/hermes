@@ -1,14 +1,14 @@
 use std::thread;
 
-use ibc_relayer::chain::counterparty::pending_packet_summary;
+use ibc_relayer::chain::{counterparty::pending_packet_summary, requests::Paginate};
 use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_identified_channel_end;
 use ibc_test_framework::util::random::random_u128_range;
 
 #[test]
-fn test_clear_packet() -> Result<(), Error> {
-    run_binary_channel_test(&ClearPacketTest)
+fn test_disabled_clear_packet() -> Result<(), Error> {
+    run_binary_channel_test(&DisabledClearPacketTest)
 }
 
 #[test]
@@ -31,13 +31,19 @@ fn test_clear_packet_sequences() -> Result<(), Error> {
     run_binary_channel_test(&ClearPacketSequencesTest)
 }
 
-pub struct ClearPacketTest;
+#[test]
+fn test_limited_clear_packet() -> Result<(), Error> {
+    run_binary_channel_test(&LimitedClearPacketTest)
+}
+
+pub struct DisabledClearPacketTest;
 pub struct ClearPacketRecoveryTest;
 pub struct ClearPacketNoScanTest;
 pub struct ClearPacketOverrideTest;
 pub struct ClearPacketSequencesTest;
+pub struct LimitedClearPacketTest;
 
-impl TestOverrides for ClearPacketTest {
+impl TestOverrides for DisabledClearPacketTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         // Disabling client workers and clear_on_start should make the relayer not
         // relay any packet it missed before starting.
@@ -60,18 +66,7 @@ impl TestOverrides for ClearPacketTest {
     }
 }
 
-impl TestOverrides for ClearPacketRecoveryTest {
-    fn modify_relayer_config(&self, config: &mut Config) {
-        config.mode.packets.enabled = true;
-        config.mode.packets.clear_on_start = true;
-    }
-
-    fn should_spawn_supervisor(&self) -> bool {
-        false
-    }
-}
-
-impl BinaryChannelTest for ClearPacketTest {
+impl BinaryChannelTest for DisabledClearPacketTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         _config: &TestConfig,
@@ -147,6 +142,17 @@ impl BinaryChannelTest for ClearPacketTest {
     }
 }
 
+impl TestOverrides for ClearPacketRecoveryTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.enabled = true;
+        config.mode.packets.clear_on_start = true;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+}
+
 impl BinaryChannelTest for ClearPacketRecoveryTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -170,7 +176,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
             &relayer_wallet_b.as_ref(),
             &wallet_b.address(),
             &denom_b1.with_amount(100u64).as_ref(),
-            &fee_denom_b.with_amount(1200u64).as_ref(),
+            &fee_denom_b.with_amount(381000000u64).as_ref(),
         )?;
 
         let amount1 = random_u128_range(1000, 5000);
@@ -478,8 +484,12 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
             channel.port_a.as_ref(),
         )?;
 
-        let pending_packets_a =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end_a.value())?;
+        let pending_packets_a = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end_a.value(),
+            Paginate::All,
+        )?;
 
         info!("Pending packets: {:?}", pending_packets_a);
 
@@ -526,8 +536,12 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
 
         sleep(Duration::from_secs(10));
 
-        let pending_packets =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end_a.value())?;
+        let pending_packets = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end_a.value(),
+            Paginate::All,
+        )?;
 
         info!("Pending packets: {pending_packets:?}");
 
@@ -554,8 +568,12 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
 
         rev_link.relay_ack_packet_messages(to_clear)?;
 
-        let pending_packets_a =
-            pending_packet_summary(chains.handle_a(), chains.handle_b(), channel_end_a.value())?;
+        let pending_packets_a = pending_packet_summary(
+            chains.handle_a(),
+            chains.handle_b(),
+            channel_end_a.value(),
+            Paginate::All,
+        )?;
 
         info!("Pending packets: {pending_packets_a:?}");
 
@@ -571,5 +589,94 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
         );
 
         Ok(())
+    }
+}
+
+impl TestOverrides for LimitedClearPacketTest {
+    fn modify_relayer_config(&self, config: &mut Config) {
+        // Disabling client workers and clear_on_start should make the relayer not
+        // relay any packet it missed before starting.
+        config.mode.clients.enabled = false;
+        config.mode.connections.enabled = false;
+        config.mode.channels.enabled = false;
+
+        config.mode.packets.enabled = true;
+        config.mode.packets.clear_on_start = true;
+        config.mode.packets.clear_interval = 0;
+    }
+
+    fn should_spawn_supervisor(&self) -> bool {
+        false
+    }
+
+    // Unordered channel: will permit gaps in the sequence of relayed packets
+    fn channel_order(&self) -> Ordering {
+        Ordering::Unordered
+    }
+}
+
+impl BinaryChannelTest for LimitedClearPacketTest {
+    fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
+        &self,
+        _config: &TestConfig,
+        relayer: RelayerDriver,
+        chains: ConnectedChains<ChainA, ChainB>,
+        channel: ConnectedChannel<ChainA, ChainB>,
+    ) -> Result<(), Error> {
+        let denom_a = chains.node_a.denom();
+
+        let wallet_a = chains.node_a.wallets().user1().cloned();
+        let wallet_b = chains.node_b.wallets().user1().cloned();
+
+        let balance_a = chains
+            .node_a
+            .chain_driver()
+            .query_balance(&wallet_a.address(), &denom_a)?;
+
+        let raw_amount = random_u128_range(1000, 5000);
+
+        let num_transfers = 70;
+
+        let amount = denom_a.with_amount(raw_amount);
+        let sent_amount = denom_a.with_amount(raw_amount * num_transfers);
+        let cleared_amount = denom_a.with_amount(raw_amount * 50);
+
+        info!("Performing {num_transfers}  IBC transfers with amount {amount}, for a total of {sent_amount}");
+
+        chains.node_a.chain_driver().ibc_transfer_token_multiple(
+            &channel.port_a.as_ref(),
+            &channel.channel_id_a.as_ref(),
+            &wallet_a.as_ref(),
+            &wallet_b.address(),
+            &amount.as_ref(),
+            70,
+            None,
+        )?;
+
+        sleep(Duration::from_secs(10));
+
+        // Spawn the supervisor only after the first IBC transfer
+        relayer.with_supervisor(|| {
+            let amount_b = cleared_amount
+                .transfer(&channel.port_b.as_ref(), &channel.channel_id_b.as_ref())?;
+
+            info!("Assert that {sent_amount} was escrowed from sending chain");
+
+            // Wallet on chain A should have both amount deducted.
+            chains.node_a.chain_driver().assert_eventual_wallet_amount(
+                &wallet_a.address(),
+                &(balance_a - sent_amount.amount()).as_ref(),
+            )?;
+
+            info!("Assert that only {amount_b} was received");
+
+            // Wallet on chain B should only receive the second IBC transfer
+            chains
+                .node_b
+                .chain_driver()
+                .assert_eventual_wallet_amount(&wallet_b.address(), &amount_b.as_ref())?;
+
+            Ok(())
+        })
     }
 }

@@ -2,7 +2,7 @@ use core::time::Duration;
 use std::borrow::BorrowMut;
 use std::sync::{Arc, Mutex};
 
-use crossbeam_channel::Receiver;
+use crossbeam_channel::{Receiver, Sender};
 use itertools::Itertools;
 use moka::sync::Cache;
 use tracing::{debug, error, error_span, info, trace, warn};
@@ -83,6 +83,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: Arc<Mutex<Link<ChainA, ChainB>>>,
     mut should_clear_on_start: bool,
     clear_interval: u64,
+    clear_limit: usize,
     path: Packet,
 ) -> TaskHandle {
     let span = {
@@ -117,6 +118,7 @@ pub fn spawn_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                 &mut link.lock().unwrap(),
                 &mut should_clear_on_start,
                 clear_interval,
+                clear_limit,
                 &path,
                 cmd,
             )?;
@@ -182,13 +184,79 @@ pub fn spawn_incentivized_packet_cmd_worker<ChainA: ChainHandle, ChainB: ChainHa
     })
 }
 
+pub fn spawn_clear_cmd_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
+    cmd_rx: Receiver<WorkerCmd>,
+    // Mutex is used to prevent race condition between the packet workers
+    link: Arc<Mutex<Link<ChainA, ChainB>>>,
+    mut should_clear_on_start: bool,
+    clear_interval: u64,
+    clear_limit: usize,
+    clear_cmd_tx: Sender<WorkerCmd>,
+) -> TaskHandle {
+    let span = {
+        let relay_path = &link.lock().unwrap().a_to_b;
+        error_span!(
+            "worker.clear.cmd",
+            src_chain = %relay_path.src_chain().id(),
+            src_port = %relay_path.src_port_id(),
+            src_channel = %relay_path.src_channel_id(),
+            dst_chain = %relay_path.dst_chain().id(),
+        )
+    };
+
+    let clear_cmd_worker_idle_timeout = if clear_interval > 0 {
+        clear_interval * 5
+    } else {
+        IDLE_TIMEOUT_BLOCKS
+    };
+
+    let mut idle_worker_timer = 0;
+
+    spawn_background_task(span, Some(Duration::from_millis(200)), move || {
+        if let Ok(cmd) = cmd_rx.try_recv() {
+            match clear_cmd_tx.send(cmd.clone()) {
+                Ok(_) => trace!("Successfully sent cmd to packet worker"),
+                Err(e) => {
+                    error!("Failed to forward cmd from clear worker to packet worker. Cause: {e}")
+                }
+            }
+            let is_new_batch = cmd.is_ibc_events();
+
+            // Try to clear pending packets. At different levels down in `handle_clear_cmd` there
+            // are retries mechanisms for MAX_RETRIES (current value hardcoded at 5).
+            // If clearing fails after all these retries with ignorable error the task continues
+            // (see `handle_link_error_in_task`) and clearing is retried with the next
+            // (`NewBlock`) `cmd` that matches the clearing interval.
+            handle_clear_cmd(
+                &mut link.lock().unwrap(),
+                &mut should_clear_on_start,
+                clear_interval,
+                clear_limit,
+                cmd,
+            )?;
+
+            if is_new_batch {
+                idle_worker_timer = 0;
+                trace!("clear worker processed an event batch, resetting idle timer");
+            } else {
+                idle_worker_timer += 1;
+                trace!("clear worker has not processed an event batch after {idle_worker_timer} blocks, incrementing idle timer");
+            }
+
+            if idle_worker_timer > clear_cmd_worker_idle_timeout {
+                warn!("clear worker has been idle for more than {clear_cmd_worker_idle_timeout} blocks, aborting");
+
+                return Ok(Next::Abort);
+            }
+        }
+
+        Ok(Next::Continue)
+    })
+}
+
 /// Receives worker commands and handles them accordingly.
 ///
-/// Given an `IbcEvent` command, updates the schedule and initiates
-/// packet clearing if the `should_clear_on_start` flag has been toggled.
-///
-/// Given a `NewBlock` command, checks if packet clearing should occur
-/// and performs it if so.
+/// Given an `IbcEvent` command, updates the schedule.
 ///
 /// Given a `ClearPendingPackets` command, clears pending packets.
 ///
@@ -198,11 +266,13 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     link: &mut Link<ChainA, ChainB>,
     should_clear_on_start: &mut bool,
     clear_interval: u64,
+    clear_limit: usize,
     path: &Packet,
     cmd: WorkerCmd,
 ) -> Result<(), TaskError<RunError>> {
-    // Handle packet clearing which is triggered from a command
-    let (do_clear, maybe_height) = match &cmd {
+    // If the channel is Ordered, verify if clearing is required before proceeding
+    // to relaying.
+    match &cmd {
         WorkerCmd::IbcEvents { batch } if link.a_to_b.channel().ordering == Ordering::Ordered => {
             let lowest_sequence = lowest_sequence(&batch.events);
 
@@ -215,10 +285,39 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             .ok();
 
             if *should_clear_on_start || next_sequence < lowest_sequence {
-                (true, Some(batch.height))
-            } else {
-                (false, None)
+                handle_clear_packet(link, clear_interval, path, Some(batch.height), clear_limit)?;
             }
+        }
+        _ => {}
+    }
+
+    // Handle command-specific task
+    if let WorkerCmd::IbcEvents { batch } = cmd {
+        handle_update_schedule(link, clear_interval, path, batch)?;
+    }
+
+    Ok(())
+}
+
+/// Given an `IbcEvent` command, schedule packet clearing if the
+/// `should_clear_on_start` flag has been toggled.
+///
+/// Given a `NewBlock` command, checks if packet clearing should occur
+/// and performs it if so.
+fn handle_clear_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
+    link: &mut Link<ChainA, ChainB>,
+    should_clear_on_start: &mut bool,
+    clear_interval: u64,
+    clear_limit: usize,
+    cmd: WorkerCmd,
+) -> Result<(), TaskError<RunError>> {
+    // Handle packet clearing which is triggered from a command
+    let (do_clear, maybe_height) = match &cmd {
+        // Clearing for Ordered channels is handled by the packet_cmd_worker
+        WorkerCmd::IbcEvents { batch: _batch }
+            if link.a_to_b.channel().ordering == Ordering::Ordered =>
+        {
+            (false, None)
         }
 
         WorkerCmd::IbcEvents { batch } => {
@@ -243,7 +342,7 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
     };
 
     if do_clear {
-        info!("clearing packets");
+        info!("packets clearing triggered, looking for packets to clear");
 
         // Reset the `clear_on_start` flag and attempt packet clearing once now.
         // More clearing will be done at clear interval.
@@ -251,12 +350,9 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
             *should_clear_on_start = false;
         }
 
-        handle_clear_packet(link, clear_interval, path, maybe_height)?;
-    }
-
-    // Handle command-specific task
-    if let WorkerCmd::IbcEvents { batch } = cmd {
-        handle_update_schedule(link, clear_interval, path, batch)?;
+        link.a_to_b
+            .schedule_packet_clearing(maybe_height, clear_limit)
+            .map_err(handle_link_error_in_task)?;
     }
 
     Ok(())
@@ -377,7 +473,7 @@ fn retrieve_all_fees_from_incentivized_packet(
     incentivized_packet
         .total_recv_fee
         .iter()
-        .group_by(|a| &a.denom)
+        .chunk_by(|a| &a.denom)
         .into_iter()
         .map(|(key, group)| {
             let total_amount: Amount = group.map(|v| v.amount).sum::<Amount>();
@@ -414,9 +510,10 @@ fn handle_clear_packet<ChainA: ChainHandle, ChainB: ChainHandle>(
     clear_interval: u64,
     path: &Packet,
     height: Option<Height>,
+    clear_limit: usize,
 ) -> Result<(), TaskError<RunError>> {
     link.a_to_b
-        .schedule_packet_clearing(height)
+        .schedule_packet_clearing(height, clear_limit)
         .map_err(handle_link_error_in_task)?;
 
     handle_execute_schedule(link, path, Resubmit::from_clear_interval(clear_interval))
