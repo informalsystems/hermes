@@ -7,6 +7,7 @@ use serde_json as json;
 use std::convert::Infallible;
 use std::fmt::{Display, Error as FmtError, Formatter};
 use std::str::FromStr;
+use tracing::debug;
 
 use crate::applications::transfer;
 
@@ -63,7 +64,19 @@ impl Version {
     }
 
     pub fn is_ics20_v2(&self) -> bool {
-        self.0.contains("ics20-2")
+        match serde_json::from_str::<serde_json::Value>(&self.0) {
+            Ok(json_value) => {
+                let app_version = json_value
+                    .get("app_version")
+                    .and_then(|app_version| app_version.as_str())
+                    .unwrap_or(self.0.as_str());
+                app_version == "ics20-2"
+            }
+            Err(e) => {
+                debug!("failed to deserialise version as JSON will fallback to direct string comparison. Error: {e}");
+                self.0.as_str() == "ics20-2"
+            }
+        }
     }
 }
 
