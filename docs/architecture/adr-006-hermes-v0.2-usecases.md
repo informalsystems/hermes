@@ -80,7 +80,7 @@ connection, or reuse a connection in the creation of a new channel).
 
 #### Patterns
 
-We propose two basic patterns that Hermes should be able to fulfil.
+We propose two basic patterns that Hermes should be able to fulfill.
 
 1. Simple invocations to perform basic actions.
     - By _action_ here we mean doing the complete handshake for an object from
