@@ -75,7 +75,7 @@ impl BinaryChainTest for SupervisorTest {
         let port_a = tagged_transfer_port();
         let port_b = tagged_transfer_port();
 
-        let (channel_id_b, _) = init_channel(
+        let (channel_id_b, channel) = init_channel(
             &chains.handle_a,
             &chains.handle_b,
             &chains.client_id_a(),
@@ -134,12 +134,20 @@ impl BinaryChainTest for SupervisorTest {
             denom_a
         );
 
+        let channel_version = channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &port_a.as_ref(),
             &channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(1000u64).as_ref(),
+            &vec![denom_a.with_amount(1000u64).as_ref()],
         )?;
 
         // During the test, you should see error logs showing "account sequence mismatch".

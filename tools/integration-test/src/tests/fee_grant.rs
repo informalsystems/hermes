@@ -122,12 +122,20 @@ impl BinaryChannelTest for FeeGrantTest {
 
         let md: MonoTagged<ChainA, &ChainDriver> = MonoTagged::new(&modified_driver);
 
+        let channel_version = channels.channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channels.channel.src_channel_id()
+            ))
+        })?;
+
         md.ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         thread::sleep(Duration::from_secs(10));
@@ -238,12 +246,20 @@ impl BinaryChannelTest for NoFeeGrantTest {
             &gas_denom.as_ref(),
         )?;
 
+        let channel_version = channels.channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channels.channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         thread::sleep(Duration::from_secs(10));

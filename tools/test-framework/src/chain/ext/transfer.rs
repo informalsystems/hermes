@@ -1,5 +1,6 @@
 use core::time::Duration;
 
+use ibc_relayer::channel::version::Version;
 use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, PortId};
@@ -9,9 +10,7 @@ use crate::chain::driver::ChainDriver;
 use crate::chain::tagged::TaggedChainDriverExt;
 use crate::error::Error;
 use crate::ibc::token::TaggedTokenRef;
-use crate::relayer::transfer::{
-    batched_ibc_token_transfer, ibc_token_transfer, ibc_token_transfer_v2,
-};
+use crate::relayer::transfer::{batched_ibc_token_transfer, ibc_token_transfer};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
 use crate::types::tagged::*;
 use crate::types::wallet::{Wallet, WalletAddress};
@@ -41,15 +40,7 @@ pub trait ChainTransferMethodsExt<Chain> {
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
-        sender: &MonoTagged<Chain, &Wallet>,
-        recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        token: &TaggedTokenRef<Chain>,
-    ) -> Result<Packet, Error>;
-
-    fn ibc_transfer_token_v2<Counterparty>(
-        &self,
-        port_id: &TaggedPortIdRef<Chain, Counterparty>,
-        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
         token: &Vec<TaggedTokenRef<Chain>>,
@@ -59,9 +50,10 @@ pub trait ChainTransferMethodsExt<Chain> {
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        token: &TaggedTokenRef<Chain>,
+        tokens: &Vec<TaggedTokenRef<Chain>>,
         memo: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<Packet, Error>;
@@ -70,9 +62,10 @@ pub trait ChainTransferMethodsExt<Chain> {
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        token: &TaggedTokenRef<Chain>,
+        tokens: &Vec<TaggedTokenRef<Chain>>,
         num_msgs: usize,
         memo: Option<String>,
     ) -> Result<(), Error>;
@@ -102,9 +95,10 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        token: &TaggedTokenRef<Chain>,
+        token: &Vec<TaggedTokenRef<Chain>>,
     ) -> Result<Packet, Error> {
         let rpc_client = self.rpc_client()?;
         self.value().runtime.block_on(ibc_token_transfer(
@@ -112,31 +106,10 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             &self.tx_config(),
             port_id,
             channel_id,
+            channel_version,
             sender,
             recipient,
             token,
-            None,
-            None,
-        ))
-    }
-
-    fn ibc_transfer_token_v2<Counterparty>(
-        &self,
-        port_id: &TaggedPortIdRef<Chain, Counterparty>,
-        channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
-        sender: &MonoTagged<Chain, &Wallet>,
-        recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        tokens: &Vec<TaggedTokenRef<Chain>>,
-    ) -> Result<Packet, Error> {
-        let rpc_client = self.rpc_client()?;
-        self.value().runtime.block_on(ibc_token_transfer_v2(
-            rpc_client.as_ref(),
-            &self.tx_config(),
-            port_id,
-            channel_id,
-            sender,
-            recipient,
-            tokens,
             None,
             None,
         ))
@@ -146,9 +119,10 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        token: &TaggedTokenRef<Chain>,
+        tokens: &Vec<TaggedTokenRef<Chain>>,
         memo: Option<String>,
         timeout: Option<Duration>,
     ) -> Result<Packet, Error> {
@@ -158,9 +132,10 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             &self.tx_config(),
             port_id,
             channel_id,
+            channel_version,
             sender,
             recipient,
-            token,
+            tokens,
             memo,
             timeout,
         ))
@@ -170,9 +145,10 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        token: &TaggedTokenRef<Chain>,
+        tokens: &Vec<TaggedTokenRef<Chain>>,
         num_msgs: usize,
         memo: Option<String>,
     ) -> Result<(), Error> {
@@ -182,9 +158,10 @@ impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a C
             &self.tx_config(),
             port_id,
             channel_id,
+            channel_version,
             sender,
             recipient,
-            token,
+            tokens,
             num_msgs,
             memo,
         ))

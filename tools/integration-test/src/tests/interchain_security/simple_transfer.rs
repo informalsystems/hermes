@@ -60,12 +60,20 @@ impl BinaryChannelTest for InterchainSecurityTransferTest {
             denom_a
         );
 
+        let channel_version_a = channel.channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
+            channel_version_a,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         let denom_b = derive_ibc_denom(
@@ -111,12 +119,20 @@ impl BinaryChannelTest for InterchainSecurityTransferTest {
             b_to_a_amount,
         );
 
+        let channel_version_b = channel.channel.dst_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.channel.dst_channel_id()
+            ))
+        })?;
+
         chains.node_b.chain_driver().ibc_transfer_token(
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
+            channel_version_b,
             &wallet_b.as_ref(),
             &wallet_c.address(),
-            &denom_b.with_amount(b_to_a_amount).as_ref(),
+            &vec![denom_b.with_amount(b_to_a_amount).as_ref()],
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(

@@ -114,12 +114,20 @@ impl BinaryChannelTest for ChannelUpgradeFlushing {
 
         let send_amount = random_u128_range(1000, 2000);
 
+        let channel_version_a = channels.channel.a_side.version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{}`",
+                channels.channel_id_a
+            ))
+        })?;
+
         chain_driver_a.ibc_transfer_token(
             &port_a,
             &channel_id_a,
+            channel_version_a,
             &user_a,
             &user_b.address(),
-            &denom_a.with_amount(send_amount).as_ref(),
+            &vec![denom_a.with_amount(send_amount).as_ref()],
         )?;
 
         sleep(Duration::from_secs(3));
@@ -127,9 +135,10 @@ impl BinaryChannelTest for ChannelUpgradeFlushing {
         chain_driver_a.ibc_transfer_token(
             &port_a,
             &channel_id_a,
+            &Version::ics20(1),
             &user_a,
             &user_b.address(),
-            &denom_a.with_amount(send_amount).as_ref(),
+            &vec![denom_a.with_amount(send_amount).as_ref()],
         )?;
 
         let old_ordering = channel_end_a.ordering;
@@ -316,12 +325,20 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
             denom_a
         );
 
+        let channel_version_a = channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version_a,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         // send a IBC transfer message from chain b to chain a
@@ -338,12 +355,20 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeFlushPackets {
             denom_b
         );
 
+        let channel_version_b = channel.dst_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.dst_channel_id()
+            ))
+        })?;
+
         chains.node_b.chain_driver().ibc_transfer_token(
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
+            channel_version_b,
             &wallet_b.as_ref(),
             &wallet_a.address(),
-            &denom_b.with_amount(b_to_a_amount).as_ref(),
+            &vec![denom_b.with_amount(b_to_a_amount).as_ref()],
         )?;
 
         info!("Will run ChanUpgradeTry step...");

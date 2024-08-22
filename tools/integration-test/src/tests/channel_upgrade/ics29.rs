@@ -114,12 +114,22 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
 
         let balance_a2 = balance_a1 - total_sent;
 
+        let channel = channels.channel.clone();
+
+        let channel_version_a = channels.channel.a_side.version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{}`",
+                channels.channel_id_a
+            ))
+        })?;
+
         let ics29_transfer = chain_driver_a.ibc_token_transfer_with_fee(
             &port_a,
             &channel_id_a,
+            channel_version_a,
             &user_a,
             &user_b.address(),
-            &denom_a.with_amount(send_amount).as_ref(),
+            &vec![denom_a.with_amount(send_amount).as_ref()],
             &denom_a.with_amount(receive_fee).as_ref(),
             &denom_a.with_amount(ack_fee).as_ref(),
             &denom_a.with_amount(timeout_fee).as_ref(),
@@ -132,7 +142,6 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
         let old_connection_hops_a = channel_end_a.connection_hops;
         let old_connection_hops_b = channel_end_b.connection_hops;
 
-        let channel = channels.channel;
         let new_version = Version::ics20_with_fee(1);
 
         let upgraded_attrs = ChannelUpgradableAttributes::new(
@@ -192,9 +201,10 @@ impl BinaryChannelTest for ChannelUpgradeICS29 {
         chain_driver_a.ibc_token_transfer_with_fee(
             &port_a,
             &channel_id_a,
+            channel_version_a,
             &user_a,
             &user_b.address(),
-            &denom_a.with_amount(send_amount).as_ref(),
+            &vec![denom_a.with_amount(send_amount).as_ref()],
             &denom_a.with_amount(receive_fee).as_ref(),
             &denom_a.with_amount(ack_fee).as_ref(),
             &denom_a.with_amount(timeout_fee).as_ref(),

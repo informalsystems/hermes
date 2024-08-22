@@ -92,12 +92,20 @@ impl BinaryChannelTest for ICS31Test {
             denom_a
         );
 
+        let channel_version = channel.channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         let denom_b = derive_ibc_denom(

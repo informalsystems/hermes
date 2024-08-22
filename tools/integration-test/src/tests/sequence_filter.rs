@@ -17,8 +17,8 @@
 
 use std::collections::BTreeMap;
 
-use ibc_relayer::config::ChainConfig;
 use ibc_relayer::util::excluded_sequences::ExcludedSequences;
+use ibc_relayer::{channel::version::Version, config::ChainConfig};
 use ibc_test_framework::{
     prelude::*,
     relayer::channel::{assert_eventually_channel_established, init_channel},
@@ -172,40 +172,58 @@ impl BinaryChannelTest for ClearNoFilterTest {
             .chain_driver()
             .query_balance(&wallet_b.address(), &denom_b)?;
 
+        let channel_version = channels.channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channels.channel.src_channel_id()
+            ))
+        })?;
+
         // Create a pending transfer from A to B with sequence 1
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         // Create a pending transfer from A to B with sequence 2
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
+
+        let channel_version = channels.channel.dst_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channels.channel.dst_channel_id()
+            ))
+        })?;
 
         // Create a pending transfer from B to A with sequence 1
         chains.node_b.chain_driver().ibc_transfer_token(
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
+            channel_version,
             &wallet_b.as_ref(),
             &wallet_a.address(),
-            &denom_b.with_amount(b_to_a_amount).as_ref(),
+            &vec![denom_b.with_amount(b_to_a_amount).as_ref()],
         )?;
 
         // Create a pending transfer from B to A with sequence 2
         chains.node_b.chain_driver().ibc_transfer_token(
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
+            channel_version,
             &wallet_b.as_ref(),
             &wallet_a.address(),
-            &denom_b.with_amount(b_to_a_amount).as_ref(),
+            &vec![denom_b.with_amount(b_to_a_amount).as_ref()],
         )?;
 
         relayer.with_supervisor(|| {
@@ -298,40 +316,58 @@ impl BinaryChannelTest for StandardRelayingNoFilterTest {
             .chain_driver()
             .query_balance(&wallet_b.address(), &denom_b)?;
 
+        let channel_version = channels.channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channels.channel.src_channel_id()
+            ))
+        })?;
+
         // Create a pending transfer from A to B with sequence 1
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         // Create a pending transfer from A to B with sequence 2
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
+
+        let channel_version = channels.channel.dst_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channels.channel.dst_channel_id()
+            ))
+        })?;
 
         // Create a pending transfer from B to A with sequence 1
         chains.node_b.chain_driver().ibc_transfer_token(
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
+            channel_version,
             &wallet_b.as_ref(),
             &wallet_a.address(),
-            &denom_b.with_amount(b_to_a_amount).as_ref(),
+            &vec![denom_b.with_amount(b_to_a_amount).as_ref()],
         )?;
 
         // Create a pending transfer from B to A with sequence 2
         chains.node_b.chain_driver().ibc_transfer_token(
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
+            channel_version,
             &wallet_b.as_ref(),
             &wallet_a.address(),
-            &denom_b.with_amount(b_to_a_amount).as_ref(),
+            &vec![denom_b.with_amount(b_to_a_amount).as_ref()],
         )?;
 
         info!("Assert that the send from A escrowed tokens for both transfers");
@@ -452,11 +488,19 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
         .chain_driver()
         .query_balance(&wallet_b_2.address(), &denom_b)?;
 
+    let channel_version = channels.channel.src_version().ok_or_else(|| {
+        Error::generic(eyre!(
+            "failed to retrieve channel version for channel `{:#?}`",
+            channels.channel.src_channel_id()
+        ))
+    })?;
+
     // Double transfer from A to B on channel with filter
     double_transfer(
         chains.node_a.chain_driver(),
         &channels.port_a.as_ref(),
         &channels.channel_id_a.as_ref(),
+        channel_version,
         &wallet_a_1.as_ref(),
         &wallet_b_1.address(),
         &denom_a.with_amount(a_to_b_amount).as_ref(),
@@ -467,11 +511,19 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
     let port_a_2: DualTagged<ChainA, ChainB, PortId> =
         DualTagged::new(channel_b_2.clone().flipped().a_side.port_id().clone());
 
+    let channel_version_2 = channel_b_2.src_version().ok_or_else(|| {
+        Error::generic(eyre!(
+            "failed to retrieve channel version for channel `{:#?}`",
+            channels.channel.src_channel_id()
+        ))
+    })?;
+
     // Double transfer from A to B on channel without filter
     double_transfer(
         chains.node_a.chain_driver(),
         &port_a_2.as_ref(),
         &channel_id_a_2.as_ref(),
+        channel_version_2,
         &wallet_a_2.as_ref(),
         &wallet_b_2.address(),
         &denom_a.with_amount(a_to_b_amount).as_ref(),
@@ -482,6 +534,7 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
         chains.node_b.chain_driver(),
         &channels.port_b.as_ref(),
         &channels.channel_id_b.as_ref(),
+        channel_version,
         &wallet_b_1.as_ref(),
         &wallet_a_1.address(),
         &denom_b.with_amount(b_to_a_amount).as_ref(),
@@ -492,6 +545,7 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
         chains.node_b.chain_driver(),
         &port_b_2,
         &channel_id_b_2.as_ref(),
+        channel_version_2,
         &wallet_b_2.as_ref(),
         &wallet_a_2.address(),
         &denom_b.with_amount(b_to_a_amount).as_ref(),
@@ -556,15 +610,30 @@ fn double_transfer<Chain: ChainHandle, Counterparty: ChainHandle>(
     chain_driver: MonoTagged<Chain, &ChainDriver>,
     port_id: &TaggedPortIdRef<Chain, Counterparty>,
     channel_id: &TaggedChannelIdRef<Chain, Counterparty>,
+    channel_version: &Version,
     sender: &MonoTagged<Chain, &Wallet>,
     recipient: &MonoTagged<Counterparty, &WalletAddress>,
     token: &TaggedTokenRef<Chain>,
 ) -> Result<(), Error> {
     // Create a pending transfer from B to A with sequence 1
-    chain_driver.ibc_transfer_token(port_id, channel_id, sender, recipient, token)?;
+    chain_driver.ibc_transfer_token(
+        port_id,
+        channel_id,
+        channel_version,
+        sender,
+        recipient,
+        vec![token],
+    )?;
 
     // Create a pending transfer from B to A with sequence 2
-    chain_driver.ibc_transfer_token(port_id, channel_id, sender, recipient, token)?;
+    chain_driver.ibc_transfer_token(
+        port_id,
+        channel_id,
+        channel_version,
+        sender,
+        recipient,
+        vec![token],
+    )?;
 
     Ok(())
 }

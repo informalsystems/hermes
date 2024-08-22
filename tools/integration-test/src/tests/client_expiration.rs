@@ -297,12 +297,20 @@ impl BinaryChainTest for PacketExpirationTest {
             )?
         };
 
+        let channel_version = channels.channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channels.channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version,
             &chains.node_a.wallets().user1(),
             &chains.node_b.wallets().user1().address(),
-            &chains.node_a.denom().with_amount(100u64).as_ref(),
+            &vec![chains.node_a.denom().with_amount(100u64).as_ref()],
         )?;
 
         wait_for_client_expiry();

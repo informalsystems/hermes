@@ -1,4 +1,5 @@
 use core::time::Duration;
+use ibc_relayer::channel::version::Version;
 use ibc_relayer::event::IbcEventWithHeight;
 use ibc_relayer_types::applications::ics29_fee::packet_fee::IdentifiedPacketFees;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
@@ -20,9 +21,10 @@ pub trait ChainFeeMethodsExt<Chain> {
         &self,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        send_amount: &TaggedTokenRef<'_, Chain>,
+        send_amount: &Vec<TaggedTokenRef<'_, Chain>>,
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
@@ -74,9 +76,10 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
         &self,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,
         channel_id: &TaggedChannelIdRef<'_, Chain, Counterparty>,
+        channel_version: &Version,
         sender: &MonoTagged<Chain, &Wallet>,
         recipient: &MonoTagged<Counterparty, &WalletAddress>,
-        send_amount: &TaggedTokenRef<'_, Chain>,
+        send_amount: &Vec<TaggedTokenRef<'_, Chain>>,
         receive_fee: &TaggedTokenRef<'_, Chain>,
         ack_fee: &TaggedTokenRef<'_, Chain>,
         timeout_fee: &TaggedTokenRef<'_, Chain>,
@@ -88,6 +91,7 @@ impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
             &self.tx_config(),
             port_id,
             channel_id,
+            channel_version,
             sender,
             recipient,
             send_amount,

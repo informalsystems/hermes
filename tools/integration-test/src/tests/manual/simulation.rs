@@ -86,11 +86,18 @@ fn tx_raw_ft_transfer<SrcChain: ChainHandle, DstChain: ChainHandle>(
     number_messages: usize,
     memo: Option<String>,
 ) -> Result<Vec<IbcEvent>, Error> {
+    let tokens = vec![(amount.into(), denom.value().to_string())];
+    let channel_version = channel.channel.src_version().ok_or_else(|| {
+        Error::generic(eyre!(
+            "failed to retrieve channel version for channel `{:#?}`",
+            channel.channel.src_channel_id()
+        ))
+    })?;
     let transfer_options = TransferOptions {
         src_port_id: channel.port_a.value().clone(),
         src_channel_id: channel.channel_id_a.value().clone(),
-        amount: amount.into(),
-        denom: denom.value().to_string(),
+        channel_version: channel_version.clone(),
+        tokens,
         receiver: Some(recipient.value().0.clone()),
         timeout_height_offset,
         timeout_duration,

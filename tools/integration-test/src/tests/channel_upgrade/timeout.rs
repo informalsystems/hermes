@@ -451,12 +451,20 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
             denom_a
         );
 
+        let channel_version_a = channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version_a,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         info!("Will run ChanUpgradeAck step...");
@@ -627,12 +635,20 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
             denom_a
         );
 
+        let channel_version_a = channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.src_channel_id()
+            ))
+        })?;
+
         chains.node_a.chain_driver().ibc_transfer_token(
             &channels.port_a.as_ref(),
             &channels.channel_id_a.as_ref(),
+            channel_version_a,
             &wallet_a.as_ref(),
             &wallet_b.address(),
-            &denom_a.with_amount(a_to_b_amount).as_ref(),
+            &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
         )?;
 
         info!("Will run ChanUpgradeAck step...");
@@ -936,15 +952,23 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
             denom_a
         );
 
+        let channel_version_a = channel.src_version().ok_or_else(|| {
+            Error::generic(eyre!(
+                "failed to retrieve channel version for channel `{:#?}`",
+                channel.src_channel_id()
+            ))
+        })?;
+
         chains
             .node_a
             .chain_driver()
             .ibc_transfer_token_with_memo_and_timeout(
                 &channels.port_a.as_ref(),
                 &channels.channel_id_a.as_ref(),
+                channel_version_a,
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
-                &denom_a.with_amount(a_to_b_amount).as_ref(),
+                &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
                 None,
                 Some(Duration::from_secs(600)),
             )?;
