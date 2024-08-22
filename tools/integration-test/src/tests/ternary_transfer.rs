@@ -57,17 +57,8 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
             denom_a
         );
 
-        let channel_version = channel_a_to_b.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel_a_to_b.src_channel_id()
-            ))
-        })?;
-
         node_a.chain_driver().ibc_transfer_token(
-            &channel_a_to_b.port_a.as_ref(),
-            &channel_a_to_b.channel_id_a.as_ref(),
-            channel_version,
+            &channel_a_to_b,
             &wallet_a1.as_ref(),
             &wallet_b1.address(),
             &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
@@ -112,17 +103,8 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let b_to_c_amount = 2500;
 
-        let channel_version = channel_b_to_c.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel_b_to_c.src_channel_id()
-            ))
-        })?;
-
         node_b.chain_driver().ibc_transfer_token(
-            &channel_b_to_c.port_a.as_ref(),
-            &channel_b_to_c.channel_id_a.as_ref(),
-            channel_version,
+            &channel_b_to_c,
             &wallet_b1.as_ref(),
             &wallet_c1.address(),
             &vec![denom_a_to_b.with_amount(b_to_c_amount).as_ref()],
@@ -157,17 +139,8 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let c_to_a_amount = 800;
 
-        let channel_version = channel_c_to_a.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel_c_to_a.src_channel_id()
-            ))
-        })?;
-
         node_c.chain_driver().ibc_transfer_token(
-            &channel_c_to_a.port_a.as_ref(),
-            &channel_c_to_a.channel_id_a.as_ref(),
-            channel_version,
+            &channel_c_to_a,
             &wallet_c1.as_ref(),
             &wallet_a1.address(),
             &vec![denom_a_to_c.with_amount(c_to_a_amount).as_ref()],
@@ -194,17 +167,8 @@ impl NaryChannelTest<3> for TernaryIbcTransferTest {
 
         let c_to_b_amount = 500;
 
-        let channel_version = channel_c_to_a.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel_c_to_a.src_channel_id()
-            ))
-        })?;
-
         node_c.chain_driver().ibc_transfer_token(
-            &channel_b_to_c.port_b.as_ref(),
-            &channel_b_to_c.channel_id_b.as_ref(),
-            channel_version,
+            &channel_b_to_c.flip(),
             &wallet_c1.as_ref(),
             &wallet_b2.address(),
             &vec![denom_a_to_c.with_amount(c_to_b_amount).as_ref()],

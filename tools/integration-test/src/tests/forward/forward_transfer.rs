@@ -124,19 +124,10 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
-        let channel_version = channel_a_to_b.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel_a_to_b.channel.src_channel_id()
-            ))
-        })?;
-
         node_a
             .chain_driver()
             .ibc_transfer_token_with_memo_and_timeout(
-                &channel_a_to_b.port_a.as_ref(),
-                &channel_a_to_b.channel_id_a.as_ref(),
-                channel_version,
+                &channel_a_to_b,
                 &wallet_a,
                 &wallet_b.address(),
                 &vec![denom_a.with_amount(a_to_c_amount).as_ref()],
@@ -264,22 +255,13 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         );
         let memo4 = serde_json::to_string(&memo_invalid_field).unwrap();
 
-        let channel_version = channel_a_to_b.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel_a_to_b.channel.src_channel_id()
-            ))
-        })?;
-
         {
             info!("forward transfer with invalid `port` field");
 
             node_a
                 .chain_driver()
                 .ibc_transfer_token_with_memo_and_timeout(
-                    &channel_a_to_b.port_a.as_ref(),
-                    &channel_a_to_b.channel_id_a.as_ref(),
-                    channel_version,
+                    &channel_a_to_b,
                     &wallet_a,
                     &wallet_b.address(),
                     &vec![denom_a.with_amount(a_to_c_amount).as_ref()],
@@ -315,9 +297,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
             node_a
                 .chain_driver()
                 .ibc_transfer_token_with_memo_and_timeout(
-                    &channel_a_to_b.port_a.as_ref(),
-                    &channel_a_to_b.channel_id_a.as_ref(),
-                    channel_version,
+                    &channel_a_to_b,
                     &wallet_a,
                     &wallet_b.address(),
                     &vec![denom_a.with_amount(a_to_c_amount).as_ref()],
@@ -353,9 +333,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
             node_a
                 .chain_driver()
                 .ibc_transfer_token_with_memo_and_timeout(
-                    &channel_a_to_b.port_a.as_ref(),
-                    &channel_a_to_b.channel_id_a.as_ref(),
-                    channel_version,
+                    &channel_a_to_b,
                     &wallet_a,
                     &wallet_b.address(),
                     &vec![denom_a.with_amount(a_to_c_amount).as_ref()],
@@ -391,9 +369,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
             node_a
                 .chain_driver()
                 .ibc_transfer_token_with_memo_and_timeout(
-                    &channel_a_to_b.port_a.as_ref(),
-                    &channel_a_to_b.channel_id_a.as_ref(),
-                    channel_version,
+                    &channel_a_to_b,
                     &wallet_a,
                     &wallet_b.address(),
                     &vec![denom_a.with_amount(a_to_c_amount).as_ref()],
@@ -509,22 +485,13 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         );
         let memo3 = serde_json::to_string(&memo_misspelled_receiver).unwrap();
 
-        let channel_version = channel_a_to_b.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel_a_to_b.channel.src_channel_id()
-            ))
-        })?;
-
         {
             info!("forward transfer with invalid port");
 
             node_a
                 .chain_driver()
                 .ibc_transfer_token_with_memo_and_timeout(
-                    &channel_a_to_b.port_a.as_ref(),
-                    &channel_a_to_b.channel_id_a.as_ref(),
-                    channel_version,
+                    &channel_a_to_b,
                     &wallet_a,
                     &wallet_b.address(),
                     &vec![denom_a.with_amount(a_to_c_amount).as_ref()],
@@ -561,9 +528,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
             node_a
                 .chain_driver()
                 .ibc_transfer_token_with_memo_and_timeout(
-                    &channel_a_to_b.port_a.as_ref(),
-                    &channel_a_to_b.channel_id_a.as_ref(),
-                    channel_version,
+                    &channel_a_to_b,
                     &wallet_a,
                     &wallet_b.address(),
                     &vec![denom_a.with_amount(a_to_c_amount).as_ref()],
@@ -600,9 +565,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
             node_a
                 .chain_driver()
                 .ibc_transfer_token_with_memo_and_timeout(
-                    &channel_a_to_b.port_a.as_ref(),
-                    &channel_a_to_b.channel_id_a.as_ref(),
-                    channel_version,
+                    &channel_a_to_b,
                     &wallet_a,
                     &wallet_b.address(),
                     &vec![denom_a.with_amount(a_to_c_amount).as_ref()],

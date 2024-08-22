@@ -52,20 +52,11 @@ impl BinaryChannelTest for IbcMemoFilterTest {
         // Create a memo bigger than the allowed limit
         let memo = "a".repeat(MEMO_SIZE_LIMIT + 1);
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains
             .node_a
             .chain_driver()
             .ibc_transfer_token_with_memo_and_timeout(
-                &channel.port_a.as_ref(),
-                &channel.channel_id_a.as_ref(),
-                channel_version,
+                &channel,
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
                 &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
@@ -102,9 +93,7 @@ impl BinaryChannelTest for IbcMemoFilterTest {
             .node_a
             .chain_driver()
             .ibc_transfer_token_with_memo_and_timeout(
-                &channel.port_a.as_ref(),
-                &channel.channel_id_a.as_ref(),
-                channel_version,
+                &channel,
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
                 &vec![denom_a.with_amount(a_to_b_amount).as_ref()],

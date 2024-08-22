@@ -55,9 +55,6 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
 
         let denom_a = chains.node_a.denom();
 
-        let port_a = channel.port_a.as_ref();
-        let channel_id_a = channel.channel_id_a.as_ref();
-
         let wallets_a = chains.node_a.wallets();
         let wallets_b = chains.node_b.wallets();
 
@@ -79,17 +76,8 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
 
             let balance_a2 = balance_a1.clone() - send_amount;
 
-            let channel_version = channel.channel.src_version().ok_or_else(|| {
-                Error::generic(eyre!(
-                    "failed to retrieve channel version for channel `{:#?}`",
-                    channel.channel.src_channel_id()
-                ))
-            })?;
-
             chain_driver_a.ibc_token_transfer_with_fee(
-                &port_a,
-                &channel_id_a,
-                channel_version,
+                &channel,
                 &user_a,
                 &user_b.address(),
                 &vec![denom_a.with_amount(send_amount).as_ref()],
@@ -136,17 +124,8 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
             let ack_fee = random_u128_range(200, 300);
             let timeout_fee = random_u128_range(100, 200);
 
-            let channel_version = channel.channel.src_version().ok_or_else(|| {
-                Error::generic(eyre!(
-                    "failed to retrieve channel version for channel `{:#?}`",
-                    channel.channel.src_channel_id()
-                ))
-            })?;
-
             chain_driver_a.ibc_token_transfer_with_fee(
-                &port_a,
-                &channel_id_a,
-                channel_version,
+                &channel,
                 &user_a,
                 &user_b.address(),
                 &vec![denom_a.with_amount(send_amount).as_ref()],
@@ -221,9 +200,6 @@ impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
 
         let denom_a = chains.node_a.denom();
 
-        let port_a = channel.port_a.as_ref();
-        let channel_id_a = channel.channel_id_a.as_ref();
-
         let wallets_a = chains.node_a.wallets();
         let wallets_b = chains.node_b.wallets();
 
@@ -250,17 +226,8 @@ impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
 
         info!("Verify that packet without enough fees is not relayed");
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chain_driver_a.ibc_token_transfer_with_fee(
-            &port_a,
-            &channel_id_a,
-            channel_version,
+            &channel,
             &user_a,
             &user_b.address(),
             &vec![denom_a.with_amount(send_amount).as_ref()],

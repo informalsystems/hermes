@@ -62,19 +62,10 @@ impl BinaryChannelTest for ExecuteScheduleTest {
 
         let mut relay_path_a_to_b = chain_a_link.a_to_b;
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         // Construct `BATCH_SIZE` pieces of operational data and queue them up to be sent to chain B.
         for i in 0..BATCH_SIZE {
             chains.node_a.chain_driver().ibc_transfer_token(
-                &channel.port_a.as_ref(),
-                &channel.channel_id_a.as_ref(),
-                channel_version,
+                &channel,
                 &chains.node_a.wallets().user1(),
                 &chains.node_b.wallets().user1().address(),
                 &vec![chains.node_a.denom().with_amount(amount1).as_ref()],

@@ -1,4 +1,3 @@
-use ibc_relayer::channel::version::Version;
 use ibc_test_framework::prelude::*;
 
 #[test]
@@ -63,9 +62,7 @@ impl BinaryChannelTest for QueryCommitmentsBenchmark {
         );
 
         chains.node_a.chain_driver().ibc_transfer_token_multiple(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &Version::ics20(1),
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![denom_a.with_amount(a_to_b_amount).as_ref()],

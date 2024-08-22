@@ -101,20 +101,11 @@ impl BinaryChannelTest for DynamicGasTest {
 
         let memo: String = MEMO_CHAR.repeat(MEMO_SIZE);
 
-        let channel_version_a = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains
             .node_a
             .chain_driver()
             .ibc_transfer_token_with_memo_and_timeout(
-                &channel.port_a.as_ref(),
-                &channel.channel_id_a.as_ref(),
-                channel_version_a,
+                &channel,
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
                 &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
@@ -166,17 +157,8 @@ impl BinaryChannelTest for DynamicGasTest {
             &gas_denom_a.as_ref(),
         )?;
 
-        let channel_version_b = channel.channel.dst_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.dst_channel_id()
-            ))
-        })?;
-
         chains.node_b.chain_driver().ibc_transfer_token(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            channel_version_b,
+            &channel.flip(),
             &chains.node_b.wallets().user1(),
             &chains.node_a.wallets().user1().address(),
             &vec![denom_b.with_amount(b_to_a_amount).as_ref()],

@@ -91,17 +91,8 @@ impl BinaryChannelTest for DisabledClearPacketTest {
             amount1
         );
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            channel_version,
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![amount1.as_ref()],
@@ -121,9 +112,7 @@ impl BinaryChannelTest for DisabledClearPacketTest {
             );
 
             chains.node_a.chain_driver().ibc_transfer_token(
-                &channel.port_a.as_ref(),
-                &channel.channel_id_a.as_ref(),
-                channel_version,
+                &channel,
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
                 &vec![amount2.as_ref()],
@@ -190,17 +179,8 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
 
         let amount1 = random_u128_range(1000, 5000);
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            channel_version,
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![denom_a.with_amount(amount1).as_ref()],
@@ -262,17 +242,8 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            channel_version,
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![denom_a.with_amount(amount1).as_ref()],
@@ -390,17 +361,8 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
             .chain_driver()
             .query_balance(&wallet_a.address(), &denom_a)?;
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            channel_version,
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![denom_a.with_amount(amount1).as_ref()],
@@ -499,17 +461,8 @@ impl BinaryChannelTest for ClearPacketSequencesTest {
 
         info!("Performing {NUM_TRANSFERS} IBC transfer, which should *not* be relayed");
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token_multiple(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            channel_version,
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![amount.as_ref()],
@@ -684,17 +637,8 @@ impl BinaryChannelTest for LimitedClearPacketTest {
 
         info!("Performing {num_transfers}  IBC transfers with amount {amount}, for a total of {sent_amount}");
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token_multiple(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            channel_version,
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![amount.as_ref()],

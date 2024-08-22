@@ -96,17 +96,8 @@ impl BinaryChannelTest for PayPacketFeeAsyncTest {
         let ack_fee = random_u128_range(200, 300);
         let timeout_fee = random_u128_range(100, 200);
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         let events = chain_driver_a.ibc_token_transfer_with_fee(
-            &port_a,
-            &channel_id_a,
-            channel_version,
+            &channel,
             &user_a,
             &user_b.address(),
             &vec![denom_a.with_amount(send_amount).as_ref()],

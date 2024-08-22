@@ -48,17 +48,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
             amount1
         );
 
-        let channel_version_a = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            channel_version_a,
+            &channel,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![denom_a.with_amount(amount1).as_ref()],
@@ -144,17 +135,8 @@ impl BinaryChannelTest for QueryPacketPendingTest {
         let denom_b = chains.node_b.denom();
         let amount2 = random_u128_range(1000, 5000);
 
-        let channel_version_b = channel.channel.dst_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.dst_channel_id()
-            ))
-        })?;
-
         chains.node_b.chain_driver().ibc_transfer_token(
-            &channel.port_b.as_ref(),
-            &channel.channel_id_b.as_ref(),
-            channel_version_b,
+            &channel.clone().flip(),
             &wallet_b.as_ref(),
             &wallet_a.address(),
             &vec![denom_b.with_amount(amount2).as_ref()],

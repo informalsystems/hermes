@@ -387,7 +387,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
         let old_connection_hops_a = channel_end_a.connection_hops;
         let old_connection_hops_b = channel_end_b.connection_hops;
 
-        let channel = channels.channel;
         let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
@@ -412,8 +411,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
         info!("Will initialise upgrade handshake with governance proposal...");
 
         chains.node_a.chain_driver().initialise_channel_upgrade(
-            channel.src_port_id().as_str(),
-            channel.src_channel_id().unwrap().as_str(),
+            channels.channel.src_port_id().as_str(),
+            channels.channel.src_channel_id().unwrap().as_str(),
             old_ordering.as_str(),
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
@@ -423,7 +422,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
 
         info!("Will run ChanUpgradeTry step...");
 
-        channel.build_chan_upgrade_try_and_send()?;
+        channels.channel.build_chan_upgrade_try_and_send()?;
 
         info!("Check that the step ChanUpgradeTry was correctly executed...");
 
@@ -451,17 +450,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
             denom_a
         );
 
-        let channel_version_a = channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token(
-            &channels.port_a.as_ref(),
-            &channels.channel_id_a.as_ref(),
-            channel_version_a,
+            &channels,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
@@ -469,7 +459,10 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
 
         info!("Will run ChanUpgradeAck step...");
 
-        channel.flipped().build_chan_upgrade_ack_and_send()?;
+        channels
+            .channel
+            .flipped()
+            .build_chan_upgrade_ack_and_send()?;
 
         info!("Check that the step ChanUpgradeAck was correctly executed...");
 
@@ -489,7 +482,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutWhenFlushing {
         // Since the chain a has not moved to `FLUSH_COMPLETE` before the upgrade timeout
         // expired, then we can submit `MsgChannelUpgradeTimeout` on chain b
         // to cancel the upgrade and move the channel back to `OPEN`
-        let timeout_event = channel.build_chan_upgrade_timeout_and_send()?;
+        let timeout_event = channels.channel.build_chan_upgrade_timeout_and_send()?;
         assert_eq!(
             timeout_event.event_type(),
             IbcEventType::UpgradeTimeoutChannel
@@ -561,7 +554,6 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
         let old_connection_hops_a = channel_end_a.connection_hops;
         let old_connection_hops_b = channel_end_b.connection_hops;
 
-        let channel = channels.channel;
         let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
@@ -586,8 +578,8 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
         info!("Will initialise upgrade handshake with governance proposal...");
 
         chains.node_a.chain_driver().initialise_channel_upgrade(
-            channel.src_port_id().as_str(),
-            channel.src_channel_id().unwrap().as_str(),
+            channels.channel.src_port_id().as_str(),
+            channels.channel.src_channel_id().unwrap().as_str(),
             old_ordering.as_str(),
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
@@ -607,7 +599,7 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
 
         info!("Will run ChanUpgradeTry step...");
 
-        channel.build_chan_upgrade_try_and_send()?;
+        channels.channel.build_chan_upgrade_try_and_send()?;
 
         info!("Check that the step ChanUpgradeTry was correctly executed...");
 
@@ -635,17 +627,8 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
             denom_a
         );
 
-        let channel_version_a = channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.src_channel_id()
-            ))
-        })?;
-
         chains.node_a.chain_driver().ibc_transfer_token(
-            &channels.port_a.as_ref(),
-            &channels.channel_id_a.as_ref(),
-            channel_version_a,
+            &channels,
             &wallet_a.as_ref(),
             &wallet_b.address(),
             &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
@@ -653,7 +636,10 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
 
         info!("Will run ChanUpgradeAck step...");
 
-        channel.flipped().build_chan_upgrade_ack_and_send()?;
+        channels
+            .channel
+            .flipped()
+            .build_chan_upgrade_ack_and_send()?;
 
         info!("Check that the step ChanUpgradeAck was correctly executed...");
 
@@ -673,13 +659,16 @@ impl BinaryChannelTest for ChannelUpgradeManualTimeoutWhenFlushing {
         // Since the chain a has not moved to `FLUSH_COMPLETE` before the upgrade timeout
         // expired, then we can submit `MsgChannelUpgradeTimeout` on chain b
         // to cancel the upgrade and move the channel back to `OPEN`
-        let timeout_event = channel.build_chan_upgrade_timeout_and_send()?;
+        let timeout_event = channels.channel.build_chan_upgrade_timeout_and_send()?;
         assert_eq!(
             timeout_event.event_type(),
             IbcEventType::UpgradeTimeoutChannel
         );
 
-        let cancel_event = channel.flipped().build_chan_upgrade_cancel_and_send()?;
+        let cancel_event = channels
+            .channel
+            .flipped()
+            .build_chan_upgrade_cancel_and_send()?;
         assert_eq!(
             cancel_event.event_type(),
             IbcEventType::UpgradeCancelChannel
@@ -892,7 +881,6 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
         let old_connection_hops_a = channel_end_a.connection_hops;
         let old_connection_hops_b = channel_end_b.connection_hops;
 
-        let channel = channels.channel;
         let new_version = Version::ics20_with_fee(1);
 
         let old_attrs = ChannelUpgradableAttributes::new(
@@ -917,8 +905,8 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
         info!("Will initialise upgrade handshake with governance proposal...");
 
         chains.node_a.chain_driver().initialise_channel_upgrade(
-            channel.src_port_id().as_str(),
-            channel.src_channel_id().unwrap().as_str(),
+            channels.channel.src_port_id().as_str(),
+            channels.channel.src_channel_id().unwrap().as_str(),
             old_ordering.as_str(),
             old_connection_hops_a.first().unwrap().as_str(),
             &serde_json::to_string(&new_version.0).unwrap(),
@@ -952,20 +940,11 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
             denom_a
         );
 
-        let channel_version_a = channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.src_channel_id()
-            ))
-        })?;
-
         chains
             .node_a
             .chain_driver()
             .ibc_transfer_token_with_memo_and_timeout(
-                &channels.port_a.as_ref(),
-                &channels.channel_id_a.as_ref(),
-                channel_version_a,
+                &channels,
                 &wallet_a.as_ref(),
                 &wallet_b.address(),
                 &vec![denom_a.with_amount(a_to_b_amount).as_ref()],
@@ -975,7 +954,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
 
         info!("Will run ChanUpgradeTry step...");
 
-        channel.build_chan_upgrade_try_and_send()?;
+        channels.channel.build_chan_upgrade_try_and_send()?;
 
         info!("Check that the step ChanUpgradeTry was correctly executed...");
 
@@ -989,7 +968,10 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
 
         info!("Will run ChanUpgradeAck step...");
 
-        channel.flipped().build_chan_upgrade_ack_and_send()?;
+        channels
+            .channel
+            .flipped()
+            .build_chan_upgrade_ack_and_send()?;
 
         info!("Check that the step ChanUpgradeAck was correctly executed...");
 
