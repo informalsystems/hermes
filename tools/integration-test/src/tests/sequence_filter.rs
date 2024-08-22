@@ -557,10 +557,10 @@ fn double_transfer<Chain: ChainHandle, Counterparty: ChainHandle>(
     token: &TaggedTokenRef<Chain>,
 ) -> Result<(), Error> {
     // Create a pending transfer from B to A with sequence 1
-    chain_driver.ibc_transfer_token(channel, sender, recipient, &vec![token.clone()])?;
+    chain_driver.ibc_transfer_token(channel, sender, recipient, &vec![*token])?;
 
     // Create a pending transfer from B to A with sequence 2
-    chain_driver.ibc_transfer_token(channel, sender, recipient, &vec![token.clone()])?;
+    chain_driver.ibc_transfer_token(channel, sender, recipient, &vec![*token])?;
 
     Ok(())
 }
