@@ -1,5 +1,8 @@
-use http::uri::Uri;
-use serde::Deserialize;
+use prost::Message;
+
+use ibc_proto::ibc::applications::transfer::v1::DenomTrace as RawDenomTrace;
+use tendermint_rpc::Client;
+use tendermint_rpc::HttpClient;
 
 use crate::denom::DenomTrace;
 use crate::error::Error;
@@ -14,27 +17,39 @@ pub struct QueryDenomTraceRequest {
     pub hash: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Deserialize)]
+#[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryDenomTraceResponse {
     /// denom_trace returns the requested denomination trace information.
-    pub denom_trace: ::core::option::Option<DenomTrace>,
+    #[prost(message, optional, tag = "1")]
+    pub denom_trace: ::core::option::Option<RawDenomTrace>,
+}
+impl ::prost::Name for QueryDenomTraceResponse {
+    const NAME: &'static str = "QueryDenomTraceResponse";
+    const PACKAGE: &'static str = "ibc.applications.transfer.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        "ibc.applications.transfer.v1.QueryDenomTraceResponse".into()
+    }
+    fn type_url() -> ::prost::alloc::string::String {
+        "/ibc.applications.transfer.v1.QueryDenomTraceResponse".into()
+    }
 }
 
 // Uses the GRPC client to retrieve the denom trace for a specific hash
-pub async fn query_denom_trace(rpc_address: &Uri, hash: &str) -> Result<DenomTrace, Error> {
-    let url = format!(
-        "{}abci_query?path=\"/ibc.applications.transfer.v1.Query/QueryDenomTraceRequest\"&hash={}",
-        rpc_address, hash
-    );
+pub async fn query_denom_trace(client: &HttpClient, hash: &str) -> Result<DenomTrace, Error> {
+    let request = QueryDenomTraceRequest {
+        hash: hash.to_string(),
+    };
+    let path = "/ibc.applications.transfer.v1.Query/DenomTrace".to_owned();
 
-    let response = reqwest::get(&url).await.map_err(Error::http_request)?;
+    let data = prost::Message::encode_to_vec(&request);
 
-    if !response.status().is_success() {
-        return Err(Error::http_response(response.status()));
-    }
+    let response = client
+        .abci_query(Some(path.clone()), data, None, false)
+        .await
+        .map_err(|e| Error::failed_abci_query(path, e))?;
 
-    let result: QueryDenomTraceResponse =
-        response.json().await.map_err(Error::http_response_body)?;
+    let result = QueryDenomTraceResponse::decode(response.value.as_slice())
+        .map_err(|e| Error::protobuf_decode("QueryDenomTraceResponse".to_owned(), e))?;
 
     let denom_trace = result
         .denom_trace
