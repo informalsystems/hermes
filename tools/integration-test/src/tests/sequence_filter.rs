@@ -17,8 +17,10 @@
 
 use std::collections::BTreeMap;
 
-use ibc_relayer::config::ChainConfig;
+use ibc_relayer::channel::Channel;
+use ibc_relayer::object::Channel as ObjectChannel;
 use ibc_relayer::util::excluded_sequences::ExcludedSequences;
+use ibc_relayer::{chain::requests::QueryHeight, config::ChainConfig};
 use ibc_test_framework::{
     prelude::*,
     relayer::channel::{assert_eventually_channel_established, init_channel},
@@ -361,7 +363,7 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: ConnectedChains<ChainA, ChainB>,
     channels: ConnectedChannel<ChainA, ChainB>,
 ) -> Result<(), Error> {
-    let (channel_id_a_2, channel_id_b_2, channel_b_2) = relayer.with_supervisor(|| {
+    let (channel_id_a_2, channel_id_b_2) = relayer.with_supervisor(|| {
         // During test bootstrap channel padding initialises a channel with ID 0.
         // Before creating the new channel with sequence filter, complete the handshake of
         // the pad channel in order to insure that the retrieved channel IDs `channel_id_a_2` and
@@ -373,7 +375,7 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
             &pad_channel_id.as_ref(),
             &channels.port_b.as_ref(),
         )?;
-        let (channel_id_b_2, channel_b_2) = init_channel(
+        let (channel_id_b_2, _) = init_channel(
             chains.handle_a(),
             chains.handle_b(),
             &chains.client_id_a(),
@@ -390,8 +392,20 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
             &channel_id_b_2.as_ref(),
             &channels.port_b.as_ref(),
         )?;
-        Ok((channel_id_a_2, channel_id_b_2, channel_b_2))
+        Ok((channel_id_a_2, channel_id_b_2))
     })?;
+
+    let (channel_2, _) = Channel::restore_from_state(
+        chains.handle_a.clone(),
+        chains.handle_b.clone(),
+        ObjectChannel {
+            dst_chain_id: chains.handle_b().id(),
+            src_chain_id: chains.handle_a().id(),
+            src_channel_id: channel_id_a_2.0.clone(),
+            src_port_id: channels.port_a.0.clone(),
+        },
+        QueryHeight::Latest,
+    )?;
 
     let denom_a = chains.node_a.denom();
     let denom_a_to_b_1 = derive_ibc_denom(
@@ -454,13 +468,13 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
     )?;
 
     let port_b_2: DualTagged<ChainB, ChainA, PortId> =
-        DualTagged::new(channel_b_2.a_side.port_id().clone());
+        DualTagged::new(channel_2.a_side.port_id().clone());
     let port_a_2: DualTagged<ChainA, ChainB, PortId> =
-        DualTagged::new(channel_b_2.clone().flipped().a_side.port_id().clone());
+        DualTagged::new(channel_2.clone().flipped().a_side.port_id().clone());
 
-    let connected_channel_b_2 = ConnectedChannel {
+    let connected_channel_2 = ConnectedChannel {
         connection: channels.clone().connection,
-        channel: channel_b_2.flipped(),
+        channel: channel_2,
         channel_id_a: channel_id_a_2,
         channel_id_b: channel_id_b_2,
         port_a: port_a_2,
@@ -470,7 +484,7 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
     // Double transfer from A to B on channel without filter
     double_transfer(
         chains.node_a.chain_driver(),
-        &connected_channel_b_2,
+        &connected_channel_2,
         &wallet_a_2.as_ref(),
         &wallet_b_2.address(),
         &denom_a.with_amount(a_to_b_amount).as_ref(),
@@ -488,7 +502,7 @@ fn run_sequence_filter_test<ChainA: ChainHandle, ChainB: ChainHandle>(
     // Double transfer from B to A on channel without filter
     double_transfer(
         chains.node_b.chain_driver(),
-        &connected_channel_b_2.flip(),
+        &connected_channel_2.flip(),
         &wallet_b_2.as_ref(),
         &wallet_a_2.address(),
         &denom_b.with_amount(b_to_a_amount).as_ref(),
