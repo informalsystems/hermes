@@ -91,7 +91,7 @@ impl MerkleProof {
             match &proof.proof {
                 Some(Proof::Exist(existence_proof)) => {
                     subroot =
-                        calculate_existence_root::<ics23::HostFunctionsManager>(existence_proof)
+                        calculate_existence_root::<ics23::HostFunctionsManager>(&existence_proof)
                             .map_err(|_| Error::invalid_merkle_proof())?;
 
                     if !verify_membership::<ics23::HostFunctionsManager>(
