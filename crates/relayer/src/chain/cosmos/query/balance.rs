@@ -7,6 +7,7 @@ use ibc_proto::cosmos::bank::v1beta1::{
 use crate::account::Balance;
 use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
+use crate::util::create_grpc_client;
 
 /// Uses the GRPC client to retrieve the account balance for a specific denom
 pub async fn query_balance(
@@ -14,9 +15,7 @@ pub async fn query_balance(
     account_address: &str,
     denom: &str,
 ) -> Result<Balance, Error> {
-    let mut client = QueryClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
@@ -47,9 +46,7 @@ pub async fn query_all_balances(
     grpc_address: &Uri,
     account_address: &str,
 ) -> Result<Vec<Balance>, Error> {
-    let mut client = QueryClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
