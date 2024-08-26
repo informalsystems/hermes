@@ -144,6 +144,9 @@ define_error! {
         EmptyUpgradedClientState
             |_| { "found no upgraded client state" },
 
+        EmptyConnectionParams
+            |_| { "connection params not found" },
+
         ConsensusStateTypeMismatch
             {
                 expected: ClientType,

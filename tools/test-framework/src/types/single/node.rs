@@ -157,6 +157,12 @@ impl FullNode {
             _ => config::GasPrice::new(0.003, test_config.native_token(chain_number).clone()),
         };
 
+        let dynamic_gas_price = if chain_type.enable_dynamic_fee() {
+            DynamicGasPrice::unsafe_new(true, 1.3, 5.0)
+        } else {
+            DynamicGasPrice::disabled()
+        };
+
         let chain_config = match chain_type {
             TestedChainType::Cosmos
             | TestedChainType::Provenance
@@ -182,7 +188,7 @@ impl FullNode {
                 max_gas: Some(3000000),
                 gas_adjustment: None,
                 gas_multiplier: Some(GasMultiplier::unsafe_new(1.5)),
-                dynamic_gas_price: DynamicGasPrice::default(),
+                dynamic_gas_price,
                 fee_granter: None,
                 max_msg_num: Default::default(),
                 max_tx_size: Default::default(),

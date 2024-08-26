@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia17
+          - package: gaia18
             command: gaiad
             account_prefix: cosmos
     steps:

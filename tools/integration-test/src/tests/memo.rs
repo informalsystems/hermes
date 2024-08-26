@@ -24,7 +24,7 @@ fn test_memo() -> Result<(), Error> {
 #[test]
 fn test_memo_overwrite() -> Result<(), Error> {
     let memo = Memo::new(random_string()).unwrap();
-    let test = MemoTest { memo };
+    let test = MemoOverwriteTest { memo };
     run_binary_channel_test(&test)
 }
 

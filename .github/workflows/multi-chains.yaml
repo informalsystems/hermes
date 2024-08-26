@@ -58,13 +58,16 @@ jobs:
       fail-fast: false
       matrix:
         first-package:
-          - package: gaia17
+          - package: gaia18
             command: gaiad
             account_prefix: cosmos
           - package: ibc-go-v7-simapp
             command: simd
             account_prefix: cosmos
           - package: ibc-go-v8-simapp
+            command: simd
+            account_prefix: cosmos
+          - package: ibc-go-v9-simapp
             command: simd
             account_prefix: cosmos
         second-package:

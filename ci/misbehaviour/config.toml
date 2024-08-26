@@ -211,6 +211,19 @@ gas_price = { price = 0.001, denom = 'stake' }
 # Minimum value: 1.0
 gas_multiplier = 1.3
 
+# Query the current gas price from the chain instead of using the static `gas_price` from the config.
+# Useful for chains which have [EIP-1559][eip]-like dynamic gas price. 
+#
+# At the moment, only chains which support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
+# query or have enabled Skip's `x/feemarket` module https://github.com/skip-mev/feemarket
+# can be used with dynamic gas price enabled.
+#
+# See this page in the Hermes guide for more information:
+# https://hermes.informal.systems/documentation/configuration/dynamic-gas-fees.html
+# 
+# Default: { enabled = false, multiplier = 1.1, max = 0.6 }
+dynamic_gas_price = { enabled = true, multiplier = 1.3, max = 5.0 }
+
 # Specify how many IBC messages at most to include in a single transaction.
 # Default: 30
 max_msg_num = 30
@@ -314,6 +327,7 @@ default_gas = 100000
 max_gas = 400000
 gas_price = { price = 0.001, denom = 'stake' }
 gas_multiplier = 1.3
+dynamic_gas_price = { enabled = true, multiplier = 1.3, max = 5.0 }
 max_msg_num = 30
 max_tx_size = 2097152
 clock_drift = '5s'

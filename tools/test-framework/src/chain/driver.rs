@@ -130,6 +130,7 @@ impl ChainDriver {
     ) -> Result<Self, Error> {
         let tx_config = new_tx_config_for_test(
             chain_id.clone(),
+            chain_type.clone(),
             format!("http://localhost:{rpc_port}"),
             format!("http://localhost:{grpc_port}"),
             chain_type.address_type(),

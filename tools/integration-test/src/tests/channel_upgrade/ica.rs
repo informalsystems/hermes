@@ -221,7 +221,7 @@ impl BinaryConnectionTest for ChannelUpgradeICACloseChannel {
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
-            &fee_denom_host.with_amount(1200u64).as_ref(),
+            &fee_denom_host.with_amount(381000000u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
@@ -382,7 +382,7 @@ impl BinaryConnectionTest for ChannelUpgradeICAUnordered {
             &chains.node_b.wallets().user1(),
             &ica_address.as_ref(),
             &stake_denom.with_amount(ica_fund).as_ref(),
-            &fee_denom_host.with_amount(1200u64).as_ref(),
+            &fee_denom_host.with_amount(381000000u64).as_ref(),
         )?;
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(

@@ -59,6 +59,10 @@ clear_interval = 100
 # Whether or not to clear packets on start. [Default: true]
 clear_on_start = true
 
+# Set the maximum number of packets to clear each time packet clearing is triggered.
+# [Default: 50]
+#clear_limit = 50
+
 # Toggle the transaction confirmation mechanism.
 # The tx confirmation mechanism periodically queries the `/tx_search` RPC
 # endpoint to check that previously-submitted transactions
