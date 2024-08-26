@@ -5,7 +5,6 @@ use eyre::eyre;
 
 use ibc_relayer::{
     chain::handle::ChainHandle,
-    channel::version::Version,
     config::Config,
     transfer::{build_transfer_messages, send_messages, TransferOptions},
 };
@@ -61,14 +60,6 @@ pub struct FeeTransferCmd {
         help = "Identifier of the source channel"
     )]
     src_channel_id: ChannelId,
-
-    #[clap(
-        long = "ics20-version",
-        default_value = "1",
-        value_name = "ICS20_VERSION",
-        help = "ICS20 version of the channel. Defaults to 1"
-    )]
-    ics20_version: u64,
 
     #[clap(
         long = "amount",
@@ -201,7 +192,6 @@ impl FeeTransferCmd {
             dst_chain_id: self.dst_chain_id.clone(),
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
-            ics20_version: self.ics20_version,
             amount: self.amount,
             denom,
             receiver: self.recipient.clone(),
@@ -240,7 +230,6 @@ pub struct FeeTransferOptions {
     pub dst_chain_id: ChainId,
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
-    pub ics20_version: u64,
     pub amount: Amount,
     pub denom: String,
     pub receiver: Option<String>,
@@ -259,7 +248,6 @@ impl From<FeeTransferOptions> for TransferOptions {
         TransferOptions {
             src_port_id: f.src_port_id,
             src_channel_id: f.src_channel_id,
-            channel_version: Version::ics20(f.ics20_version), // TODO: Can only create transfer on ICS20 channel
             tokens,
             receiver: f.receiver,
             timeout_height_offset: f.timeout_height_offset,
@@ -333,7 +321,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -370,7 +357,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -407,7 +393,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "stake".to_owned(),
                 recipient: None,
@@ -446,7 +431,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: Some("other_recipient".to_owned()),
@@ -485,7 +469,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -524,7 +507,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -563,7 +545,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -602,7 +583,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -641,7 +621,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -679,7 +658,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -718,7 +696,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,
@@ -757,7 +734,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_a"),
                 src_port_id: PortId::from_str("port_a").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_a").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(1000u64),
                 denom: "samoleans".to_owned(),
                 recipient: None,

@@ -638,6 +638,10 @@ define_error! {
         InvalidChannelString
             { channel: String }
             |e| { format!("invalid channel string {}", e.channel) },
+
+        UnknownIcs20Version
+            { version_str: String }
+            |e| { format!("unknown ICS20 version string {}", e.version_str) },
     }
 }
 

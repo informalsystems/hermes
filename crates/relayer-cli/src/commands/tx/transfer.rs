@@ -4,7 +4,6 @@ use abscissa_core::clap::Parser;
 use abscissa_core::{config::Override, FrameworkErrorKind};
 use eyre::eyre;
 
-use ibc_relayer::channel::version::Version;
 use ibc_relayer::{
     chain::handle::ChainHandle,
     config::Config,
@@ -59,14 +58,6 @@ pub struct TxIcs20MsgTransferCmd {
         help = "Identifier of the source channel"
     )]
     src_channel_id: ChannelId,
-
-    #[clap(
-        long = "ics20-version",
-        default_value = "1",
-        value_name = "ICS20_VERSION",
-        help = "ICS20 version of the channel. Defaults to 1"
-    )]
-    ics20_version: u64,
 
     #[clap(
         long = "amount",
@@ -174,7 +165,6 @@ impl TxIcs20MsgTransferCmd {
         let opts = TransferOptions {
             src_port_id: self.src_port_id.clone(),
             src_channel_id: self.src_channel_id.clone(),
-            channel_version: Version::ics20(self.ics20_version), // TODO: Can only create transfer on ICS20 channel
             tokens,
             receiver: self.receiver.clone(),
             timeout_height_offset: self.timeout_height_offset,
@@ -239,7 +229,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 0,
@@ -273,7 +262,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 0,
@@ -307,7 +295,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 0,
@@ -343,7 +330,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 0,
@@ -379,7 +365,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 0,
@@ -415,7 +400,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 0,
@@ -451,7 +435,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 21,
                 timeout_seconds: 0,
@@ -487,7 +470,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 21,
@@ -523,7 +505,6 @@ mod tests {
                 src_chain_id: ChainId::from_string("chain_sender"),
                 src_port_id: PortId::from_str("port_sender").unwrap(),
                 src_channel_id: ChannelId::from_str("channel_sender").unwrap(),
-                ics20_version: 1,
                 amount: Amount::from(42u64),
                 timeout_height_offset: 0,
                 timeout_seconds: 0,

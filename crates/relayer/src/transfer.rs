@@ -124,7 +124,6 @@ impl TransferTimeout {
 pub struct TransferOptions {
     pub src_port_id: PortId,
     pub src_channel_id: ChannelId,
-    pub channel_version: Version,
     pub tokens: Vec<(Amount, String)>,
     pub receiver: Option<String>,
     pub timeout_height_offset: u64,

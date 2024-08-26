@@ -244,13 +244,6 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
             num_msgs
         );
 
-        let channel_version = channel.channel.src_version().ok_or_else(|| {
-            Error::generic(eyre!(
-                "failed to retrieve channel version for channel `{:#?}`",
-                channel.channel.src_channel_id()
-            ))
-        })?;
-
         let tokens = vec![(
             random_u64_range(1000, 5000).into(),
             chains.node_a.denom().value().to_string(),
@@ -259,7 +252,6 @@ impl BinaryChannelTest for OrderedChannelClearEqualCLITest {
         let transfer_options = TransferOptions {
             src_port_id: channel.port_a.value().clone(),
             src_channel_id: channel.channel_id_a.value().clone(),
-            channel_version: channel_version.clone(),
             tokens,
             receiver: Some(chains.node_b.wallets().user1().address().value().0.clone()),
             timeout_height_offset: 1000,
