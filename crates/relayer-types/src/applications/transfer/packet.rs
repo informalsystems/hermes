@@ -66,8 +66,6 @@ impl TryFrom<RawPacketDataV2> for PacketDataV2 {
             .into_iter()
             .map(|token| token.try_into())
             .collect::<Result<Vec<_>, _>>()?;
-        //let denom = PrefixedDenom::from_str(&raw_pkt_data.denom)?;
-        //let amount = Amount::from_str(&raw_pkt_data.amount)?;
         let memo = Some(raw_pkt_data.memo).filter(|m| !m.is_empty());
         Ok(Self {
             tokens,

@@ -186,38 +186,6 @@ pub fn build_transfer_message(
     }
 }
 
-/*pub fn build_transfer_message_v2(
-    src_port_id: PortId,
-    src_channel_id: ChannelId,
-    tokens: Vec<(Amount, String)>,
-    sender: Signer,
-    receiver: Signer,
-    timeout_height: TimeoutHeight,
-    timeout_timestamp: Timestamp,
-    memo: Option<String>,
-) -> Any {
-    let tokens = tokens
-        .iter()
-        .map(|(amount, denom)| Coin {
-            denom: denom.clone(),
-            amount: amount.to_string(),
-        })
-        .collect();
-    let msg = MsgTransfer {
-        source_port: src_port_id,
-        source_channel: src_channel_id,
-        token: None,
-        sender,
-        receiver,
-        timeout_height,
-        timeout_timestamp,
-        memo,
-        tokens,
-    };
-
-    msg.to_any()
-}*/
-
 pub fn build_transfer_messages<SrcChain: ChainHandle, DstChain: ChainHandle>(
     src_chain: &SrcChain, // the chain whose account is debited
     dst_chain: &DstChain, // the chain whose account eventually gets credited

@@ -9,16 +9,9 @@ use ics23::{
     NonExistenceProof,
 };
 
-//use crate::core::ics23_commitment::commitment::{CommitmentPrefix, CommitmentRoot};
 use crate::core::ics23_commitment::commitment::CommitmentRoot;
 use crate::core::ics23_commitment::error::Error;
 use crate::core::ics23_commitment::specs::ProofSpecs;
-
-/*pub fn apply_prefix(prefix: &CommitmentPrefix, mut path: Vec<String>) -> MerklePath {
-    let mut key_path: Vec<String> = vec![format!("{prefix:?}")];
-    key_path.append(&mut path);
-    MerklePath { key_path }
-}*/
 
 impl From<CommitmentRoot> for MerkleRoot {
     fn from(root: CommitmentRoot) -> Self {
