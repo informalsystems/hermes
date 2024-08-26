@@ -393,7 +393,6 @@ define_error! {
                 address: String,
                 endpoint: String,
             }
-            [ DisplayOnly<tonic::transport::Error> ]
             |e| {
                 format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
