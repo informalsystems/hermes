@@ -369,7 +369,7 @@ to deal with chain-specific datatypes, such as `Header`, `ClientState`, and
 To abstract over chain-specific datatypes, we introduce a trait which specifies
 both which types we need to abstract over, and their interface.
 
-For the ICS 002 Client submodule, this trait looks as follow:
+For the ICS 002 Client submodule, this trait looks as follows:
 
 ```rust
 pub trait ClientDef {
@@ -379,7 +379,7 @@ pub trait ClientDef {
 }
 ```
 
-The `ClientDef` trait specifies three datatypes, and their corresponding interface, which is provided
+The `ClientDef` trait specifies three datatypes, and their corresponding interface, which are provided
 via a trait defined in the same submodule.
 
 A production implementation of this interface would instantiate these types with the concrete
