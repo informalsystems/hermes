@@ -73,11 +73,9 @@ impl BinaryChannelTest for OrderedChannelTest {
             &denom_a.with_amount(amount1).as_ref(),
         )?;
 
-        sleep(Duration::from_secs(1));
+        sleep(Duration::from_secs(2));
 
         relayer.with_supervisor(|| {
-            sleep(Duration::from_secs(1));
-
             let amount2 = random_u128_range(1000, 5000);
 
             info!(

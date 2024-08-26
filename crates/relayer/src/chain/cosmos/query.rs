@@ -16,6 +16,7 @@ use crate::error::Error;
 
 pub mod account;
 pub mod balance;
+pub mod connection;
 pub mod consensus_state;
 pub mod custom;
 pub mod denom_trace;

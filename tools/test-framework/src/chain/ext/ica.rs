@@ -1,3 +1,4 @@
+use ibc_relayer::upgrade_chain::requires_legacy_upgrade_proposal;
 use serde_json::json;
 
 use ibc_relayer::chain::tracking::TrackedMsgs;
@@ -63,7 +64,7 @@ impl<'a, Chain: Send> InterchainAccountMethodsExt<Chain> for MonoTagged<Chain, &
 }
 
 #[allow(clippy::type_complexity)]
-pub fn register_interchain_account<Chain: ChainHandle, Counterparty: ChainHandle>(
+pub fn register_unordered_interchain_account<Chain: ChainHandle, Counterparty: ChainHandle>(
     chain: &MonoTagged<Chain, FullNode>,
     handle: &Chain,
     connection: &ConnectedConnection<Chain, Counterparty>,
@@ -87,13 +88,23 @@ pub fn register_interchain_account<Chain: ChainHandle, Counterparty: ChainHandle
         "host_connection_id": connection.connection_id_b.0
     });
 
-    let msg = LegacyMsgRegisterInterchainAccount {
-        owner,
-        connection_id: connection.connection_id_a.0.clone(),
-        version: Version::new(version_obj.to_string()),
-    };
+    let msg_any = if requires_legacy_upgrade_proposal(handle.clone()) {
+        let msg = LegacyMsgRegisterInterchainAccount {
+            owner,
+            connection_id: connection.connection_id_a.0.clone(),
+            version: Version::new(version_obj.to_string()),
+        };
 
-    let msg_any = msg.to_any();
+        msg.to_any()
+    } else {
+        let msg = MsgRegisterInterchainAccount {
+            owner,
+            connection_id: connection.connection_id_a.0.clone(),
+            version: Version::new(version_obj.to_string()),
+            ordering: Ordering::Unordered,
+        };
+        msg.to_any()
+    };
 
     let tm = TrackedMsgs::new_static(vec![msg_any], "RegisterInterchainAccount");
 
@@ -143,14 +154,23 @@ pub fn register_ordered_interchain_account<Chain: ChainHandle, Counterparty: Cha
         "host_connection_id": connection.connection_id_b.0
     });
 
-    let msg = MsgRegisterInterchainAccount {
-        owner,
-        connection_id: connection.connection_id_a.0.clone(),
-        version: Version::new(version_obj.to_string()),
-        ordering: Ordering::Ordered,
-    };
+    let msg_any = if requires_legacy_upgrade_proposal(handle.clone()) {
+        let msg = LegacyMsgRegisterInterchainAccount {
+            owner,
+            connection_id: connection.connection_id_a.0.clone(),
+            version: Version::new(version_obj.to_string()),
+        };
 
-    let msg_any = msg.to_any();
+        msg.to_any()
+    } else {
+        let msg = MsgRegisterInterchainAccount {
+            owner,
+            connection_id: connection.connection_id_a.0.clone(),
+            version: Version::new(version_obj.to_string()),
+            ordering: Ordering::Ordered,
+        };
+        msg.to_any()
+    };
 
     let tm = TrackedMsgs::new_static(vec![msg_any], "RegisterInterchainAccount");
 

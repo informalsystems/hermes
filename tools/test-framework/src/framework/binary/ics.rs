@@ -65,15 +65,17 @@ where
             0,
         )?;
         let provider_native_token = builder.native_tokens[0].clone();
-        let provider_fee = format!("1200{}", provider_native_token);
+        let provider_fee = format!("381000000{provider_native_token}");
 
         // Get consumer chain id
         let chain_type = ChainType::from_str(&builder.command_paths[1])?;
         let chain_id = chain_type.chain_id("consumer", false);
 
-        node_a
-            .chain_driver
-            .submit_consumer_chain_proposal(chain_id.as_str(), "2023-05-31T12:09:47.048227Z")?;
+        node_a.chain_driver.submit_consumer_chain_proposal(
+            chain_id.as_str(),
+            &provider_fee,
+            "2023-05-31T12:09:47.048227Z",
+        )?;
 
         node_a.chain_driver.assert_proposal_status(
             node_a.chain_driver.chain_id.as_str(),

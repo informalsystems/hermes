@@ -45,12 +45,12 @@ IBC protocol defines the minimal data set that must be made available to relayer
 #### Query Functionality
 IBC host state machines MUST expose an interface for inspecting their state. For Cosmos/Tendermint chains this means:
 - the IBC modules on chain correctly implement and respond to queries
-  - [IBC-Modules-Rust] an implementation for some queries currently exist in Cosmos-SDK and same and more need to be implemented in Rust. The full requirements are detailed in section Relayer Queries.
+  - [IBC-Modules-Rust] an implementation for some queries currently exists in Cosmos-SDK and the same and more need to be implemented in Rust. The full requirements are detailed in section Relayer Queries.
 - the relayer needs the ability to send rpc/http ABCI queries to and receive replies from Tendermint/Cosmos-SDK
   - [[ABCI Rust](https://github.com/tendermint/rust-abci)] - ABCI Rust implementation
   - [IBC-Modules-Rust] identifier validation is required (ICS-024)
   - [IBC-Modules-Rust] requires Rust types for all query responses
-  - [[Merkle-Proofs-Rust](https://github.com/confio/ics23/tree/master/rust)] (candidate implementation) - some query responses include proofs and included in IBC transactions by the relayer (some may be validated, TBD)
+  - [[Merkle-Proofs-Rust](https://github.com/confio/ics23/tree/master/rust)] (candidate implementation) - some query responses include proofs and are included in IBC transactions by the relayer (some may be validated, TBD)
 
 #### IBC Messages
 The relayer creates transactions that include IBC messages to manage clients, connections and channels, and send application packets to destination chains. These messages must be defined in the IBC Rust implementation [IBC-Modules-Rust].

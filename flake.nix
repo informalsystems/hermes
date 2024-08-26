@@ -32,7 +32,7 @@
           cometbft
           evmos
           gaia6-ordered
-          gaia17
+          gaia18
           ibc-go-v2-simapp
           ibc-go-v3-simapp
           ibc-go-v4-simapp
@@ -40,6 +40,7 @@
           ibc-go-v6-simapp
           ibc-go-v7-simapp
           ibc-go-v8-simapp
+          ibc-go-v9-simapp
           interchain-security
           migaloo
           neutron

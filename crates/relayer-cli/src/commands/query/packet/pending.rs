@@ -7,6 +7,7 @@ use ibc_relayer::chain::counterparty::{
     channel_on_destination, pending_packet_summary, PendingPackets,
 };
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
+use ibc_relayer::chain::requests::Paginate;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::cli_utils::spawn_chain_counterparty;
@@ -130,8 +131,13 @@ impl QueryPendingPacketsCmd {
             self.chain_id, chan_conn_cli.channel
         );
 
-        let src_summary = pending_packet_summary(&chains.src, &chains.dst, &chan_conn_cli.channel)
-            .map_err(Error::supervisor)?;
+        let src_summary = pending_packet_summary(
+            &chains.src,
+            &chains.dst,
+            &chan_conn_cli.channel,
+            Paginate::All,
+        )
+        .map_err(Error::supervisor)?;
 
         let counterparty_channel = channel_on_destination(
             &chan_conn_cli.channel,
@@ -141,8 +147,13 @@ impl QueryPendingPacketsCmd {
         .map_err(Error::supervisor)?
         .ok_or_else(|| Error::missing_counterparty_channel_id(chan_conn_cli.channel))?;
 
-        let dst_summary = pending_packet_summary(&chains.dst, &chains.src, &counterparty_channel)
-            .map_err(Error::supervisor)?;
+        let dst_summary = pending_packet_summary(
+            &chains.dst,
+            &chains.src,
+            &counterparty_channel,
+            Paginate::All,
+        )
+        .map_err(Error::supervisor)?;
 
         Ok(Summary {
             src_chain: chains.src.id(),

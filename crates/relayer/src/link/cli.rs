@@ -11,7 +11,7 @@ use ibc_relayer_types::Height;
 
 use crate::chain::counterparty::{unreceived_acknowledgements, unreceived_packets};
 use crate::chain::handle::ChainHandle;
-use crate::chain::requests::Qualified;
+use crate::chain::requests::{Paginate, Qualified};
 use crate::chain::tracking::TrackingId;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
@@ -97,6 +97,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             self.a_to_b.dst_chain(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
+            Paginate::All,
         )
         .map_err(LinkError::supervisor)?;
 
@@ -109,10 +110,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
+        // Retain only sequences which should not be filtered out
+        let raw_sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.a_to_b.exclude_src_sequences.contains(sequence))
+            .collect();
+
         info!(
             "{} unreceived packets found: {} ",
-            sequences.len(),
-            PrettySlice(&sequences)
+            raw_sequences.len(),
+            PrettySlice(&raw_sequences)
         );
 
         let query_height = match packet_data_query_height {
@@ -127,7 +134,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .map_or(50, |cfg| cfg.query_packets_chunk_size());
 
         self.relay_packet_messages(
-            sequences,
+            raw_sequences,
             query_height,
             chunk_size,
             query_send_packet_events,
@@ -162,6 +169,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             self.a_to_b.dst_chain(),
             self.a_to_b.src_chain(),
             &self.a_to_b.path_id,
+            Paginate::All,
         )
         .map_err(LinkError::supervisor)?
         else {
@@ -177,10 +185,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
+        // Retain only sequences which should not be filtered out
+        let raw_sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.a_to_b.exclude_src_sequences.contains(sequence))
+            .collect();
+
         info!(
             "{} unreceived acknowledgements found: {} ",
-            sequences.len(),
-            sequences.iter().copied().collated().format(", "),
+            raw_sequences.len(),
+            raw_sequences.iter().copied().collated().format(", "),
         );
 
         let query_height = match packet_data_query_height {
@@ -195,7 +209,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .map_or(50, |cfg| cfg.query_packets_chunk_size());
 
         self.relay_packet_messages(
-            sequences,
+            raw_sequences,
             query_height,
             chunk_size,
             query_write_ack_events,
