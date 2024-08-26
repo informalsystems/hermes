@@ -14,9 +14,6 @@ OPTIONS:
     -h, --help
             Print help information
 
-        --ics20-version <ICS20_VERSION>
-            ICS20 version of the channel. Defaults to 1 [default: 1]
-
         --key-name <KEY_NAME>
             Use the given signing key name (default: `key_name` config)
 
