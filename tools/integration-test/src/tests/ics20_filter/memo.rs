@@ -1,16 +1,25 @@
 use byte_unit::Byte;
 
-use ibc_relayer::config::types::ics20_field_size_limit::Ics20FieldSizeLimit;
+use ibc_relayer::{
+    channel::version::Version, config::types::ics20_field_size_limit::Ics20FieldSizeLimit,
+};
 use ibc_test_framework::prelude::*;
 
 #[test]
 fn test_memo_filter() -> Result<(), Error> {
-    run_binary_channel_test(&IbcMemoFilterTest)
+    run_binary_channel_test(&IbcMemoFilterTest { ics20_version: 1 })
+}
+
+#[test]
+fn test_memo_filter_ics20_v2() -> Result<(), Error> {
+    run_binary_channel_test(&IbcMemoFilterTest { ics20_version: 2 })
 }
 
 const MEMO_SIZE_LIMIT: usize = 2000;
 
-pub struct IbcMemoFilterTest;
+pub struct IbcMemoFilterTest {
+    pub ics20_version: u64,
+}
 
 impl TestOverrides for IbcMemoFilterTest {
     fn modify_relayer_config(&self, config: &mut Config) {
@@ -18,6 +27,10 @@ impl TestOverrides for IbcMemoFilterTest {
             Ics20FieldSizeLimit::new(true, Byte::from_bytes(MEMO_SIZE_LIMIT as u64));
 
         config.mode.clients.misbehaviour = false;
+    }
+
+    fn channel_version(&self) -> Version {
+        Version::ics20(self.ics20_version)
     }
 }
 
