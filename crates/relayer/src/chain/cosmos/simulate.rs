@@ -4,6 +4,7 @@ use tonic::codegen::http::Uri;
 
 use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
+use crate::util::create_grpc_client;
 
 pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResponse, Error> {
     let mut tx_bytes = vec![];
@@ -15,9 +16,7 @@ pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResp
         ..Default::default()
     };
 
-    let mut client = ServiceClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), ServiceClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
