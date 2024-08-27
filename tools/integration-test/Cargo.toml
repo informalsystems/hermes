@@ -22,6 +22,7 @@ http           = { workspace = true }
 prost          = { workspace = true }
 serde          = { workspace = true }
 serde_json     = { workspace = true }
+sha2           = { workspace = true }
 tendermint-rpc = { workspace = true, features = ["http-client"] }
 tendermint     = { workspace = true }
 time           = { workspace = true }
@@ -49,6 +50,7 @@ dynamic-gas-fee                 = []
 new-register-interchain-account = []
 authz                           = []
 benchmark                       = []
+wasm                            = []
 no-denom-trace                  = []
 
 [[bin]]

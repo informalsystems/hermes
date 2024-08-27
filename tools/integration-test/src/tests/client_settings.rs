@@ -1,7 +1,7 @@
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::config::ChainConfig;
-use ibc_relayer::foreign_client::CreateOptions;
+use ibc_relayer::foreign_client::{CreateOptions, TendermintCreateOptions};
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
@@ -69,19 +69,21 @@ impl BinaryChainTest for ClientDefaultsTest {
 
 impl TestOverrides for ClientOptionsTest {
     fn client_options_a_to_b(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(120_000)),
             trust_threshold: Some(TrustThreshold::new(13, 23).unwrap()),
         }
+        .into()
     }
 
     fn client_options_b_to_a(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(340_000)),
             trust_threshold: Some(TrustThreshold::TWO_THIRDS),
         }
+        .into()
     }
 }
 

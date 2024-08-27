@@ -55,13 +55,7 @@ pub fn store_wasm_contract(
 
     std::thread::sleep(core::time::Duration::from_secs(1));
 
-    query_tx_hash(
-        driver.chain_id.as_str(),
-        &driver.command_path,
-        &driver.home_path,
-        &driver.rpc_listen_address(),
-        &output.stdout,
-    )?;
+    query_tx_hash(driver, &output.stdout)?;
 
     Ok(output.stdout)
 }
@@ -109,25 +103,22 @@ pub fn store_wasm_client_code(
 }
 
 pub fn instantiate_wasm_contract(
-    chain_id: &str,
-    command_path: &str,
-    home_path: &str,
-    rpc_listen_address: &str,
+    driver: &ChainDriver,
     address: &str,
     fees: &str,
     code: &str,
     init_args: &str,
 ) -> Result<(), Error> {
     let exec_output = simple_exec(
-        chain_id,
-        command_path,
+        driver.chain_id.as_str(),
+        &driver.command_path,
         &[
             "--home",
-            home_path,
+            &driver.home_path,
             "--chain-id",
-            chain_id,
+            driver.chain_id.as_str(),
             "--node",
-            rpc_listen_address,
+            &driver.rpc_listen_address(),
             "--keyring-backend",
             "test",
             "tx",
@@ -150,13 +141,7 @@ pub fn instantiate_wasm_contract(
 
     std::thread::sleep(core::time::Duration::from_secs(1));
 
-    query_tx_hash(
-        chain_id,
-        command_path,
-        home_path,
-        rpc_listen_address,
-        &exec_output.stdout,
-    )?;
+    query_tx_hash(driver, &exec_output.stdout)?;
 
     Ok(())
 }
