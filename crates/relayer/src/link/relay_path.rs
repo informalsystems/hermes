@@ -2,13 +2,15 @@ use alloc::collections::BTreeMap as HashMap;
 use alloc::collections::VecDeque;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
+use prost::Message;
+use serde::de::Error as _;
 use serde_json::Error;
 use std::ops::Sub;
 use std::time::{Duration, Instant};
 
 use ibc_proto::google::protobuf::Any;
-use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData as RawPacketData;
-use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketDataV2 as RawPacketDataV2;
+use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketData;
+use ibc_proto::ibc::applications::transfer::v2::FungibleTokenPacketDataV2;
 use itertools::Itertools;
 use tracing::{debug, error, info, span, trace, warn, Level};
 
@@ -2020,12 +2022,12 @@ fn extract_memo_and_receiver(
     data: &[u8],
 ) -> Result<(String, String), Error> {
     if channel_version.is_ics20_v2() {
-        match serde_json::from_slice::<RawPacketDataV2>(data) {
+        match FungibleTokenPacketDataV2::decode(data) {
             Ok(packet_data) => Ok((packet_data.memo, packet_data.receiver)),
-            Err(e) => Err(e),
+            Err(e) => Err(Error::custom(e.to_string())),
         }
     } else {
-        match serde_json::from_slice::<RawPacketData>(data) {
+        match serde_json::from_slice::<FungibleTokenPacketData>(data) {
             Ok(packet_data) => Ok((packet_data.memo, packet_data.receiver)),
             Err(e) => Err(e),
         }

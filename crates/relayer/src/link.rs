@@ -145,6 +145,21 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             ));
         }
 
+        // Query the channel if it exists in order to retrieve the channel version.
+        // If the channel doesn't exist, set the version to None.
+        let maybe_channel_a = a_chain.query_channel(
+            QueryChannelRequest {
+                port_id: opts.src_port_id.clone(),
+                channel_id: opts.src_channel_id.clone(),
+                height: QueryHeight::Latest,
+            },
+            IncludeProof::Yes,
+        );
+        let channel_version = match maybe_channel_a {
+            Ok((channel_a, _)) => Some(channel_a.version),
+            Err(_) => None,
+        };
+
         let channel = Channel {
             ordering: a_channel.ordering,
             a_side: ChannelSide::new(
@@ -153,7 +168,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection_id,
                 opts.src_port_id.clone(),
                 Some(opts.src_channel_id.clone()),
-                None,
+                channel_version.clone(),
             ),
             b_side: ChannelSide::new(
                 b_chain.clone(),
@@ -161,7 +176,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
                 a_connection.counterparty().connection_id().unwrap().clone(),
                 a_channel.counterparty().port_id.clone(),
                 Some(b_channel_id.clone()),
-                None,
+                channel_version,
             ),
             connection_delay: a_connection.delay_period(),
         };
