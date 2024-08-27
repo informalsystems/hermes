@@ -10,6 +10,7 @@ fn test_memo_filter() -> Result<(), Error> {
     run_binary_channel_test(&IbcMemoFilterTest { ics20_version: 1 })
 }
 
+#[cfg(any(doc, feature = "ics20-v2"))]
 #[test]
 fn test_memo_filter_ics20_v2() -> Result<(), Error> {
     run_binary_channel_test(&IbcMemoFilterTest { ics20_version: 2 })
