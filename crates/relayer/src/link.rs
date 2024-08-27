@@ -146,7 +146,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
         }
 
         // Query the channel if it exists in order to retrieve the channel version.
-        // If the channel doesn't exist, set the version to None.
+        // If the channel doesn't exist or the query fails, set the version to None.
         let maybe_channel_a = a_chain.query_channel(
             QueryChannelRequest {
                 port_id: opts.src_port_id.clone(),
