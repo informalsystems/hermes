@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia18
+          - package: gaia19
             command: gaiad
             account_prefix: cosmos
             native_token: stake
@@ -95,11 +95,13 @@ jobs:
             account_prefix: migaloo
             native_token: stake
             features: ics29-fee,ica,forward-packet
-          - package: injective
-            command: injectived
-            account_prefix: inj
-            native_token: stake
-            features: forward-packet,fee-grant
+          # Disable Injective because wasmvm hasn't been correctly
+          # wired for Injective in Cosmos Nix
+          #- package: injective
+          #  command: injectived
+          #  account_prefix: inj
+          #  native_token: stake
+          #  features: forward-packet,fee-grant
 
     steps:
       - uses: actions/checkout@v4
@@ -176,10 +178,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia18 .#stride
+          - package: .#gaia19 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia18 .#neutron
+          - package: .#gaia19 .#neutron
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
@@ -221,7 +223,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia18 .#stride-no-admin
+          - package: .#gaia19 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -262,7 +264,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia18
+          - package: .#celestia .#gaia19
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake
