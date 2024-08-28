@@ -84,7 +84,7 @@ jobs:
             command: junod
             account_prefix: juno
             native_token: stake
-            features: juno,forward-packet,ica
+            features: juno,forward-packet,ica,ics29-fee
           - package: provenance
             command: provenanced
             account_prefix: pb
