@@ -1,5 +1,42 @@
 # CHANGELOG
 
+## v1.10.3
+
+*August 29th, 2024*
+
+This release brings several important updates and improvements across multiple components. Notably, it introduces explicit root TLS configuration for gRPC clients in both the Chain Registry and Relayer Library, enhancing security and configuration flexibility. Additionally, the Relayer CLI has been refined to ensure proper filtering of sequences in the clear packet command, improving the reliability of packet management.
+
+Furthermore, the Relayer Library now uses `abci_query` instead of gRPC queries for staking parameters and service configuration during health checks, and when retrieving version information. These updates contribute to a more robust and efficient relayer experience.
+
+### BUG FIXES
+
+- [Chain Registry](chain-registry)
+  - add explicit root TLS configuration to gRPC clients
+    ([\#4160](https://github.com/informalsystems/hermes/issues/4160))
+- [Relayer Library](relayer)
+  - Add explicit root TLS configuration to gRPC clients
+    ([\#4160](https://github.com/informalsystems/hermes/issues/4160))
+- [Relayer CLI](relayer-cli)
+  - Correctly filter out sequences from the `excluded_sequences` configuration
+    when clearing packets with the `clear packet` CLI.
+    ([\#4158](https://github.com/informalsystems/hermes/issues/4158))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Use `abci_query` instead of gRPC queries when retrieving staking params
+    and service config during health-check, and when retrieving version information.
+    ([\#4102](https://github.com/informalsystems/hermes/issues/4102))
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Celestia running the integration tests in the CI from `v1.11.0`
+    to `v1.14.0` ([\#4123](https://github.com/informalsystems/hermes/issues/4123))
+
+### FEATURES
+
+- [Integration Test Framework](tools/test-framework)
+  - Add ibc-go `v9` to the chains running the integration tests in the CI.
+    ([\#4151](https://github.com/informalsystems/hermes/issues/4151))
+
 ## v1.10.2
 
 *August 14th, 2024*
