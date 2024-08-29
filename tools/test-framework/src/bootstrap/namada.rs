@@ -152,7 +152,7 @@ pub fn bootstrap_namada_node(
         ],
         &[("NAMADA_NETWORK_CONFIGS_DIR", genesis_path)],
     )?;
-    std::env::set_current_dir(&cur_dir)?;
+    std::env::set_current_dir(cur_dir)?;
 
     let config_path = format!("{home_path}/setup/validator-0/{chain_id}/config.toml");
 

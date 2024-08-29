@@ -129,15 +129,13 @@ impl NamadaChain {
         // Confirm the transaction later
         let mut tx_args = tx_args.broadcast_only(true);
 
-        let memo = if !self.config().memo_prefix.as_str().is_empty() {
-            Some(
-                self.config()
-                    .memo_prefix
-                    .as_str()
-                    .to_string()
-                    .as_bytes()
-                    .to_vec(),
-            )
+        let memo = self
+            .config()
+            .memo_overwrite
+            .as_ref()
+            .unwrap_or(&self.config().memo_prefix);
+        let memo = if !memo.as_str().is_empty() {
+            Some(memo.as_str().to_string().as_bytes().to_vec())
         } else {
             None
         };
