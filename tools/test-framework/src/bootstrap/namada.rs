@@ -84,7 +84,8 @@ pub fn bootstrap_namada_node(
     let genesis_path = &format!("{home_path}/genesis");
     fs::create_dir_all(genesis_path)?;
 
-    let wasm_checksum = &format!("{namada_repo_path}/wasm/checksums.json");
+    let wasm_dir = &format!("{namada_repo_path}/wasm");
+    let wasm_checksum = &format!("{wasm_dir}/checksums.json");
 
     // Init network
     let output = simple_exec_with_envs(
@@ -103,6 +104,8 @@ pub fn bootstrap_namada_node(
             wasm_checksum,
             "--archive-dir",
             genesis_path,
+            "--wasm-dir",
+            wasm_dir,
         ],
         &[("NAMADA_BASE_DIR", home_path)],
     )?;
@@ -112,6 +115,7 @@ pub fn bootstrap_namada_node(
     let validator_base_dir = &format!("{home_path}/setup/validator-0");
     let pre_genesis_path = &format!("{home_path}/pre-genesis/validator-0");
 
+    simple_exec("namada", "cd", &[&namada_repo_path])?;
     simple_exec_with_envs(
         &chain_id,
         "namadac",
@@ -126,7 +130,6 @@ pub fn bootstrap_namada_node(
             "validator-0",
             "--pre-genesis-path",
             pre_genesis_path,
-            "--dont-prefetch-wasm",
         ],
         &[("NAMADA_NETWORK_CONFIGS_DIR", genesis_path)],
     )?;
@@ -144,17 +147,9 @@ pub fn bootstrap_namada_node(
             "join-network",
             "--chain-id",
             &chain_id,
-            "--dont-prefetch-wasm",
         ],
         &[("NAMADA_NETWORK_CONFIGS_DIR", genesis_path)],
     )?;
-
-    let dst_cp = &format!("{home_path}/setup/validator-0/{chain_id}/wasm/");
-
-    // Copy wasm
-    let copy_loop =
-        format!("for file in {namada_repo_path}/wasm/*.wasm; do cp \"$file\" {dst_cp}; done");
-    simple_exec("namada", "sh", &["-c", &copy_loop])?;
 
     let config_path = format!("{home_path}/setup/validator-0/{chain_id}/config.toml");
 

@@ -671,8 +671,11 @@ impl BinaryChannelTest for LimitedClearPacketTest {
 
         // Spawn the supervisor only after the first IBC transfer
         relayer.with_supervisor(|| {
-            let amount_b = cleared_amount
-                .transfer(&channel.port_b.as_ref(), &channel.channel_id_b.as_ref())?;
+            let amount_b = cleared_amount.transfer(
+                &chains.node_b.chain_driver().value().chain_type,
+                &channel.port_b.as_ref(),
+                &channel.channel_id_b.as_ref(),
+            )?;
 
             info!("Assert that {sent_amount} was escrowed from sending chain");
 

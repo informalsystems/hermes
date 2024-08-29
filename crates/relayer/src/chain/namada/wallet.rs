@@ -46,7 +46,7 @@ impl FsWalletStorage for CliWalletUtils {
 impl WalletIo for CliWalletUtils {
     type Rng = OsRng;
 
-    fn read_password(_confirm: bool) -> Zeroizing<String> {
+    fn read_password(_confirm: bool, _target_key: Option<&str>) -> Zeroizing<String> {
         match env::var("NAMADA_WALLET_PASSWORD_FILE") {
             Ok(path) => Zeroizing::new(
                 fs::read_to_string(path).expect("Something went wrong reading the file"),

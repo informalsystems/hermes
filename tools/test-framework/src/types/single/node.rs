@@ -164,7 +164,7 @@ impl FullNode {
         };
 
         let chain_config = match chain_type {
-            TestedChainType::Cosmos
+            TestedChainType::Cosmos { dynamic_fee: _ }
             | TestedChainType::Provenance
             | TestedChainType::Evmos
             | TestedChainType::Osmosis

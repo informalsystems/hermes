@@ -108,7 +108,11 @@ function init_network() {
     --templates-path ${base_dir}/templates \
     --wasm-checksums-path ${CHECKSUM_PATH} \
     --archive-dir ${base_dir}/genesis \
+    --wasm-dir ${NAMADA_DIR}/wasm \
     | awk '$1 == "Derived" {print $4}')
+
+  mkdir -p ${validator_base_dir}/pre-genesis/validator-0
+  cp ${BASE_GENESIS_DIR}/src/pre-genesis/validator-0/*.toml ${validator_base_dir}/pre-genesis/validator-0
 
   NAMADA_NETWORK_CONFIGS_DIR=${base_dir}/genesis \
   ${NAMADAC} --base-dir ${validator_base_dir} \
@@ -116,25 +120,15 @@ function init_network() {
     --chain-id ${chain_id} \
     --genesis-validator validator-0 \
     --pre-genesis-path \
-    ${base_dir}/pre-genesis/validator-0 \
-    --dont-prefetch-wasm
+    ${base_dir}/pre-genesis/validator-0
 
   rm -rf ${base_dir}/${chain_id}
   # for non-validator
   NAMADA_NETWORK_CONFIGS_DIR=${base_dir}/genesis \
   ${NAMADAC} --base-dir ${base_dir} \
   utils join-network \
-  --chain-id ${chain_id} \
-  --dont-prefetch-wasm
-}
-
-function copy_wasm() {
-  local suffix=$1
-  local chain_id=$2
-
-  local base_dir=${DATA_DIR}/namada-${suffix}
-
-  cp ${NAMADA_DIR}/wasm/*.wasm ${base_dir}/setup/validator-0/${chain_id}/wasm/
+    --add-persistent-peers \
+    --chain-id ${chain_id}
 }
 
 function init_relayer_acc() {
@@ -169,10 +163,8 @@ make_genesis "a"
 result=$(init_network "a")
 chain_id_a=$(echo "${result}" | awk '$5 == "ID" {id = $6} END {print id}')
 
-copy_wasm "a" ${chain_id_a}
-
 ${NAMADAN} --base-dir ${DATA_DIR}/namada-a/setup/validator-0 \
-  ledger run > ${DATA_DIR}/namada-a/namada.log 2>&1 &
+  ledger > ${DATA_DIR}/namada-a/namada.log 2>&1 &
 sleep 5
 
 # shutdown temporarily to bootstrap chain-b
@@ -183,10 +175,8 @@ make_genesis "b"
 result=$(init_network "b")
 chain_id_b=$(echo "${result}" | awk '$5 == "ID" {id = $6} END {print id}')
 
-copy_wasm "b" ${chain_id_b}
-
 ${NAMADAN} --base-dir ${DATA_DIR}/namada-b/setup/validator-0 \
-  ledger run > ${DATA_DIR}/namada-b/namada.log 2>&1 &
+  ledger > ${DATA_DIR}/namada-b/namada.log 2>&1 &
 sleep 5
 
 # shutdown temporarily to bootstrap chain-b
@@ -206,12 +196,12 @@ sed -i .bak \
 
 # Restart each chain
 ${NAMADAN} --base-dir ${DATA_DIR}/namada-a/setup/validator-0 \
-  ledger run > ${DATA_DIR}/namada-a/namada.log 2>&1 &
+  ledger > ${DATA_DIR}/namada-a/namada.log 2>&1 &
 echo "Namada chain A's PID = $!"
 sleep 5
 
 ${NAMADAN} --base-dir ${DATA_DIR}/namada-b/setup/validator-0 \
-  ledger run > ${DATA_DIR}/namada-b/namada.log 2>&1 &
+  ledger > ${DATA_DIR}/namada-b/namada.log 2>&1 &
 echo "Namada chain B's PID = $!"
 sleep 5
 
