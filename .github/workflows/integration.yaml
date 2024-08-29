@@ -84,7 +84,7 @@ jobs:
             command: junod
             account_prefix: juno
             native_token: stake
-            features: juno,forward-packet,ica
+            features: juno,forward-packet,ica,ics29-fee
           - package: provenance
             command: provenanced
             account_prefix: pb
@@ -95,11 +95,13 @@ jobs:
             account_prefix: migaloo
             native_token: stake
             features: ics29-fee,ica,forward-packet
-          - package: injective
-            command: injectived
-            account_prefix: inj
-            native_token: stake
-            features: forward-packet,fee-grant
+          # Disable Injective because wasmvm hasn't been correctly
+          # wired for Injective in Cosmos Nix
+          #- package: injective
+          #  command: injectived
+          #  account_prefix: inj
+          #  native_token: stake
+          #  features: forward-packet,fee-grant
 
     steps:
       - uses: actions/checkout@v4
