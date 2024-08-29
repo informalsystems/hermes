@@ -17,7 +17,7 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
 use ibc_test_framework::chain::{
-    config::add_allow_message_interchainaccounts,
+    config::cosmos::add_allow_message_interchainaccounts,
     ext::ica::{register_ordered_interchain_account, register_unordered_interchain_account},
 };
 use ibc_test_framework::prelude::*;
