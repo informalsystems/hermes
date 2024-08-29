@@ -34,7 +34,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia17
+          - package: .#gaia18
             command: gaiad,namada
             account_prefix: cosmos,''
             native_token: stake,nam
@@ -90,11 +90,11 @@ jobs:
           release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/170839589" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
-          cp ./namada-*/namadac ~/local/bin/namadac
-          cp ./namada-*/namadan ~/local/bin/namadan
-          cp ./namada-*/namadaw ~/local/bin/namadaw
-          cp ./namada-*/namada ~/local/bin/namada
-          cp ./namada-*/wasm/*.wasm $NAMADA_REPO_PATH/wasm
+          cp ./namada*/namadac ~/local/bin/namadac
+          cp ./namada*/namadan ~/local/bin/namadan
+          cp ./namada*/namadaw ~/local/bin/namadaw
+          cp ./namada*/namada ~/local/bin/namada
+          cp ./namada*/wasm/*.wasm $NAMADA_REPO_PATH/wasm
       - name: Update environment path
         run: |
           echo "${HOME}/local/bin" >> $GITHUB_PATH
@@ -164,11 +164,11 @@ jobs:
           release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/170839589" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
-          cp ./namada-*/namadac ~/local/bin/namadac
-          cp ./namada-*/namadan ~/local/bin/namadan
-          cp ./namada-*/namadaw ~/local/bin/namadaw
-          cp ./namada-*/namada ~/local/bin/namada
-          cp ./namada-*/wasm/* $NAMADA_REPO_PATH/wasm
+          cp ./namada*/namadac ~/local/bin/namadac
+          cp ./namada*/namadan ~/local/bin/namadan
+          cp ./namada*/namadaw ~/local/bin/namadaw
+          cp ./namada*/namada ~/local/bin/namada
+          cp ./namada*/wasm/*.wasm $NAMADA_REPO_PATH/wasm
       - name: Update environment path
         run: |
           echo "${HOME}/local/bin" >> $GITHUB_PATH
