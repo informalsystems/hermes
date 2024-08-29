@@ -94,6 +94,7 @@ jobs:
           cp ./namada*/namadan ~/local/bin/namadan
           cp ./namada*/namadaw ~/local/bin/namadaw
           cp ./namada*/namada ~/local/bin/namada
+          cp ./namada*/wasm/checksums.json $NAMADA_REPO_PATH/wasm
           cp ./namada*/wasm/*.wasm $NAMADA_REPO_PATH/wasm
       - name: Update environment path
         run: |
@@ -168,6 +169,7 @@ jobs:
           cp ./namada*/namadan ~/local/bin/namadan
           cp ./namada*/namadaw ~/local/bin/namadaw
           cp ./namada*/namada ~/local/bin/namada
+          cp ./namada*/wasm/checksums.json $NAMADA_REPO_PATH/wasm
           cp ./namada*/wasm/*.wasm $NAMADA_REPO_PATH/wasm
       - name: Update environment path
         run: |
