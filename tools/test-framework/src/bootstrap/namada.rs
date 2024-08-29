@@ -115,7 +115,9 @@ pub fn bootstrap_namada_node(
     let validator_base_dir = &format!("{home_path}/setup/validator-0");
     let pre_genesis_path = &format!("{home_path}/pre-genesis/validator-0");
 
-    simple_exec("namada", "cd", &[&namada_repo_path])?;
+    // TODO: workaround a bug of specifying the wasm directory in Namada v0.43.0
+    let cur_dir = std::env::current_dir()?;
+    std::env::set_current_dir(&namada_repo_path)?;
     simple_exec_with_envs(
         &chain_id,
         "namadac",
@@ -150,6 +152,7 @@ pub fn bootstrap_namada_node(
         ],
         &[("NAMADA_NETWORK_CONFIGS_DIR", genesis_path)],
     )?;
+    std::env::set_current_dir(&cur_dir)?;
 
     let config_path = format!("{home_path}/setup/validator-0/{chain_id}/config.toml");
 
