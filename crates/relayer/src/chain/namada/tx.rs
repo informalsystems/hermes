@@ -130,10 +130,10 @@ impl NamadaChain {
         let mut tx_args = tx_args.broadcast_only(true);
 
         let memo = self
-            .config()
+            .config
             .memo_overwrite
             .as_ref()
-            .unwrap_or(&self.config().memo_prefix);
+            .unwrap_or(&self.config.memo_prefix);
         let memo = if !memo.as_str().is_empty() {
             Some(memo.as_str().to_string().as_bytes().to_vec())
         } else {
@@ -158,12 +158,12 @@ impl NamadaChain {
         args: &TxArgs,
         signing_data: &signing::SigningTxData,
     ) -> Result<Option<(Address, u64, f64)>, Error> {
-        let chain_id = self.config().id.clone();
-        let fee_token_str = self.config().gas_price.denom.clone();
+        let chain_id = self.config.id.clone();
+        let fee_token_str = self.config.gas_price.denom.clone();
         let fee_token = Address::from_str(&fee_token_str)
             .map_err(|_| NamadaError::address_decode(fee_token_str.clone()))?;
-        let max_gas = max_gas_from_config(self.config());
-        let gas_price = self.config().gas_price.price;
+        let max_gas = max_gas_from_config(&self.config);
+        let gas_price = self.config.gas_price.price;
 
         let args = args.clone().dry_run_wrapper(true);
         // Set the max gas to the gas limit for the simulation
@@ -217,7 +217,7 @@ impl NamadaChain {
             ));
         }
 
-        let gas_multiplier = self.config().gas_multiplier.unwrap_or_default().to_f64();
+        let gas_multiplier = self.config.gas_multiplier.unwrap_or_default().to_f64();
 
         let adjusted_gas = adjust_estimated_gas(AdjustGas {
             gas_multiplier,
@@ -275,7 +275,7 @@ impl NamadaChain {
             return Ok(());
         }
 
-        let chain_id = &self.config().id;
+        let chain_id = &self.id();
         crate::time!(
             "wait_for_block_commits",
             {
@@ -304,7 +304,7 @@ impl NamadaChain {
                 );
 
                 return Ok(());
-            } else if elapsed > self.config().rpc_timeout {
+            } else if elapsed > self.config.rpc_timeout {
                 debug!("timed out after {} ms", elapsed.as_millis());
                 return Err(Error::tx_no_confirmation());
             } else {

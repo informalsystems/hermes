@@ -264,7 +264,7 @@ impl NamadaChain {
         crate::time!(
             "query_blocks: query block packet events",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_block");

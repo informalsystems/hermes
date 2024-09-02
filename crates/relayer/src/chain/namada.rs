@@ -102,15 +102,11 @@ pub struct NamadaChain {
 }
 
 impl NamadaChain {
-    fn config(&self) -> &CosmosSdkConfig {
-        &self.config
-    }
-
     fn init_event_source(&mut self) -> Result<TxEventSourceCmd, Error> {
         crate::time!(
             "init_event_source",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
 
@@ -320,21 +316,21 @@ impl ChainEndpoint for NamadaChain {
         if proto_msgs.is_empty() {
             return Ok(vec![]);
         }
-        let max_msg_num = self.config().max_msg_num.to_usize();
+        let max_msg_num = self.config.max_msg_num.to_usize();
         let msg_chunks = proto_msgs.chunks(max_msg_num);
         let mut tx_sync_results = vec![];
         for msg_chunk in msg_chunks {
             let response = self.batch_txs(msg_chunk)?;
             tx_sync_results.push(response_to_tx_sync_result(
-                &self.config().id,
+                &self.config.id,
                 msg_chunk.len(),
                 response,
             ));
-            if self.config().sequential_batch_tx {
+            if self.config.sequential_batch_tx {
                 self.wait_for_block_commits(&mut tx_sync_results)?;
             }
         }
-        if !self.config().sequential_batch_tx {
+        if !self.config.sequential_batch_tx {
             self.wait_for_block_commits(&mut tx_sync_results)?;
         }
 
@@ -363,7 +359,7 @@ impl ChainEndpoint for NamadaChain {
             return Ok(vec![]);
         }
 
-        let max_msg_num = self.config().max_msg_num.to_usize();
+        let max_msg_num = self.config.max_msg_num.to_usize();
         let msg_chunks = proto_msgs.chunks(max_msg_num);
         let mut responses = vec![];
         for msg_chunk in msg_chunks {
@@ -386,7 +382,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "verify_header",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
 
@@ -404,7 +400,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "check_misbehaviour",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
 
@@ -503,7 +499,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_commitment_prefix",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_commitment_prefix");
@@ -515,7 +511,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_application_status",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_application_status");
@@ -528,7 +524,7 @@ impl ChainEndpoint for NamadaChain {
         if status.sync_info.catching_up {
             return Err(Error::chain_not_caught_up(
                 self.config.rpc_addr.to_string(),
-                self.config().id.clone(),
+                self.config.id.clone(),
             ));
         }
 
@@ -552,7 +548,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_clients",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_clients");
@@ -581,7 +577,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_client_state",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_client_state");
@@ -602,7 +598,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_consensus_state",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.config.id.to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_consensus_state");
@@ -646,7 +642,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_upgraded_client_state",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_upgraded_client_state");
@@ -678,7 +674,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_upgraded_consensus_state",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_upgraded_consensus_state");
@@ -710,7 +706,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_connections",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_connections");
@@ -742,7 +738,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_client_connections",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_client_connections");
@@ -765,7 +761,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_connection",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_connection");
@@ -784,7 +780,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_connection_channels",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_connection_channels");
@@ -807,7 +803,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_channels",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_channels");
@@ -839,7 +835,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_channel",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_channel");
@@ -858,7 +854,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_channel_client_state",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_channel_client_state");
@@ -913,7 +909,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_packet_commitments",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_packet_commitments");
@@ -959,7 +955,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_unreceived_packets",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_unreceived_packets");
@@ -1007,7 +1003,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_packet_acknowledgements",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_packet_acknowledgements");
@@ -1040,7 +1036,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_unreceived_acknowledgements",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_unreceived_acknowledgements");
@@ -1071,7 +1067,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_next_sequence_receive",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_next_sequence_receive");
@@ -1092,7 +1088,7 @@ impl ChainEndpoint for NamadaChain {
     fn query_txs(&self, request: QueryTxRequest) -> Result<Vec<IbcEventWithHeight>, Error> {
         crate::time!("query_txs",
         {
-            "src_chain": self.config().id.to_string(),
+            "src_chain": self.id().to_string(),
         });
         crate::telemetry!(query, self.id(), "query_txs");
 
@@ -1115,7 +1111,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "query_packet_events",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
         crate::telemetry!(query, self.id(), "query_packet_events");
@@ -1183,7 +1179,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "build_consensus_state",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
 
@@ -1199,7 +1195,7 @@ impl ChainEndpoint for NamadaChain {
         crate::time!(
             "build_header",
             {
-                "src_chain": self.config().id.to_string(),
+                "src_chain": self.id().to_string(),
             }
         );
 
