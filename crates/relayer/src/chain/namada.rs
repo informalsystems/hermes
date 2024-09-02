@@ -95,6 +95,7 @@ pub struct NamadaChain {
     config: CosmosSdkConfig,
     /// Namada context
     ctx: NamadaImpl<HttpClient, wallet::NullWalletUtils, FsShieldedUtils, NullIo>,
+    compat_mode: CompatMode,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
     keybase: KeyRing<NamadaKeyPair>,
@@ -110,17 +111,12 @@ impl NamadaChain {
             }
         );
 
-        let node_info = self
-            .rt
-            .block_on(fetch_node_info(self.ctx.client(), &self.config))?;
-        let compat_mode = CompatMode::from_version(node_info.version).unwrap_or(CompatMode::V0_37);
-
         use crate::config::EventSourceMode as Mode;
         let (event_source, monitor_tx) = match &self.config.event_source {
             Mode::Push { url, batch_delay } => EventSource::websocket(
                 self.config.id.clone(),
                 url.clone(),
-                compat_mode,
+                self.compat_mode,
                 *batch_delay,
                 self.rt.clone(),
             ),
@@ -195,7 +191,12 @@ impl ChainEndpoint for NamadaChain {
 
         let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
-        rpc_client.set_compat_mode(CompatMode::V0_37);
+        let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
+        let compat_mode = CompatMode::from_version(node_info.version)
+            .ok()
+            .or_else(|| config.compat_mode.clone().map(CompatMode::from))
+            .unwrap_or(CompatMode::V0_37);
+        rpc_client.set_compat_mode(compat_mode);
 
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
         let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
@@ -240,6 +241,7 @@ impl ChainEndpoint for NamadaChain {
         Ok(Self {
             config,
             ctx,
+            compat_mode,
             light_client,
             rt,
             keybase,
