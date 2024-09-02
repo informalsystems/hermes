@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use core::str::FromStr;
 use std::thread;
+use tracing::debug;
 
 use core::time::Duration;
 
@@ -250,6 +251,10 @@ impl ChainEndpoint for NamadaChain {
     }
 
     fn shutdown(self) -> Result<(), Error> {
+        if let Some(monitor_tx) = self.tx_monitor_cmd {
+            monitor_tx.shutdown().map_err(Error::event_source)?;
+        }
+
         Ok(())
     }
 
@@ -631,7 +636,10 @@ impl ChainEndpoint for NamadaChain {
                     heights.push(height);
                 }
                 // the key is not for a consensus state
-                Err(_) => continue,
+                Err(_) => {
+                    debug!("The key {key} is not for a consensus state");
+                    continue;
+                }
             }
         }
         Ok(heights)
