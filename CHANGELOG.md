@@ -30,6 +30,12 @@ Furthermore, the Relayer Library now uses `abci_query` instead of gRPC queries f
 - [Integration Test Framework](tools/test-framework)
   - Update the version of Celestia running the integration tests in the CI from `v1.11.0`
     to `v1.14.0` ([\#4123](https://github.com/informalsystems/hermes/issues/4123))
+  - Update the version of Neutron running the integration tests in the CI from `v4.1.0`
+    to `v4.2.2` ([\#4168](https://github.com/informalsystems/hermes/issues/4168))
+  - Update the version of `wasmd` running the integration tests in the CI from `v0.52.0`
+    to `v0.53.0` ([\#4169](https://github.com/informalsystems/hermes/issues/4169))
+  - Update the version of Juno running the integration tests in the CI from `v23.0.0`
+    to `v24.0.0` ([\#4171](https://github.com/informalsystems/hermes/issues/4171))
 
 ### FEATURES
 
