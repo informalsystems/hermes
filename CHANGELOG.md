@@ -4,14 +4,14 @@
 
 *September 2nd, 2024*
 
-This release brings several important updates and improvements across multiple components. Notably, it introduces explicit root TLS configuration for gRPC clients in both the Chain Registry and Relayer Library, enhancing security and configuration flexibility. Additionally, the Relayer CLI has been refined to ensure proper filtering of sequences in the clear packet command, improving the reliability of packet management.
+This release fixes an issue where Hermes could not connect to gRPC servers over TLS. Additionally, this release also fixes a bug in the `clear packet` CLI where the `excluded_sequences` configuration option was not always taken into account.
 
-Furthermore, the Relayer Library now uses `abci_query` instead of gRPC queries for staking parameters and service configuration during health checks, and when retrieving version information. These updates contribute to a more robust and efficient relayer experience.
+Furthermore, Hermes now uses `abci_query` instead of gRPC for some queries, for instance for querying staking parameters and service configuration during health checks, and when retrieving version information.
 
 ### BUG FIXES
 
 - [Chain Registry](chain-registry)
-  - add explicit root TLS configuration to gRPC clients
+  - Add explicit root TLS configuration to gRPC clients
     ([\#4160](https://github.com/informalsystems/hermes/issues/4160))
 - [Relayer Library](relayer)
   - Add explicit root TLS configuration to gRPC clients
