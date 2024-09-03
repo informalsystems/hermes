@@ -200,7 +200,7 @@ fn detect_compatibility_mode(
         ChainConfig::CosmosSdk(config) => rt.block_on(fetch_compat_mode(&client, config))?,
     };
 
-    Ok(compat_mode.into())
+    Ok(compat_mode)
 }
 
 #[cfg(test)]
