@@ -1,6 +1,7 @@
 use alloc::sync::Arc;
 use bytes::Buf;
 use bytes::Bytes;
+use config::CosmosSdkConfig;
 use core::{future::Future, str::FromStr, time::Duration};
 use futures::future::join_all;
 use num_bigint::BigInt;
@@ -106,11 +107,9 @@ use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use crate::util::compat_mode::compat_mode_from_version;
 use crate::util::create_grpc_client;
-use crate::util::pretty::PrettySlice;
 use crate::util::pretty::{
-    PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
+    PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection, PrettySlice,
 };
 use crate::HERMES_VERSION;
 
@@ -917,11 +916,10 @@ impl ChainEndpoint for CosmosSdkChain {
             .build()
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
-        let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
-
-        let compat_mode = compat_mode_from_version(&config.compat_mode, node_info.version)?.into();
+        let compat_mode = rt.block_on(fetch_compat_mode(&rpc_client, &config))?;
         rpc_client.set_compat_mode(compat_mode);
 
+        let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
         let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
 
         // Initialize key store and load key
@@ -1116,6 +1114,7 @@ impl ChainEndpoint for CosmosSdkChain {
             &self.rpc_client,
             &self.config.rpc_addr,
         ))?;
+
         Ok(version_specs)
     }
 
@@ -2772,6 +2771,40 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+pub async fn fetch_compat_mode(
+    client: &HttpClient,
+    config: &CosmosSdkConfig,
+) -> Result<CompatMode, Error> {
+    use crate::util::compat_mode::compat_mode_from_node_version;
+    use crate::util::compat_mode::compat_mode_from_version_specs;
+
+    let version_specs = fetch_version_specs(&config.id, client, &config.rpc_addr).await;
+
+    let compat_mode = match version_specs {
+        Ok(specs) => compat_mode_from_version_specs(&config.compat_mode, specs.consensus),
+        Err(e) => {
+            warn!(
+                "Failed to fetch version specs for chain '{}': {e}",
+                config.id
+            );
+
+            let status = client
+                .status()
+                .await
+                .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+
+            warn!(
+                "Will fall back on using the node version: {}",
+                status.node_info.version
+            );
+
+            compat_mode_from_node_version(&config.compat_mode, status.node_info.version)
+        }
+    }?;
+
+    Ok(compat_mode.into())
 }
 
 #[cfg(test)]
