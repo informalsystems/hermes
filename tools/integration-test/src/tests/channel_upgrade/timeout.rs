@@ -27,7 +27,7 @@ use ibc_relayer_types::core::ics04_channel::channel::State as ChannelState;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics04_channel::version::Version;
 use ibc_relayer_types::events::IbcEventType;
-use ibc_test_framework::chain::config::{set_max_deposit_period, set_voting_period};
+use ibc_test_framework::chain::config::cosmos::{set_max_deposit_period, set_voting_period};
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, assert_eventually_channel_upgrade_ack,
@@ -992,6 +992,7 @@ impl BinaryChannelTest for ChannelUpgradeHandshakeTimeoutOnPacketAck {
         // and move channel ends to `FLUSH_COMPLETE`
         relayer.with_supervisor(|| {
             let ibc_denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channels.port_b.as_ref(),
                 &channels.channel_id_b.as_ref(),
                 &denom_a,

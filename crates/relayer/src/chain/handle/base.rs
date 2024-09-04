@@ -31,8 +31,8 @@ use ibc_relayer_types::{
 use crate::{
     account::Balance,
     chain::{
-        client::ClientSettings, cosmos::version::Specs, endpoint::ChainStatus, requests::*,
-        tracking::TrackedMsgs,
+        client::ClientSettings, endpoint::ChainStatus, requests::*, tracking::TrackedMsgs,
+        version::Specs,
     },
     client_state::{AnyClientState, IdentifiedAnyClientState},
     config::ChainConfig,
