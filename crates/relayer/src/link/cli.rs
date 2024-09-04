@@ -110,10 +110,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
+        // Retain only sequences which should not be filtered out
+        let raw_sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.a_to_b.exclude_src_sequences.contains(sequence))
+            .collect();
+
         info!(
             "{} unreceived packets found: {} ",
-            sequences.len(),
-            PrettySlice(&sequences)
+            raw_sequences.len(),
+            PrettySlice(&raw_sequences)
         );
 
         let query_height = match packet_data_query_height {
@@ -128,7 +134,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .map_or(50, |cfg| cfg.query_packets_chunk_size());
 
         self.relay_packet_messages(
-            sequences,
+            raw_sequences,
             query_height,
             chunk_size,
             query_send_packet_events,
@@ -179,10 +185,16 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             sequences.retain(|seq| sequence_filter.iter().any(|range| range.contains(seq)));
         }
 
+        // Retain only sequences which should not be filtered out
+        let raw_sequences: Vec<Sequence> = sequences
+            .into_iter()
+            .filter(|sequence| !self.a_to_b.exclude_src_sequences.contains(sequence))
+            .collect();
+
         info!(
             "{} unreceived acknowledgements found: {} ",
-            sequences.len(),
-            sequences.iter().copied().collated().format(", "),
+            raw_sequences.len(),
+            raw_sequences.iter().copied().collated().format(", "),
         );
 
         let query_height = match packet_data_query_height {
@@ -197,7 +209,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Link<ChainA, ChainB> {
             .map_or(50, |cfg| cfg.query_packets_chunk_size());
 
         self.relay_packet_messages(
-            sequences,
+            raw_sequences,
             query_height,
             chunk_size,
             query_write_ack_events,

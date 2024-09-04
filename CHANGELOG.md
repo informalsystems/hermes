@@ -1,5 +1,48 @@
 # CHANGELOG
 
+## v1.10.3
+
+*September 2nd, 2024*
+
+This release fixes an issue where Hermes could not connect to gRPC servers over TLS. Additionally, this release also fixes a bug in the `clear packet` CLI where the `excluded_sequences` configuration option was not always taken into account.
+
+Furthermore, Hermes now uses `abci_query` instead of gRPC for some queries, for instance for querying staking parameters and service configuration during health checks, and when retrieving version information.
+
+### BUG FIXES
+
+- [Chain Registry](chain-registry)
+  - Add explicit root TLS configuration to gRPC clients
+    ([\#4160](https://github.com/informalsystems/hermes/issues/4160))
+- [Relayer Library](relayer)
+  - Add explicit root TLS configuration to gRPC clients
+    ([\#4160](https://github.com/informalsystems/hermes/issues/4160))
+- [Relayer CLI](relayer-cli)
+  - Correctly filter out sequences from the `excluded_sequences` configuration
+    when clearing packets with the `clear packet` CLI.
+    ([\#4158](https://github.com/informalsystems/hermes/issues/4158))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Use `abci_query` instead of gRPC queries when retrieving staking params
+    and service config during health-check, and when retrieving version information.
+    ([\#4102](https://github.com/informalsystems/hermes/issues/4102))
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Celestia running the integration tests in the CI from `v1.11.0`
+    to `v1.14.0` ([\#4123](https://github.com/informalsystems/hermes/issues/4123))
+  - Update the version of Neutron running the integration tests in the CI from `v4.1.0`
+    to `v4.2.2` ([\#4168](https://github.com/informalsystems/hermes/issues/4168))
+  - Update the version of `wasmd` running the integration tests in the CI from `v0.52.0`
+    to `v0.53.0` ([\#4169](https://github.com/informalsystems/hermes/issues/4169))
+  - Update the version of Juno running the integration tests in the CI from `v23.0.0`
+    to `v24.0.0` ([\#4171](https://github.com/informalsystems/hermes/issues/4171))
+
+### FEATURES
+
+- [Integration Test Framework](tools/test-framework)
+  - Add ibc-go `v9` to the chains running the integration tests in the CI.
+    ([\#4151](https://github.com/informalsystems/hermes/issues/4151))
+
 ## v1.10.2
 
 *August 14th, 2024*

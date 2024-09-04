@@ -7,6 +7,7 @@ use crate::chain::requests::{QueryConsensusStateHeightsRequest, QueryConsensusSt
 use crate::config::default::max_grpc_decoding_size;
 use crate::consensus_state::AnyConsensusStateWithHeight;
 use crate::error::Error;
+use crate::util::create_grpc_client;
 use crate::util::pretty::{PrettyConsensusStateWithHeight, PrettyHeight};
 
 /// Performs a `QueryConsensusStateHeightsRequest` gRPC query to fetch all the consensus state
@@ -36,10 +37,11 @@ pub async fn query_consensus_state_heights(
             .contains("unknown method ConsensusStateHeights")
     }
 
-    let mut client =
-        ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr.clone())
-            .await
-            .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(
+        grpc_addr.clone(),
+        ibc_proto::ibc::core::client::v1::query_client::QueryClient::new,
+    )
+    .await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
@@ -105,10 +107,11 @@ pub async fn query_consensus_states(
         }
     );
 
-    let mut client =
-        ibc_proto::ibc::core::client::v1::query_client::QueryClient::connect(grpc_addr.clone())
-            .await
-            .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(
+        grpc_addr.clone(),
+        ibc_proto::ibc::core::client::v1::query_client::QueryClient::new,
+    )
+    .await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 

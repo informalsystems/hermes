@@ -6,12 +6,11 @@ use ibc_proto::ibc::core::connection::v1::QueryConnectionParamsRequest;
 
 use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
+use crate::util::create_grpc_client;
 
 /// Uses the GRPC client to retrieve the connection params
 pub async fn query_connection_params(grpc_address: &Uri) -> Result<Params, Error> {
-    let mut client = QueryClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
