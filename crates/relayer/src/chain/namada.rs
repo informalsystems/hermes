@@ -65,11 +65,11 @@ use crate::account::Balance;
 use crate::chain::client::ClientSettings;
 use crate::chain::cosmos::batch::response_to_tx_sync_result;
 use crate::chain::cosmos::config::CosmosSdkConfig;
-use crate::chain::cosmos::version::Specs;
 use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::handle::Subscription;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
+use crate::chain::version::{ConsensusVersion, Specs};
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::error::Error as ConfigError;
 use crate::config::ChainConfig;
@@ -89,6 +89,7 @@ pub mod error;
 pub mod key;
 mod query;
 mod tx;
+pub mod version;
 pub mod wallet;
 
 pub struct NamadaChain {
@@ -310,7 +311,30 @@ impl ChainEndpoint for NamadaChain {
     }
 
     fn version_specs(&self) -> Result<Specs, Error> {
-        unimplemented!()
+        let status = self
+            .rt
+            .block_on(SdkClient::status(self.ctx.client()))
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+
+        let cometbft_version = status.node_info.version.to_string();
+        let cometbft_version = cometbft_version
+            .parse()
+            .map_err(|_| NamadaError::version(cometbft_version))?;
+
+        let moniker = &status.node_info.moniker;
+        let namada_version = moniker
+            .to_string()
+            .split_once('-')
+            .and_then(|(_, version)| version.strip_prefix('v'))
+            .ok_or_else(|| NamadaError::version(moniker.to_string()))?
+            .parse()
+            .map_err(|_| NamadaError::version(moniker.to_string()))?;
+
+        let specs = version::Specs {
+            namada: Some(namada_version),
+            consensus: Some(ConsensusVersion::Comet(cometbft_version)),
+        };
+        Ok(Specs::Namada(specs))
     }
 
     fn send_messages_and_wait_commit(
@@ -635,7 +659,6 @@ impl ChainEndpoint for NamadaChain {
                     let height = ICSHeight::new(h.revision_number(), h.revision_height()).unwrap();
                     heights.push(height);
                 }
-                // the key is not for a consensus state
                 Err(_) => {
                     debug!("The key {key} is not for a consensus state");
                     continue;

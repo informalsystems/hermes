@@ -25,6 +25,13 @@ define_error! {
         DryRun
             { tx_result: namada_sdk::tx::data::TxResult<String> }
             |e| { format!("Dry run to simulate a transaction failed: {:?}", e.tx_result) },
+
+        Upgrade
+            |_| { "Namada doesn't support `MsgIbcSoftwareUpgrade` and `UpgradeProposal`" },
+
+        Version
+            { version: String }
+            |e| { format!("Parsing the version string failed: {}", e.version) },
     }
 }
 

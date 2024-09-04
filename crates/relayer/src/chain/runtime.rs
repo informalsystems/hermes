@@ -46,11 +46,11 @@ use crate::{
 
 use super::{
     client::ClientSettings,
-    cosmos::version::Specs,
     endpoint::{ChainEndpoint, ChainStatus, HealthCheck},
     handle::{ChainHandle, ChainRequest, ReplyTo, Subscription},
     requests::*,
     tracking::TrackedMsgs,
+    version::Specs,
 };
 
 pub struct Threads {

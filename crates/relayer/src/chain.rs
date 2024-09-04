@@ -7,3 +7,4 @@ pub mod namada;
 pub mod requests;
 pub mod runtime;
 pub mod tracking;
+pub mod version;
