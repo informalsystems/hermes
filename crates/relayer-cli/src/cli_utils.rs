@@ -109,7 +109,7 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
     src_chain: &Chain,
     src_channel_id: &ChannelId,
     src_port_id: &PortId,
-    dst_chain_id: &ChainId,
+    _dst_chain_id: &ChainId,
 ) -> Result<(), eyre::Report> {
     // Fetch from the source chain the channel end and check that it is open.
     let (channel_end_src, _) = src_chain.query_channel(
@@ -166,18 +166,18 @@ pub fn check_can_send_on_channel<Chain: ChainHandle>(
         src_chain_client_state
     );
 
-    // Check that this client is verifying headers for the destination chain.
-    if &src_chain_client_state.chain_id() != dst_chain_id {
-        return Err(eyre!(
-            "the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
-             chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
-            src_port_id,
-            src_channel_id,
-            src_chain.id(),
-            src_chain_client_state.chain_id(),
-            dst_chain_id
-        ));
-    }
+    // // Check that this client is verifying headers for the destination chain.
+    // if &src_chain_client_state.chain_id() != dst_chain_id {
+    //     return Err(eyre!(
+    //         "the requested port/channel ('{}'/'{}') provides a path from chain '{}' to \
+    //          chain '{}' (not to the destination chain '{}'). Bailing due to mismatching arguments.",
+    //         src_port_id,
+    //         src_channel_id,
+    //         src_chain.id(),
+    //         src_chain_client_state.chain_id(),
+    //         dst_chain_id
+    //     ));
+    // }
 
     Ok(())
 }
