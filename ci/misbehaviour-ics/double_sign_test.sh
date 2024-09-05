@@ -221,79 +221,55 @@ done
 # Build consumer chain proposal file
 tee ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json<<EOF
 {
-    "title": "Create a chain",
-    "summary": "Gonna be a great chain",
-    "chain_id": "consumer",
+  "chain_id": "consumer",
+  "metadata": {
+    "name": "consumer chain",
+    "description": "no description",
+    "metadata": "no metadata"
+  },
+  "initialization_parameters": {
     "initial_height": {
-        "revision_height": 1
+     "revision_number": 0,
+     "revision_height": 1
     },
     "genesis_hash": "Z2VuX2hhc2g=",
     "binary_hash": "YmluX2hhc2g=",
-    "spawn_time": "2023-03-11T09:02:14.718477-08:00",
-    "deposit": "10000001stake",
+    "spawn_time": "2024-08-29T12:26:16.529913Z",
+    "unbonding_period": 1728000000000000,
+    "ccv_timeout_period": 2419200000000000,
+    "transfer_timeout_period": 1800000000000,
     "consumer_redistribution_fraction": "0.75",
-    "blocks_per_distribution_transmission": 1000,
+    "blocks_per_distribution_transmission": 10,
     "historical_entries": 10000,
-    "unbonding_period": 864000000000000,
-    "ccv_timeout_period": 259200000000000,
-    "transfer_timeout_period": 1800000000000
+    "distribution_transmission_channel": ""
+  },
+  "power_shaping_parameters": {
+    "top_N": 0,
+    "validators_power_cap": 0,
+    "validator_set_cap": 0,
+    "allowlist": [],
+    "denylist": [],
+    "min_stake": 0,
+    "allow_inactive_vals": false
+  }
 }
 EOF
 
 sleep 5
 interchain-security-pd keys show $LEAD_PROV_KEY --keyring-backend test --home ${LEAD_VALIDATOR_PROV_DIR}
 
-# Submit consumer chain proposal
-interchain-security-pd tx gov submit-legacy-proposal consumer-addition ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json --chain-id provider --from $LEAD_PROV_KEY --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR  --keyring-backend test -y --gas auto
+# Create consumer chain
+interchain-security-pd tx provider create-consumer ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json --chain-id provider --from $LEAD_PROV_KEY --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR  --keyring-backend test -y --gas auto
 
 sleep 3
 
-# Vote yes to proposal
-for index in "${!MONIKERS[@]}"
-do
-    MONIKER=${MONIKERS[$index]}
-    PROV_KEY=${MONIKER}-key
-    RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
-    RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
-
-    PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${MONIKER}
-    interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} --node $RPC_LADDR -y --keyring-backend test
-done
+CONSUMER_ID=$(interchain-security-pd query provider list-consumer-chains --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR --output json | jq -r '.chains[0].consumer_id')
+echo "ConsumerID: $CONSUMER_ID"
 
 HERMES_PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${HERMES_VALIDATOR_MONIKER}
 HERMES_KEY=${HERMES_VALIDATOR_MONIKER}-key
 HERMES_KEY2=${HERMES_VALIDATOR_MONIKER}-key2
 HERMES_CONS_NODE_DIR=${CONS_NODES_ROOT_DIR}/consumer-${HERMES_VALIDATOR_MONIKER}
-
-# # ## CONSUMER CHAIN ##
-
-### Assert that the proposal for the consumer chain passed
-PROPOSAL_STATUS_PASSED="PROPOSAL_STATUS_PASSED"
-MAX_TRIES=10
-TRIES=0
-
-cat ${PROV_NODE_DIR}/config/genesis.json | grep "period"
-
-while [ $TRIES -lt $MAX_TRIES ]; do
-    output=$(interchain-security-pd query gov proposal 1 --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR --output json)
-
-    proposal_status=$(echo "$output" | grep -o '"status":"[^"]*' | awk -F ':"' '{print $2}')
-    if [ "$proposal_status" = "$PROPOSAL_STATUS_PASSED" ]; then
-        echo "Proposal status is now $proposal_status. Exiting loop."
-        break
-    else
-        echo "Proposal status is $proposal_status. Continuing to check..."
-    fi
-    TRIES=$((TRIES + 1))
-
-    sleep 2
-done
-
-if [ $TRIES -eq $MAX_TRIES ]; then
-    echo "[ERROR] Failed due to an issue with the consumer proposal"
-    echo "This is likely due to a misconfiguration in the test script."
-    exit 0
-fi
 
 # # Clean start
 for index in "${!MONIKERS[@]}"
@@ -309,7 +285,7 @@ do
     CONS_NODE_DIR=${CONS_NODES_ROOT_DIR}/consumer-${MONIKER}
 
     # Build genesis file and node directory structure
-    interchain-security-cd init $MONIKER --chain-id consumer  --home ${CONS_NODE_DIR}
+    interchain-security-cd init $MONIKER --chain-id consumer --home ${CONS_NODE_DIR}
 
     sleep 1
 
@@ -334,7 +310,7 @@ do
     # Add consumer genesis states to genesis file
     RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
-    interchain-security-pd query provider consumer-genesis consumer --home ${PROV_NODE_DIR} --node ${RPC_LADDR} -o json > consumer_gen.json
+    interchain-security-pd query provider consumer-genesis $CONSUMER_ID --home ${PROV_NODE_DIR} --node ${RPC_LADDR} -o json > consumer_gen.json
     jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' ${CONS_NODE_DIR}/config/genesis.json consumer_gen.json > ${CONS_NODE_DIR}/edited_genesis.json \
     && mv ${CONS_NODE_DIR}/edited_genesis.json ${CONS_NODE_DIR}/config/genesis.json
     rm consumer_gen.json
