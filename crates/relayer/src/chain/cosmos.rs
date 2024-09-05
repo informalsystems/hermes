@@ -4,6 +4,7 @@ use bytes::Bytes;
 use config::CosmosSdkConfig;
 use core::{future::Future, str::FromStr, time::Duration};
 use futures::future::join_all;
+use itertools::Itertools;
 use num_bigint::BigInt;
 use prost::Message;
 use std::cmp::Ordering;
@@ -107,9 +108,10 @@ use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
+use crate::util::collate::CollatedIterExt;
 use crate::util::create_grpc_client;
 use crate::util::pretty::{
-    PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection, PrettySlice,
+    PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
 use crate::HERMES_VERSION;
 
@@ -2681,7 +2683,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             if !seqs.is_empty() {
                 warn!(
                     "chain '{chain_id}' will not clear packets on channel '{channel_id}' with sequences: {}. \
-                    Ignore this warning if this configuration is correct.", PrettySlice(seqs)
+                    Ignore this warning if this configuration is correct.", seqs.iter().copied().collated().format(", ")
                 );
             }
         }
