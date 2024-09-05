@@ -9,7 +9,7 @@ if [ "$DEBUG" = true ]; then
     set -x
 fi
 
-# User balance of stake tokens 
+# User balance of stake tokens
 USER_COINS="100000000000stake"
 # Amount of stake tokens staked
 STAKE="100000000stake"
@@ -80,7 +80,7 @@ do
 
     # Build genesis file and node directory structure
     interchain-security-pd init $MONIKER --chain-id provider --home ${PROV_NODE_DIR}
-    jq ".app_state.gov.params.voting_period = \"5s\" | .app_state.staking.params.unbonding_time = \"86400s\"" \
+    jq ".app_state.gov.params.voting_period = \"5s\" | .app_state.gov.params.expedited_voting_period = \"4s\" | .app_state.staking.params.unbonding_time = \"86400s\"" \
     ${PROV_NODE_DIR}/config/genesis.json > \
     ${PROV_NODE_DIR}/edited_genesis.json && mv ${PROV_NODE_DIR}/edited_genesis.json ${PROV_NODE_DIR}/config/genesis.json
 
@@ -144,7 +144,7 @@ do
     interchain-security-pd genesis gentx $PROV_KEY  $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
     sleep 1
 
-    # Copy gentxs to the lead validator for possible future collection. 
+    # Copy gentxs to the lead validator for possible future collection.
     # Obviously we don't need to copy the first validator's gentx to itself
     if [ $MONIKER != $LEAD_VALIDATOR_MONIKER ]; then
         cp ${PROV_NODE_DIR}/config/gentx/* ${LEAD_VALIDATOR_PROV_DIR}/config/gentx/
@@ -590,7 +590,7 @@ do
     sleep 5
 
     MSG="successfully submitted double voting evidence to chain"
-    
+
     if grep -c "$MSG" $HOME_DIR/hermes-evidence-logs.txt; then
         echo "[SUCCESS] Successfully submitted double voting evidence to provider chain"
         exit 0
