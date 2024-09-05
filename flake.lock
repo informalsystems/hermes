@@ -226,11 +226,11 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1725305683,
-        "narHash": "sha256-3yOKmHTsSXU5X2PiqCZ3WcmVSCNjQpJ4xQft7cOcgDo=",
+        "lastModified": 1725559253,
+        "narHash": "sha256-MORwaPlMtu38RaG3f4QC7Am52KZOi3ia95esf7LK/2M=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "483a52c178745ff207ba319c02e04a859d9b80a1",
+        "rev": "fc9bea5bff64646a92b4757d67d1f924cd0c7972",
         "type": "github"
       },
       "original": {
@@ -1150,16 +1150,17 @@
     "interchain-security-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-adBzn51PKoRsCL9gIzC5Tcqmu7u3GjxTcDj2jpZ/da8=",
+        "lastModified": 1725434145,
+        "narHash": "sha256-GiaTXIYG0ZM5mScV7bEOLf311yYCy/d/YslRosnnzf0=",
         "owner": "cosmos",
         "repo": "interchain-security",
-        "rev": "03aada4af3243dbf739a12adfacc7b37232df694",
+        "rev": "7301916eeafa3700a03d5ddf47a0779801c6d3a1",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "feat/ics-misbehaviour-handling",
         "repo": "interchain-security",
+        "rev": "7301916eeafa3700a03d5ddf47a0779801c6d3a1",
         "type": "github"
       }
     },
@@ -1463,11 +1464,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1725194671,
-        "narHash": "sha256-tLGCFEFTB5TaOKkpfw3iYT9dnk4awTP/q4w+ROpMfuw=",
+        "lastModified": 1725369773,
+        "narHash": "sha256-gT+rUDbw+TQuszQEzMUJWTW7QYtccZ5xxWmKOSrPvEw=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b833ff01a0d694b910daca6e2ff4a3f26dee478c",
+        "rev": "8b4061fd60ccc3b3f44b73faa7c983eacf7a6f7b",
         "type": "github"
       },
       "original": {
