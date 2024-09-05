@@ -18,7 +18,7 @@ use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{IncludeProof, PageRequest, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{fetch_ccv_consumer_id, ForeignClient};
 use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
@@ -323,6 +323,8 @@ fn submit_duplicate_vote_evidence(
         return Ok(ControlFlow::Continue(()));
     }
 
+    let consumer_id = fetch_ccv_consumer_id(counterparty_chain_handle, counterparty_client_id)?;
+
     let infraction_height = evidence.vote_a.height;
 
     // Get the trusted height in the same way we do for client updates,
@@ -359,6 +361,7 @@ fn submit_duplicate_vote_evidence(
         submitter: signer.clone(),
         duplicate_vote_evidence: evidence.clone(),
         infraction_block_header,
+        consumer_id,
     }
     .to_any();
 
@@ -578,13 +581,24 @@ fn submit_light_client_attack_evidence(
             counterparty.id(),
         );
 
-        let msg = MsgSubmitIcsConsumerMisbehaviour {
-            submitter: signer.clone(),
-            misbehaviour: misbehaviour.clone(),
+        match fetch_ccv_consumer_id(counterparty, &counterparty_client_id) {
+            Ok(consumer_id) => {
+                msgs.push(
+                    MsgSubmitIcsConsumerMisbehaviour {
+                        submitter: signer.clone(),
+                        misbehaviour: misbehaviour.clone(),
+                        consumer_id,
+                    }
+                    .to_any(),
+                );
+            }
+            Err(e) => {
+                error!(
+                    "cannot submit CCV light client attack evidence to client `{}` on provider chain `{}`: {e}",
+                    counterparty_client_id, counterparty.id()
+                );
+            }
         }
-        .to_any();
-
-        msgs.push(msg);
     };
 
     // We do not need to submit the misbehaviour if the client is already frozen.

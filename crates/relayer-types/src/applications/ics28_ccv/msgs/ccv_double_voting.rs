@@ -9,6 +9,7 @@ use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 use super::error::Error;
+use super::ConsumerId;
 
 pub const ICS_DOUBLE_VOTING_TYPE_URL: &str =
     "/interchain_security.ccv.provider.v1.MsgSubmitConsumerDoubleVoting";
@@ -18,6 +19,7 @@ pub struct MsgSubmitIcsConsumerDoubleVoting {
     pub submitter: Signer,
     pub duplicate_vote_evidence: DuplicateVoteEvidence,
     pub infraction_block_header: Header,
+    pub consumer_id: ConsumerId,
 }
 
 impl Msg for MsgSubmitIcsConsumerDoubleVoting {
@@ -57,6 +59,7 @@ impl TryFrom<RawIcsDoubleVoting> for MsgSubmitIcsConsumerDoubleVoting {
                 .map_err(|e| {
                     Error::invalid_raw_double_voting(format!("cannot convert header: {e}"))
                 })?,
+            consumer_id: ConsumerId::new(raw.consumer_id),
         })
     }
 }
@@ -67,6 +70,7 @@ impl From<MsgSubmitIcsConsumerDoubleVoting> for RawIcsDoubleVoting {
             submitter: value.submitter.to_string(),
             duplicate_vote_evidence: Some(value.duplicate_vote_evidence.into()),
             infraction_block_header: Some(value.infraction_block_header.into()),
+            consumer_id: value.consumer_id.to_string(),
         }
     }
 }

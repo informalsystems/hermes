@@ -158,6 +158,7 @@
         "gaia17-src": "gaia17-src",
         "gaia18-src": "gaia18-src",
         "gaia19-src": "gaia19-src",
+        "gaia20-src": "gaia20-src",
         "gaia5-src": "gaia5-src",
         "gaia6-ordered-src": "gaia6-ordered-src",
         "gaia6-src": "gaia6-src",
@@ -225,15 +226,16 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1725007328,
-        "narHash": "sha256-DMRDFFpXIJyKRNhiVhXaIoOJkmVyKbt6DO6M5F8CCec=",
+        "lastModified": 1725305683,
+        "narHash": "sha256-3yOKmHTsSXU5X2PiqCZ3WcmVSCNjQpJ4xQft7cOcgDo=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "d87f011075da3ee1afbbe3443ca25461af7d49fd",
+        "rev": "483a52c178745ff207ba319c02e04a859d9b80a1",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/add-gaia-v20-alpha",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -670,6 +672,23 @@
         "owner": "cosmos",
         "ref": "v19.1.0",
         "repo": "gaia",
+        "type": "github"
+      }
+    },
+    "gaia20-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1725271426,
+        "narHash": "sha256-ApRAGsbv2+lYKLyeIVHMrx5Gg2VetLXCs8oml0QYhCg=",
+        "owner": "cosmos",
+        "repo": "gaia",
+        "rev": "b5b22dc6e8eef40a6de67d62409601c6e5198fed",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "repo": "gaia",
+        "rev": "b5b22dc6e8eef40a6de67d62409601c6e5198fed",
         "type": "github"
       }
     },
