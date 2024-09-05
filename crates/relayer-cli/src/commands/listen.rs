@@ -1,27 +1,24 @@
 use alloc::sync::Arc;
-use core::{
-    fmt::{Display, Error as FmtError, Formatter},
-    str::FromStr,
-};
+use core::fmt::{Display, Error as FmtError, Formatter};
+use core::str::FromStr;
 use std::thread;
 
 use abscissa_core::application::fatal_error;
 use abscissa_core::clap::Parser;
 use eyre::eyre;
 use itertools::Itertools;
-use tendermint_rpc::{client::CompatMode, Client, HttpClient};
+use tendermint_rpc::{client::CompatMode, HttpClient};
 use tokio::runtime::Runtime as TokioRuntime;
 use tracing::{error, info, instrument};
 
-use ibc_relayer::{
-    chain::handle::Subscription,
-    config::{ChainConfig, EventSourceMode},
-    error::Error,
-    event::source::EventSource,
-    util::compat_mode::compat_mode_from_version,
-    HERMES_VERSION,
-};
-use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent};
+use ibc_relayer::chain::cosmos::fetch_compat_mode;
+use ibc_relayer::chain::handle::Subscription;
+use ibc_relayer::config::{ChainConfig, EventSourceMode};
+use ibc_relayer::error::Error;
+use ibc_relayer::event::source::EventSource;
+use ibc_relayer::HERMES_VERSION;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use ibc_relayer_types::events::IbcEvent;
 
 use crate::prelude::*;
 
@@ -194,16 +191,15 @@ fn detect_compatibility_mode(
     let rpc_addr = match config {
         ChainConfig::CosmosSdk(config) => config.rpc_addr.clone(),
     };
+
     let client = HttpClient::builder(rpc_addr.try_into()?)
         .user_agent(format!("hermes/{}", HERMES_VERSION))
         .build()?;
 
-    let status = rt.block_on(client.status())?;
     let compat_mode = match config {
-        ChainConfig::CosmosSdk(config) => {
-            compat_mode_from_version(&config.compat_mode, status.node_info.version)?.into()
-        }
+        ChainConfig::CosmosSdk(config) => rt.block_on(fetch_compat_mode(&client, config))?,
     };
+
     Ok(compat_mode)
 }
 
