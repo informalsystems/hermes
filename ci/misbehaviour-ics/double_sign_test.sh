@@ -304,13 +304,13 @@ do
     interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR $USER_COINS --home ${CONS_NODE_DIR}
     CONS_ACCOUNT_ADDR2=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY2}.json)
     interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR2 $USER_COINS --home ${CONS_NODE_DIR}
-    sleep 10
+    sleep 10000
 
     ### this probably does not have to be done for each node
     # Add consumer genesis states to genesis file
     RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
-    interchain-security-pd query provider consumer-genesis $CONSUMER_ID --home ${PROV_NODE_DIR} --node ${RPC_LADDR} -o json > consumer_gen.json
+    interchain-security-pd query provider consumer-genesis $CONSUMER_ID --home ${PROV_NODE_DIR} --node ${LEAD_PROV_LISTEN_ADDR} -o json > consumer_gen.json
     jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' ${CONS_NODE_DIR}/config/genesis.json consumer_gen.json > ${CONS_NODE_DIR}/edited_genesis.json \
     && mv ${CONS_NODE_DIR}/edited_genesis.json ${CONS_NODE_DIR}/config/genesis.json
     rm consumer_gen.json
