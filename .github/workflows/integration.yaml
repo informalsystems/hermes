@@ -60,6 +60,11 @@ jobs:
             account_prefix: cosmos
             native_token: stake
             features: ica,ics29-fee,authz
+          - package: ibc-go-v7-indexer-subs-simapp
+            command: simd
+            account_prefix: cosmos
+            native_token: stake
+            features: ica,ics29-fee,authz
           - package: ibc-go-v8-simapp
             command: simd
             account_prefix: cosmos
@@ -74,7 +79,7 @@ jobs:
             command: wasmd
             account_prefix: wasm
             native_token: stake
-            features: ''
+            features: ""
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
@@ -107,13 +112,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -134,9 +139,9 @@ jobs:
           ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
           NATIVE_TOKENS: ${{ matrix.chain.native_token }}
         run: |
-            nix shell .#python .#${{ matrix.chain.package }} -c \
-              cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
-              --features=${{ matrix.chain.features }}
+          nix shell .#python .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
+            --features=${{ matrix.chain.features }}
 
   ordered-channel-test:
     runs-on: ubuntu-20.04
@@ -145,13 +150,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -188,13 +193,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -230,13 +235,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
@@ -272,13 +277,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
