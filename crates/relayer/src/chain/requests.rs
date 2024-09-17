@@ -338,6 +338,7 @@ pub struct QueryPacketCommitmentRequest {
 /// gRPC query to fetch the packet commitment hashes associated with the specified channel.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct QueryPacketCommitmentsRequest {
+    pub query_height: QueryHeight,
     pub port_id: PortId,
     pub channel_id: ChannelId,
     pub pagination: Paginate,

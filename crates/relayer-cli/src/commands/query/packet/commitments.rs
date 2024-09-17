@@ -1,11 +1,13 @@
 use abscissa_core::clap::Parser;
 
 use ibc_relayer::chain::counterparty::commitments_on_chain;
-use ibc_relayer::chain::requests::Paginate;
+use ibc_relayer::chain::handle::ChainHandle;
+use ibc_relayer::chain::requests::{Paginate, QueryHeight};
+use ibc_relayer_types::core::ics02_client::height::Height;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, PortId};
 
 use crate::cli_utils::spawn_chain_runtime;
-use crate::conclude::Output;
+use crate::conclude::{exit_with_unrecoverable_error, Output};
 use crate::error::Error;
 use crate::prelude::*;
 
@@ -40,6 +42,13 @@ pub struct QueryPacketCommitmentsCmd {
         help = "Identifier of the channel to query"
     )]
     channel_id: ChannelId,
+
+    #[clap(
+        long = "height",
+        value_name = "HEIGHT",
+        help = "Height of the state to query. Leave unspecified for latest height."
+    )]
+    height: Option<u64>,
 }
 
 impl QueryPacketCommitmentsCmd {
@@ -48,12 +57,25 @@ impl QueryPacketCommitmentsCmd {
 
         let chain = spawn_chain_runtime(&config, &self.chain_id)?;
 
-        commitments_on_chain(&chain, &self.port_id, &self.channel_id, Paginate::All)
-            .map_err(Error::supervisor)
-            .map(|(seqs_vec, height)| PacketSeqs {
-                height,
-                seqs: seqs_vec,
-            })
+        let query_height = self.height.map_or(QueryHeight::Latest, |revision_height| {
+            QueryHeight::Specific(
+                Height::new(chain.id().version(), revision_height)
+                    .unwrap_or_else(exit_with_unrecoverable_error),
+            )
+        });
+
+        commitments_on_chain(
+            &chain,
+            &query_height,
+            &self.port_id,
+            &self.channel_id,
+            Paginate::All,
+        )
+        .map_err(Error::supervisor)
+        .map(|(seqs_vec, height)| PacketSeqs {
+            height,
+            seqs: seqs_vec,
+        })
     }
 }
 
@@ -85,7 +107,8 @@ mod tests {
             QueryPacketCommitmentsCmd {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
-                channel_id: ChannelId::from_str("channel-07").unwrap()
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                height: None,
             },
             QueryPacketCommitmentsCmd::parse_from([
                 "test",
@@ -105,7 +128,8 @@ mod tests {
             QueryPacketCommitmentsCmd {
                 chain_id: ChainId::from_string("chain_id"),
                 port_id: PortId::from_str("port_id").unwrap(),
-                channel_id: ChannelId::from_str("channel-07").unwrap()
+                channel_id: ChannelId::from_str("channel-07").unwrap(),
+                height: None,
             },
             QueryPacketCommitmentsCmd::parse_from([
                 "test",
