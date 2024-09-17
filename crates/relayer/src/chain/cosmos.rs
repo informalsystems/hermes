@@ -1844,7 +1844,6 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         request: QueryPacketCommitmentsRequest,
     ) -> Result<(Vec<Sequence>, ICSHeight), Error> {
-        dbg!(&request);
         crate::time!(
             "query_packet_commitments",
             {
