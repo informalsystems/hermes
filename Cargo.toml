@@ -47,7 +47,7 @@ tendermint-testgen               = { version = "0.39.1" }
 abscissa_core            = "=0.6.0"
 anyhow                   = "1.0"
 async-stream             = "0.3.5"
-async-trait              = "0.1.81"
+async-trait              = "0.1.82"
 axum                     = "0.6.18"
 bech32                   = "0.9.1"
 bitcoin                  = "0.31.2"
@@ -111,7 +111,7 @@ time                     = "0.3"
 tiny-bip39               = "1.0.0"
 tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = "1.39.2"
-tokio-stream             = "0.1.14"
+tokio-stream             = "0.1.16"
 toml                     = "0.8.19"
 tonic                    = "0.12"
 tracing                  = { version = "0.1.36", default-features = false }
