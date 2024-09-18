@@ -2819,7 +2819,7 @@ pub async fn fetch_compat_mode(
         }
     }?;
 
-    Ok(compat_mode.into())
+    Ok(compat_mode)
 }
 
 /// Performs a gRPC query to fetch the CCV ConsumerID corresponding
