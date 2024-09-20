@@ -3314,7 +3314,7 @@ dependencies = [
 [[package]]
 name = "tendermint"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "bytes",
  "digest 0.10.7",
@@ -3343,7 +3343,7 @@ dependencies = [
 [[package]]
 name = "tendermint-config"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "flex-error",
  "serde",
@@ -3356,7 +3356,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "contracts",
  "crossbeam-channel",
@@ -3380,7 +3380,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-detector"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "crossbeam-channel",
  "derive_more",
@@ -3402,7 +3402,7 @@ dependencies = [
 [[package]]
 name = "tendermint-light-client-verifier"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "derive_more",
  "flex-error",
@@ -3414,7 +3414,7 @@ dependencies = [
 [[package]]
 name = "tendermint-proto"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "bytes",
  "flex-error",
@@ -3428,7 +3428,7 @@ dependencies = [
 [[package]]
 name = "tendermint-rpc"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "async-trait",
  "async-tungstenite",
@@ -3461,7 +3461,7 @@ dependencies = [
 [[package]]
 name = "tendermint-testgen"
 version = "0.39.1"
-source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#c190d2a72fa15e3d96412d6beacaf4fb62ed4e61"
+source = "git+https://github.com/informalsystems/tendermint-rs.git?branch=romac/v038-evidence#58c6f4cc0aac1a421f61d743d50c4951f8d07044"
 dependencies = [
  "ed25519-consensus",
  "gumdrop",
