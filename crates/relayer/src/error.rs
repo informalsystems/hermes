@@ -30,6 +30,7 @@ use ibc_relayer_types::clients::ics07_tendermint::error as tendermint_error;
 use ibc_relayer_types::core::ics02_client::{client_type::ClientType, error as client_error};
 use ibc_relayer_types::core::ics03_connection::error as connection_error;
 use ibc_relayer_types::core::ics23_commitment::error as commitment_error;
+use ibc_relayer_types::core::ics24_host::error::ValidationError;
 use ibc_relayer_types::core::ics24_host::identifier::{ChainId, ChannelId, ConnectionId};
 use ibc_relayer_types::proofs::ProofError;
 
@@ -633,6 +634,10 @@ define_error! {
         InvalidChannelString
             { channel: String }
             |e| { format!("invalid channel string {}", e.channel) },
+
+        Ics24HostValidationError
+            [ ValidationError ]
+            |_| { "ICS24 host validation error" },
     }
 }
 

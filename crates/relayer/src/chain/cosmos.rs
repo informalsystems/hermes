@@ -4,7 +4,6 @@ use bytes::Bytes;
 use config::CosmosSdkConfig;
 use core::{future::Future, str::FromStr, time::Duration};
 use futures::future::join_all;
-use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerId;
 use itertools::Itertools;
 use num_bigint::BigInt;
 use prost::Message;
@@ -23,6 +22,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
+use ibc_relayer_types::applications::ics28_ccv::msgs::{ConsumerChain, ConsumerId};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
@@ -148,7 +148,7 @@ pub mod wait;
 /// might be un-necessarily restrictive on the relayer side.
 /// The [default max. block size in Tendermint 0.37 is 21MB](tm-37-max).
 /// With a fraction of `0.9`, then Hermes will never permit the configuration
-/// of `max_tx_size` to exceed ~18.9MB.
+/// of `max_tx_size` to exceed ~18.9MB
 ///
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
@@ -2543,7 +2543,7 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(incentivized_response)
     }
 
-    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+    fn query_consumer_chains(&self) -> Result<Vec<ConsumerChain>, Error> {
         use ibc_proto::interchain_security::ccv::provider::v1::ConsumerPhase;
         use ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerChainsRequest;
 
@@ -2562,7 +2562,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let request = tonic::Request::new(QueryConsumerChainsRequest {
             phase: ConsumerPhase::Launched as i32,
-            limit: 100,
+            pagination: Some(PageRequest::all().into()),
         });
 
         let response = self
@@ -2573,8 +2573,8 @@ impl ChainEndpoint for CosmosSdkChain {
         let result = response
             .chains
             .into_iter()
-            .map(|c| (c.chain_id.parse().unwrap(), c.client_id.parse().unwrap()))
-            .collect();
+            .map(|c| ConsumerChain::try_from(c).map_err(Error::ics24_host_validation_error))
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(result)
     }

@@ -6,6 +6,7 @@ use std::time::Duration;
 
 use abscissa_core::clap::Parser;
 use ibc_relayer::config::{ChainConfig, Config};
+use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerId;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint::block::Height as TendermintHeight;
@@ -318,12 +319,17 @@ fn submit_duplicate_vote_evidence(
 
     let signer = counterparty_chain_handle.get_signer()?;
 
-    if !is_counterparty_provider(chain, counterparty_chain_handle, counterparty_client_id) {
+    let consumer_id = fetch_ccv_consumer_id(counterparty_chain_handle, counterparty_client_id)?;
+
+    if !is_counterparty_provider(
+        chain,
+        &consumer_id,
+        counterparty_chain_handle,
+        counterparty_client_id,
+    ) {
         debug!("counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` is not a CCV client, skipping...");
         return Ok(ControlFlow::Continue(()));
     }
-
-    let consumer_id = fetch_ccv_consumer_id(counterparty_chain_handle, counterparty_client_id)?;
 
     let infraction_height = evidence.vote_a.height;
 
@@ -510,8 +516,10 @@ fn submit_light_client_attack_evidence(
         counterparty.id(),
     );
 
+    let consumer_id = fetch_ccv_consumer_id(counterparty, &counterparty_client_id)?;
+
     let counterparty_is_provider =
-        is_counterparty_provider(chain, counterparty, &counterparty_client_id);
+        is_counterparty_provider(chain, &consumer_id, counterparty, &counterparty_client_id);
 
     let counterparty_client_is_frozen = counterparty_client.is_frozen();
 
@@ -683,6 +691,7 @@ fn has_consensus_state(
 /// which is then definitely a provider.
 fn is_counterparty_provider(
     chain: &CosmosSdkChain,
+    consumer_id: &ConsumerId,
     counterparty_chain_handle: &BaseChainHandle,
     counterparty_client_id: &ClientId,
 ) -> bool {
@@ -691,8 +700,10 @@ fn is_counterparty_provider(
             .query_consumer_chains()
             .unwrap_or_default(); // If the query fails, use an empty list of consumers
 
-        consumer_chains.iter().any(|(chain_id, client_id)| {
-            chain_id == chain.id() && client_id == counterparty_client_id
+        consumer_chains.iter().any(|consumer| {
+            &consumer.chain_id == chain.id()
+                && &consumer.client_id == counterparty_client_id
+                && &consumer.consumer_id == consumer_id
         })
     } else {
         false

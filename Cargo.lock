@@ -1550,7 +1550,7 @@ dependencies = [
 [[package]]
 name = "ibc-proto"
 version = "0.48.0"
-source = "git+https://github.com/cosmos/ibc-proto-rs?branch=romac/permissionless-ics#cf35684ac98d1c24ef4d6ed35e59c9606c8a1f94"
+source = "git+https://github.com/cosmos/ibc-proto-rs?branch=romac/permissionless-ics#9673ddf70674b7b9d97f2072ef6485b2776d940a"
 dependencies = [
  "base64 0.22.1",
  "bytes",
@@ -4187,7 +4187,7 @@ version = "0.1.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf221c93e13a30d793f7645a0e7762c55d169dbb0a49671918a2319d289b10bb"
 dependencies = [
- "windows-sys 0.59.0",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
