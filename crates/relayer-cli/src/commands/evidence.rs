@@ -741,6 +741,11 @@ fn fetch_all_counterparty_clients(
             connection.connection_id
         );
 
+        if client_id.as_str() == "09-localhost" {
+            debug!("skipping localhost client `{client_id}`...");
+            continue;
+        }
+
         debug!(
             "fetching client state for client `{client_id}` on connection `{}`",
             connection.connection_id
