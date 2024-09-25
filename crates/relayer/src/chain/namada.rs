@@ -1,4 +1,5 @@
 use alloc::sync::Arc;
+use tendermint_rpc::HttpClient;
 use core::str::FromStr;
 use std::thread;
 use tracing::debug;
@@ -44,13 +45,13 @@ use namada_sdk::io::NullIo;
 use namada_sdk::masp::fs::FsShieldedUtils;
 use namada_sdk::proof_of_stake::storage_key as pos_storage_key;
 use namada_sdk::proof_of_stake::OwnedPosParams;
-use namada_sdk::queries::Client as SdkClient;
 use namada_sdk::state::ics23_specs::ibc_proof_specs;
 use namada_sdk::state::Sha256Hasher;
 use namada_sdk::storage::{Key, KeySeg, PrefixValue};
 use namada_sdk::wallet::Store;
 use namada_sdk::wallet::Wallet;
 use namada_sdk::{rpc, Namada, NamadaImpl};
+use namada_sdk::io::{NamadaIo, Client};
 use namada_token::storage_key::{balance_key, denom_key, is_any_token_balance_key};
 use namada_token::{Amount, DenominatedAmount, Denomination};
 use tendermint::block::Height as TmHeight;
@@ -58,7 +59,6 @@ use tendermint::{node, Time};
 use tendermint_light_client::types::LightBlock as TMLightBlock;
 use tendermint_rpc::client::CompatMode;
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use tendermint_rpc::{Client, HttpClient};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::account::Balance;
@@ -157,7 +157,7 @@ impl NamadaChain {
     fn get_latest_block_time(&self) -> Result<Time, Error> {
         let status = self
             .rt
-            .block_on(SdkClient::status(self.ctx.client()))
+            .block_on(Client::status(self.ctx.client()))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
         Ok(status
             .sync_info
@@ -261,7 +261,7 @@ impl ChainEndpoint for NamadaChain {
 
     fn health_check(&mut self) -> Result<HealthCheck, Error> {
         self.rt
-            .block_on(SdkClient::health(self.ctx.client()))
+            .block_on(Client::health(self.ctx.client()))
             .map_err(|e| {
                 Error::health_check_json_rpc(
                     self.config.id.clone(),
@@ -313,7 +313,7 @@ impl ChainEndpoint for NamadaChain {
     fn version_specs(&self) -> Result<Specs, Error> {
         let status = self
             .rt
-            .block_on(SdkClient::status(self.ctx.client()))
+            .block_on(Client::status(self.ctx.client()))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         let cometbft_version = status.node_info.version.to_string();
@@ -549,7 +549,7 @@ impl ChainEndpoint for NamadaChain {
 
         let status = self
             .rt
-            .block_on(SdkClient::status(self.ctx.client()))
+            .block_on(Client::status(self.ctx.client()))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         if status.sync_info.catching_up {
@@ -1163,8 +1163,8 @@ impl ChainEndpoint for NamadaChain {
         };
 
         let rpc_call = match height.value() {
-            0 => SdkClient::latest_block(self.ctx.client()),
-            _ => SdkClient::block(self.ctx.client(), height),
+            0 => Client::latest_block(self.ctx.client()),
+            _ => Client::block(self.ctx.client(), height),
         };
         let response = self
             .rt

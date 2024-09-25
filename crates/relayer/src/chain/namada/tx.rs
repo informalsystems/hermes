@@ -1,8 +1,8 @@
 use core::str::FromStr;
 use core::time::Duration;
 use std::path::PathBuf;
-use std::thread;
 use std::time::Instant;
+use std::{thread, u64};
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
@@ -10,8 +10,9 @@ use namada_sdk::address::{Address, ImplicitAddress};
 use namada_sdk::args::TxBuilder;
 use namada_sdk::args::{Tx as TxArgs, TxCustom};
 use namada_sdk::chain::ChainId;
+use namada_sdk::io::NamadaIo;
 use namada_sdk::tx::{prepare_tx, ProcessTxResponse};
-use namada_sdk::{signing, tx, Namada};
+use namada_sdk::{rpc, signing, tx, Namada};
 use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, debug_span, trace, warn};
 
@@ -47,6 +48,7 @@ impl NamadaChain {
             data_path: None,
             serialized_tx: None,
             owner: relayer_addr.clone(),
+            disposable_signing_key: false,
         };
         let mut txs = Vec::new();
         for msg in msgs {
@@ -57,6 +59,7 @@ impl NamadaChain {
             txs.push((tx, signing_data));
         }
         let (mut tx, signing_data) = tx::build_batch(txs).map_err(NamadaError::namada)?;
+        // This is fine, as only the relayers is signing the transactions
         let signing_data = signing_data.first().expect("SigningData should exist");
 
         // Estimate the fee with dry-run
@@ -165,9 +168,25 @@ impl NamadaChain {
         let max_gas = max_gas_from_config(&self.config);
         let gas_price = self.config.gas_price.price;
 
+        let max_block_gas_key = namada_sdk::parameters::storage::get_max_block_gas_key();
+        let max_block_gas: u64 = match self.rt.block_on(rpc::query_storage_value(
+            self.ctx.client(),
+            &max_block_gas_key,
+        )) {
+            Ok(max_block_gas) => max_block_gas,
+            Err(e) => {
+                warn!(
+                    id = %chain_id,
+                    "estimate_fee: error while querying max block gas, defaulting to config default. Error: {}",
+                    e
+                );
+                max_gas
+            }
+        };
+
         let args = args.clone().dry_run_wrapper(true);
         // Set the max gas to the gas limit for the simulation
-        self.prepare_tx_with_gas(&mut tx, &args, &fee_token, max_gas, gas_price)?;
+        self.prepare_tx_with_gas(&mut tx, &args, &fee_token, max_block_gas, gas_price)?;
 
         self.rt
             .block_on(self.ctx.sign(
@@ -181,14 +200,16 @@ impl NamadaChain {
 
         let response = match self.rt.block_on(self.ctx.submit(tx, &args)) {
             Ok(resp) => resp,
-            Err(_) => {
+            Err(e) => {
                 warn!(
                     id = %chain_id,
-                    "send_tx: gas estimation failed, using the default gas limit"
+                    "send_tx: gas estimation failed, using the default gas limit. Error: {}",
+                    e
                 );
                 return Ok(None);
             }
         };
+
         let estimated_gas = match response {
             ProcessTxResponse::DryRun(result) => {
                 if result

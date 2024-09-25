@@ -8,12 +8,13 @@ use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::events::extend::Height as HeightAttr;
 use namada_sdk::events::Event as NamadaEvent;
-use namada_sdk::queries::{Client as SdkClient, RPC};
+use namada_sdk::io::Client;
+use namada_sdk::queries::RPC;
 use namada_sdk::rpc;
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::tx::data::ResultCode;
 use namada_sdk::tx::event::{Batch as BatchAttr, Code as CodeAttr};
-use namada_sdk::Namada;
+use namada_sdk::io::NamadaIo;
 use tendermint::block::Height as TmHeight;
 use tendermint::Hash as TmHash;
 
@@ -273,7 +274,7 @@ impl NamadaChain {
             .map_err(|_| Error::invalid_height_no_source())?;
         let response = self
             .rt
-            .block_on(SdkClient::block_results(self.ctx.client(), tm_height))
+            .block_on(Client::block_results(self.ctx.client(), tm_height))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
 
         let events = response

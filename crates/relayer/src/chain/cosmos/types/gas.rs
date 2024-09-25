@@ -1,4 +1,5 @@
 use ibc_proto::cosmos::tx::v1beta1::Fee;
+use namada_sdk::DEFAULT_GAS_LIMIT;
 
 use crate::chain::cosmos::calculate_fee;
 use crate::chain::cosmos::config::CosmosSdkConfig;
@@ -6,7 +7,7 @@ use crate::config::dynamic_gas::DynamicGasPrice;
 use crate::config::GasPrice;
 
 /// Default gas limit when submitting a transaction.
-const DEFAULT_MAX_GAS: u64 = 400_000;
+const DEFAULT_MAX_GAS: u64 = DEFAULT_GAS_LIMIT;
 
 const DEFAULT_FEE_GRANTER: &str = "";
 
