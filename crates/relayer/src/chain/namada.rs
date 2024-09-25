@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
-use tendermint_rpc::HttpClient;
 use core::str::FromStr;
 use std::thread;
+use tendermint_rpc::HttpClient;
 use tracing::debug;
 
 use core::time::Duration;
@@ -36,24 +36,24 @@ use ibc_relayer_types::core::ics24_host::path::{
 };
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::Height as ICSHeight;
-use namada_ibc::core::host::types::path::UPGRADED_IBC_STATE;
-use namada_ibc::{storage, COMMITMENT_PREFIX};
-use namada_parameters::{storage as param_storage, EpochDuration};
 use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
+use namada_sdk::ibc::core::host::types::path::UPGRADED_IBC_STATE;
+use namada_sdk::ibc::{storage, COMMITMENT_PREFIX};
 use namada_sdk::io::NullIo;
+use namada_sdk::io::{Client, NamadaIo};
 use namada_sdk::masp::fs::FsShieldedUtils;
+use namada_sdk::parameters::{storage as param_storage, EpochDuration};
 use namada_sdk::proof_of_stake::storage_key as pos_storage_key;
 use namada_sdk::proof_of_stake::OwnedPosParams;
 use namada_sdk::state::ics23_specs::ibc_proof_specs;
 use namada_sdk::state::Sha256Hasher;
 use namada_sdk::storage::{Key, KeySeg, PrefixValue};
+use namada_sdk::token::storage_key::{balance_key, denom_key, is_any_token_balance_key};
+use namada_sdk::token::{Amount, DenominatedAmount, Denomination};
 use namada_sdk::wallet::Store;
 use namada_sdk::wallet::Wallet;
 use namada_sdk::{rpc, Namada, NamadaImpl};
-use namada_sdk::io::{NamadaIo, Client};
-use namada_token::storage_key::{balance_key, denom_key, is_any_token_balance_key};
-use namada_token::{Amount, DenominatedAmount, Denomination};
 use tendermint::block::Height as TmHeight;
 use tendermint::{node, Time};
 use tendermint_light_client::types::LightBlock as TMLightBlock;
@@ -689,7 +689,7 @@ impl ChainEndpoint for NamadaChain {
             .upgrade_height
             .decrement()
             .map_err(|_| Error::invalid_height_no_source())?;
-        let key = namada_ibc::storage::upgraded_client_state_key(height);
+        let key = namada_sdk::ibc::storage::upgraded_client_state_key(height);
         let (value, proof) =
             self.query(key, QueryHeight::Specific(query_height), IncludeProof::Yes)?;
         if let Some(proof) = proof {
@@ -721,7 +721,7 @@ impl ChainEndpoint for NamadaChain {
             .upgrade_height
             .decrement()
             .map_err(|_| Error::invalid_height_no_source())?;
-        let key = namada_ibc::storage::upgraded_consensus_state_key(height);
+        let key = namada_sdk::ibc::storage::upgraded_consensus_state_key(height);
         let (value, proof) =
             self.query(key, QueryHeight::Specific(query_height), IncludeProof::Yes)?;
         if let Some(proof) = proof {

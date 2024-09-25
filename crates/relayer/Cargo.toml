@@ -46,10 +46,7 @@ humantime                        = { workspace = true }
 humantime-serde                  = { workspace = true }
 itertools                        = { workspace = true }
 moka                             = { workspace = true, features = ["sync"] }
-namada_ibc                       = { workspace = true }
-namada_parameters                = { workspace = true }
 namada_sdk                       = { workspace = true }
-namada_token                     = { workspace = true }
 num-bigint                       = { workspace = true, features = ["serde"] }
 num-rational                     = { workspace = true, features = ["num-bigint", "serde"] }
 once_cell                        = { workspace = true }

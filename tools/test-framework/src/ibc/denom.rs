@@ -140,7 +140,7 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
             ..
         } => {
             let path = format!("{port_id}/{channel_id}");
-            let ibc_token_addr = namada_ibc::trace::ibc_token(format!("{path}/{raw_address}"));
+            let ibc_token_addr = namada_sdk::ibc::trace::ibc_token(format!("{path}/{raw_address}"));
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path,
@@ -157,7 +157,7 @@ fn derive_namada_ibc_denom<ChainA, ChainB>(
         } => {
             let new_path = format!("{port_id}/{channel_id}/{path}");
             let ibc_token_addr =
-                namada_ibc::trace::ibc_token(format!("{new_path}/{}", denom.hash_only()));
+                namada_sdk::ibc::trace::ibc_token(format!("{new_path}/{}", denom.hash_only()));
 
             Ok(MonoTagged::new(Denom::Ibc {
                 path: new_path,
