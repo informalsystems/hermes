@@ -17,7 +17,7 @@ use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, debug_span, trace, warn};
 
 use crate::chain::cosmos::gas::{adjust_estimated_gas, AdjustGas};
-use crate::chain::cosmos::types::gas::max_gas_from_config;
+use crate::chain::cosmos::types::gas::max_gas_from_config_opt;
 use crate::chain::cosmos::types::tx::{TxStatus, TxSyncResult};
 use crate::chain::cosmos::wait::all_tx_results_found;
 use crate::chain::endpoint::ChainEndpoint;
@@ -165,24 +165,17 @@ impl NamadaChain {
         let fee_token_str = self.config.gas_price.denom.clone();
         let fee_token = Address::from_str(&fee_token_str)
             .map_err(|_| NamadaError::address_decode(fee_token_str.clone()))?;
-        let max_gas = max_gas_from_config(&self.config);
         let gas_price = self.config.gas_price.price;
 
         let max_block_gas_key = namada_sdk::parameters::storage::get_max_block_gas_key();
-        let max_block_gas: u64 = match self.rt.block_on(rpc::query_storage_value(
-            self.ctx.client(),
-            &max_block_gas_key,
-        )) {
-            Ok(max_block_gas) => max_block_gas,
-            Err(e) => {
-                warn!(
-                    id = %chain_id,
-                    "estimate_fee: error while querying max block gas, defaulting to config default. Error: {}",
-                    e
-                );
-                max_gas
-            }
-        };
+        let max_block_gas: u64 = self
+            .rt
+            .block_on(rpc::query_storage_value(
+                self.ctx.client(),
+                &max_block_gas_key,
+            ))
+            .map_err(NamadaError::namada)?;
+        let max_gas = max_gas_from_config_opt(&self.config).unwrap_or(max_block_gas);
 
         let args = args.clone().dry_run_wrapper(true);
         // Set the max gas to the gas limit for the simulation
