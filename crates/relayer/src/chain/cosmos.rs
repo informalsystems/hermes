@@ -1863,6 +1863,8 @@ impl ChainEndpoint for CosmosSdkChain {
                 )
             })?;
 
+        let height_param = AsciiMetadataValue::try_from(request.query_height)?;
+
         if request.pagination.is_enabled() {
             let mut results = Vec::new();
             let mut page_key = Vec::new();
@@ -1889,6 +1891,10 @@ impl ChainEndpoint for CosmosSdkChain {
                 let mut tonic_request = tonic::Request::new(raw_request);
                 // TODO: This should either be configurable or inferred from the pagination
                 tonic_request.set_timeout(Duration::from_secs(10));
+
+                tonic_request
+                    .metadata_mut()
+                    .insert("x-cosmos-block-height", height_param.clone());
 
                 let response = self.rt.block_on(async {
                     client
@@ -1946,9 +1952,14 @@ impl ChainEndpoint for CosmosSdkChain {
 
             Ok((commitment_sequences, height))
         } else {
-            let request = tonic::Request::new(request.into());
+            let mut tonic_request = tonic::Request::new(request.clone().into());
+
+            tonic_request
+                .metadata_mut()
+                .insert("x-cosmos-block-height", height_param);
+
             let response = self
-                .block_on(client.packet_commitments(request))
+                .block_on(client.packet_commitments(tonic_request))
                 .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
                 .into_inner();
 
