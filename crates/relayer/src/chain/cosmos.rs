@@ -915,6 +915,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut rpc_client = HttpClient::builder(config.rpc_addr.clone().try_into().unwrap())
             .user_agent(format!("hermes/{}", HERMES_VERSION))
+            .timeout(config.rpc_timeout)
             .build()
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
