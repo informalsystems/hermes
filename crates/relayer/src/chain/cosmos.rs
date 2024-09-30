@@ -22,6 +22,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
+use ibc_relayer_types::applications::ics28_ccv::msgs::{ConsumerChain, ConsumerId};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
@@ -147,7 +148,7 @@ pub mod wait;
 /// might be un-necessarily restrictive on the relayer side.
 /// The [default max. block size in Tendermint 0.37 is 21MB](tm-37-max).
 /// With a fraction of `0.9`, then Hermes will never permit the configuration
-/// of `max_tx_size` to exceed ~18.9MB.
+/// of `max_tx_size` to exceed ~18.9MB
 ///
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
@@ -367,6 +368,7 @@ impl CosmosSdkChain {
     }
 
     /// Performs a gRPC query to fetch CCV Consumer chain staking parameters.
+    /// Assumes we are the consumer chain.
     pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
         crate::time!(
             "query_ccv_consumer_chain_params",
@@ -398,6 +400,14 @@ impl CosmosSdkChain {
             .ok_or_else(|| Error::grpc_response_param("no staking params".to_string()))?;
 
         Ok(params)
+    }
+
+    /// Performs a gRPC query to fetch the CCV ConsumerID corresponding
+    /// to the given ClientID.
+    ///
+    /// Assumes we are the provider chain.
+    pub fn query_ccv_consumer_id(&self, client_id: &ClientId) -> Result<ConsumerId, Error> {
+        self.block_on(query_ccv_consumer_id(&self.config, client_id))
     }
 
     /// Performs a gRPC query for Cosmos chain staking parameters.
@@ -2544,7 +2554,10 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(incentivized_response)
     }
 
-    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+    fn query_consumer_chains(&self) -> Result<Vec<ConsumerChain>, Error> {
+        use ibc_proto::interchain_security::ccv::provider::v1::ConsumerPhase;
+        use ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerChainsRequest;
+
         crate::time!(
             "query_consumer_chains",
             {
@@ -2558,9 +2571,10 @@ impl ChainEndpoint for CosmosSdkChain {
             ibc_proto::interchain_security::ccv::provider::v1::query_client::QueryClient::new,
         ))?;
 
-        let request = tonic::Request::new(
-            ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerChainsRequest {},
-        );
+        let request = tonic::Request::new(QueryConsumerChainsRequest {
+            phase: ConsumerPhase::Launched as i32,
+            pagination: Some(PageRequest::all().into()),
+        });
 
         let response = self
             .block_on(client.query_consumer_chains(request))
@@ -2570,8 +2584,8 @@ impl ChainEndpoint for CosmosSdkChain {
         let result = response
             .chains
             .into_iter()
-            .map(|c| (c.chain_id.parse().unwrap(), c.client_id.parse().unwrap()))
-            .collect();
+            .map(|c| ConsumerChain::try_from(c).map_err(Error::ics24_host_validation_error))
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(result)
     }
@@ -2816,7 +2830,46 @@ pub async fn fetch_compat_mode(
         }
     }?;
 
-    Ok(compat_mode.into())
+    Ok(compat_mode)
+}
+
+/// Performs a gRPC query to fetch the CCV ConsumerID corresponding
+/// to the given ClientID.
+///
+/// Assumes we are the provider chain.
+pub async fn query_ccv_consumer_id(
+    config: &CosmosSdkConfig,
+    client_id: &ClientId,
+) -> Result<ConsumerId, Error> {
+    use ibc_proto::interchain_security::ccv::provider::v1::query_client::QueryClient;
+    use ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerIdFromClientIdRequest;
+
+    crate::telemetry!(query, &config.id, "query_ccv_consumer_id");
+    crate::time!(
+        "query_ccv_consumer_id",
+        {
+            "src_chain": &config.id,
+        }
+    );
+
+    let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
+        .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
+
+    let mut client = create_grpc_client(grpc_addr, QueryClient::new)
+        .await?
+        .max_decoding_message_size(config.max_grpc_decoding_size.get_bytes() as usize);
+
+    let request = tonic::Request::new(QueryConsumerIdFromClientIdRequest {
+        client_id: client_id.to_string(),
+    });
+
+    let response = client
+        .query_consumer_id_from_client_id(request)
+        .await
+        .map_err(|e| Error::grpc_status(e, "query_ccv_consumer_id".to_owned()))?;
+
+    let consumer_id = response.into_inner().consumer_id;
+    Ok(ConsumerId::new(consumer_id))
 }
 
 #[cfg(test)]

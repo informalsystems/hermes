@@ -1,5 +1,4 @@
 use flex_error::{define_error, TraceError};
-use tendermint_proto::Error as TendermintProtoError;
 
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::height::HeightError;
@@ -109,14 +108,14 @@ define_error! {
             },
 
         DecodeRawClientState
-            [ TraceError<TendermintProtoError> ]
+            [ TraceError<tendermint_proto::Error> ]
             | _ | { "error decoding raw client state" },
 
         MissingRawClientState
             | _ | { "missing raw client state" },
 
         InvalidRawConsensusState
-            [ TraceError<TendermintProtoError> ]
+            [ TraceError<tendermint_proto::Error> ]
             | _ | { "invalid raw client consensus state" },
 
         MissingRawConsensusState
@@ -138,7 +137,7 @@ define_error! {
             | _ | { "invalid client identifier" },
 
         InvalidRawHeader
-            [ TraceError<TendermintProtoError> ]
+            [ TraceError<ibc_proto::Error> ]
             | _ | { "invalid raw header" },
 
         MalformedHeader
@@ -148,7 +147,7 @@ define_error! {
             | _ | { "missing raw header" },
 
         DecodeRawMisbehaviour
-            [ TraceError<TendermintProtoError> ]
+            [ TraceError<tendermint_proto::Error> ]
             | _ | { "invalid raw misbehaviour" },
 
         InvalidRawMisbehaviour
@@ -254,19 +253,19 @@ define_error! {
             | e | { format_args!("the local consensus state could not be retrieved for height {}", e.height) },
 
         InvalidConnectionEnd
-            [ TraceError<TendermintProtoError>]
+            [ TraceError<tendermint_proto::Error>]
             | _ | { "invalid connection end" },
 
         InvalidChannelEnd
-            [ TraceError<TendermintProtoError>]
+            [ TraceError<tendermint_proto::Error>]
             | _ | { "invalid channel end" },
 
         InvalidAnyClientState
-            [ TraceError<TendermintProtoError>]
+            [ TraceError<tendermint_proto::Error>]
             | _ | { "invalid any client state" },
 
         InvalidAnyConsensusState
-            [ TraceError<TendermintProtoError> ]
+            [ TraceError<tendermint_proto::Error> ]
             | _ | { "invalid any client consensus state" },
 
         Signer

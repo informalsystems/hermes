@@ -2,9 +2,9 @@
   description = "Nix development dependencies for ibc-rs";
 
   inputs = {
-    nixpkgs.url = github:nixos/nixpkgs/nixpkgs-unstable;
-    flake-utils.url = github:numtide/flake-utils;
-    cosmos-nix.url = github:informalsystems/cosmos.nix;
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    cosmos-nix.url = "github:informalsystems/cosmos.nix/luca_joss/add-gaia-v20-alpha";
   };
 
   outputs = inputs: let
@@ -33,6 +33,7 @@
           evmos
           gaia6-ordered
           gaia18
+          gaia20
           ibc-go-v2-simapp
           ibc-go-v3-simapp
           ibc-go-v4-simapp

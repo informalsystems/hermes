@@ -8,6 +8,7 @@ use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
+use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerChain;
 use ibc_relayer_types::{
     applications::ics31_icq::response::CrossChainQueryResponse,
     core::{
@@ -371,7 +372,7 @@ pub enum ChainRequest {
     },
 
     QueryConsumerChains {
-        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
+        reply_to: ReplyTo<Vec<ConsumerChain>>,
     },
 
     QueryUpgrade {
@@ -699,7 +700,7 @@ pub trait ChainHandle: Clone + Display + Send + Sync + Debug + 'static {
         request: QueryIncentivizedPacketRequest,
     ) -> Result<QueryIncentivizedPacketResponse, Error>;
 
-    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error>;
+    fn query_consumer_chains(&self) -> Result<Vec<ConsumerChain>, Error>;
 
     fn query_upgrade(
         &self,
