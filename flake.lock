@@ -218,6 +218,7 @@
         "wasmvm_1_5_0-src": "wasmvm_1_5_0-src",
         "wasmvm_1_5_2-src": "wasmvm_1_5_2-src",
         "wasmvm_1_5_4-src": "wasmvm_1_5_4-src",
+        "wasmvm_1_5_5-src": "wasmvm_1_5_5-src",
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src",
         "wasmvm_2_0_0-src": "wasmvm_2_0_0-src",
         "wasmvm_2_0_3-src": "wasmvm_2_0_3-src",
@@ -225,15 +226,16 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1725007328,
-        "narHash": "sha256-DMRDFFpXIJyKRNhiVhXaIoOJkmVyKbt6DO6M5F8CCec=",
+        "lastModified": 1727786196,
+        "narHash": "sha256-iAzKmzrUm6BD6Vwb6rtbkTy1e/nFTsgo+Y5WNrrY2vc=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "d87f011075da3ee1afbbe3443ca25461af7d49fd",
+        "rev": "a79a38c35a4b6606ea2a7db2e3a2ae661049dc1e",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/update-juno-to-v25",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -497,11 +499,11 @@
         "systems": "systems_6"
       },
       "locked": {
-        "lastModified": 1710146030,
-        "narHash": "sha256-SZ5L6eA7HJ/nmkzGG7/ISclqe6oZdOZTNoesiInkXPQ=",
+        "lastModified": 1726560853,
+        "narHash": "sha256-X6rJYSESBVr3hBoH0WbKE5KvhPU5bloyZ2L4K60/fPQ=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "b1d9ab70662946ef0850d488da1c9019f3a9752a",
+        "rev": "c1dfcf08411b08f6b8615f7d8971a2bfa81d5e8a",
         "type": "github"
       },
       "original": {
@@ -964,16 +966,16 @@
     "ibc-go-v6-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1712318519,
-        "narHash": "sha256-roRXZEOJIFJiXEQ+a71QdMmqoVJKVk2wvPgHJ9r/mQ8=",
+        "lastModified": 1713970631,
+        "narHash": "sha256-MpBZ/V8agG3/GFJXEY3kSp+FnUw8rX5C613l5D8HXs4=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "8e31269c692d87ac65bfe70cf609925975a57203",
+        "rev": "8cd96f4169ebee21d50ef69417203b21cf4238ab",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v6.3.0",
+        "ref": "v6.3.1",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -981,16 +983,16 @@
     "ibc-go-v7-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1712318559,
-        "narHash": "sha256-uYiUNXLD48v3vRGK6/aQ7z7Ed5hY8VnEBGG/3Uv87Nc=",
+        "lastModified": 1725009574,
+        "narHash": "sha256-6Wpxu4mQaSrQKOLSb3kUpzRrr0aIHVMVEHVwpGJw3sM=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "802ca265dba74a293747e1ccb8b7999aa985af19",
+        "rev": "a5dde80a4ba1c4601aa055a311bf46779104627f",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v7.4.0",
+        "ref": "v7.8.0",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -1015,16 +1017,16 @@
     "ibc-go-v8-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1716359952,
-        "narHash": "sha256-KTjyHwmXA/jgppDKRe85XfRmh8O7AHFKhDyyOb9VROU=",
+        "lastModified": 1726232417,
+        "narHash": "sha256-oIfVmXIOkRqDF4NGmHsh5BELCIzPydAqiz+7urnZ7A4=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "9b6567bf818198ded336490d5f2d89c9d42fd87b",
+        "rev": "6b2554360c0e3f0bbaa59da5b16b29fc05675c57",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v8.3.1",
+        "ref": "v8.5.1",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -1049,16 +1051,16 @@
     "ibc-go-v9-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1723037346,
-        "narHash": "sha256-ba8gbJ0l4l8ZRT9XVN3hTcnxZSb5Fn20p1xiEG4/54c=",
+        "lastModified": 1725262239,
+        "narHash": "sha256-F2p/lIs2/ropKdm0Pebz1kjhRlgwYK0BmDGe/sYec3Y=",
         "owner": "cosmos",
         "repo": "ibc-go",
-        "rev": "66ebf864d7bfe2193a96c972a9e74196b2ddf104",
+        "rev": "8983f91e519fb1c43d9c9481ba60f11e4ae2b2b0",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "v9.0.0-beta.1",
+        "ref": "v9.0.0-rc.0",
         "repo": "ibc-go",
         "type": "github"
       }
@@ -1179,16 +1181,16 @@
     "juno-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1724278445,
-        "narHash": "sha256-XvJqp36HSYqm6OMLQqJPX5sCT52GxSLFDMO+fJovh+0=",
+        "lastModified": 1727102451,
+        "narHash": "sha256-UaTCcK+I6Wl4yCpbNckx+lRi55kTSucJxzw5irJOVh4=",
         "owner": "CosmosContracts",
         "repo": "juno",
-        "rev": "2f119adacca3a1668ff150c225a3f423501e748c",
+        "rev": "de3c4d145c7a96c31e3fca6fe8850ce4ab559e33",
         "type": "github"
       },
       "original": {
         "owner": "CosmosContracts",
-        "ref": "v24.0.0",
+        "ref": "v25.0.0",
         "repo": "juno",
         "type": "github"
       }
@@ -1444,11 +1446,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1725194671,
-        "narHash": "sha256-tLGCFEFTB5TaOKkpfw3iYT9dnk4awTP/q4w+ROpMfuw=",
+        "lastModified": 1727716680,
+        "narHash": "sha256-uMVkVHL4r3QmlZ1JM+UoJwxqa46cgHnIfqGzVlw5ca4=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b833ff01a0d694b910daca6e2ff4a3f26dee478c",
+        "rev": "b5b22b42c0d10c7d2463e90a546c394711e3a724",
         "type": "github"
       },
       "original": {
@@ -2006,6 +2008,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v1.5.4",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_1_5_5-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727088523,
+        "narHash": "sha256-ysS2pMMm+s1JsHVv9RhiMHt5g4UGcE5jqOI5YKdC4vU=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "0c5b9ce8446189f07d2bf65fbb902817cf57a563",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v1.5.5",
         "repo": "wasmvm",
         "type": "github"
       }
