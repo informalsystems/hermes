@@ -10,7 +10,7 @@ use crate::util::create_grpc_client;
 
 /// Uses the GRPC client to retrieve the connection params
 pub async fn query_connection_params(grpc_address: &Uri) -> Result<Params, Error> {
-    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
+    let mut client = create_grpc_client(grpc_address, QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
