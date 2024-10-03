@@ -1,4 +1,5 @@
 use std::str::FromStr;
+use std::thread;
 
 use crate::bootstrap::consumer::bootstrap_consumer_node;
 use crate::bootstrap::single::bootstrap_single_node;
@@ -71,11 +72,23 @@ where
         let chain_type = ChainType::from_str(&builder.command_paths[1])?;
         let chain_id = chain_type.chain_id("consumer", false);
 
-        node_a.chain_driver.submit_consumer_chain_proposal(
-            chain_id.as_str(),
+        let consumer_id = node_a
+            .chain_driver
+            .create_permisionless_consumer(chain_id.as_str(), &provider_fee)?;
+
+        thread::sleep(std::time::Duration::from_secs(3));
+
+        node_a.chain_driver.update_consumer(
+            &consumer_id,
             &provider_fee,
-            "2023-05-31T12:09:47.048227Z",
+            node_a.wallets.validator.address.as_str(),
         )?;
+
+        thread::sleep(std::time::Duration::from_secs(3));
+
+        node_a
+            .chain_driver
+            .submit_consumer_chain_proposal(&consumer_id, &provider_fee)?;
 
         node_a.chain_driver.assert_proposal_status(
             node_a.chain_driver.chain_id.as_str(),
@@ -104,9 +117,11 @@ where
             "1",
         )?;
 
+        thread::sleep(std::time::Duration::from_secs(3));
+
         let node_b = bootstrap_consumer_node(
             builder,
-            "consumer",
+            &consumer_id,
             &node_a,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),

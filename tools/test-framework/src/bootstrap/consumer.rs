@@ -57,7 +57,7 @@ pub fn bootstrap_consumer_node(
 
     node_a
         .chain_driver
-        .query_consumer_genesis(&chain_driver, chain_driver.chain_id.as_str())?;
+        .query_consumer_genesis(&chain_driver, prefix)?;
 
     chain_driver.replace_genesis_state()?;
 
