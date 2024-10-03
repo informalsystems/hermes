@@ -11,7 +11,7 @@ use crate::util::create_grpc_client;
 
 // Uses the GRPC client to retrieve the denom trace for a specific hash
 pub async fn query_denom_trace(grpc_address: &Uri, hash: &str) -> Result<DenomTrace, Error> {
-    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
+    let mut client = create_grpc_client(grpc_address, QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 

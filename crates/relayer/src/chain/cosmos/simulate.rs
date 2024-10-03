@@ -16,7 +16,7 @@ pub async fn send_tx_simulate(grpc_address: &Uri, tx: Tx) -> Result<SimulateResp
         ..Default::default()
     };
 
-    let mut client = create_grpc_client(grpc_address.clone(), ServiceClient::new).await?;
+    let mut client = create_grpc_client(grpc_address, ServiceClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 

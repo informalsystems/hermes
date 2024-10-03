@@ -38,7 +38,7 @@ pub async fn query_consensus_state_heights(
     }
 
     let mut client = create_grpc_client(
-        grpc_addr.clone(),
+        grpc_addr,
         ibc_proto::ibc::core::client::v1::query_client::QueryClient::new,
     )
     .await?;
@@ -108,7 +108,7 @@ pub async fn query_consensus_states(
     );
 
     let mut client = create_grpc_client(
-        grpc_addr.clone(),
+        grpc_addr,
         ibc_proto::ibc::core::client::v1::query_client::QueryClient::new,
     )
     .await?;
