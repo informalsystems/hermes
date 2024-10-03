@@ -173,6 +173,7 @@
         "ibc-go-v4-src": "ibc-go-v4-src",
         "ibc-go-v5-src": "ibc-go-v5-src",
         "ibc-go-v6-src": "ibc-go-v6-src",
+        "ibc-go-v7-indexer-subs-src": "ibc-go-v7-indexer-subs-src",
         "ibc-go-v7-src": "ibc-go-v7-src",
         "ibc-go-v7-wasm-src": "ibc-go-v7-wasm-src",
         "ibc-go-v8-src": "ibc-go-v8-src",
@@ -225,15 +226,16 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1725007328,
-        "narHash": "sha256-DMRDFFpXIJyKRNhiVhXaIoOJkmVyKbt6DO6M5F8CCec=",
+        "lastModified": 1726662278,
+        "narHash": "sha256-HcOl0gzHRrLcFStXA5su0sjAi/EdLEEaML5ePKon5pc=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "d87f011075da3ee1afbbe3443ca25461af7d49fd",
+        "rev": "b8b6cc8152907f02a1d3fbbf5608f047caa443c2",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "simapp/cometbft-indexer-subs",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -974,6 +976,23 @@
       "original": {
         "owner": "cosmos",
         "ref": "v6.3.0",
+        "repo": "ibc-go",
+        "type": "github"
+      }
+    },
+    "ibc-go-v7-indexer-subs-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1726659959,
+        "narHash": "sha256-I54u/UnvkSSVcj/73qyboW2irijthWxw2Xvd0bntHMk=",
+        "owner": "informalsystems",
+        "repo": "ibc-go",
+        "rev": "7ca60663a1d7d15f1c659746191a4a8d41879fa2",
+        "type": "github"
+      },
+      "original": {
+        "owner": "informalsystems",
+        "ref": "cometbft/indexer-subs-cap-1",
         "repo": "ibc-go",
         "type": "github"
       }
