@@ -110,7 +110,7 @@ tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = "1.39.2"
 tokio-stream             = "0.1.16"
 toml                     = "0.8.19"
-tonic                    = "0.12"
+tonic                    = "=0.12.1"
 tracing                  = { version = "0.1.36", default-features = false }
 tracing-subscriber       = "0.3.14"
 uint                     = "0.9"
