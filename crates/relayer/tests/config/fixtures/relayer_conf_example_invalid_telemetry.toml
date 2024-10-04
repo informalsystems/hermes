@@ -34,7 +34,7 @@ type = "CosmosSdk"
 id = 'chain_A'
 rpc_addr = 'http://127.0.0.1:26657'
 grpc_addr = 'http://127.0.0.1:9090'
-event_source = { mode = 'push', url = 'ws://localhost:26657/websocket' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
@@ -60,7 +60,7 @@ type = "CosmosSdk"
 id = 'chain_B'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9090'
-event_source = { mode = 'push', url = 'ws://localhost:26557/websocket' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 rpc_timeout = '10s'
 account_prefix = 'cosmos'
 key_name = 'testkey'
