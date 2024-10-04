@@ -211,7 +211,7 @@ pub fn validator_opt_in(
             "provider",
             "opt-in",
             consumer_id,
-            &format!("'{pubkey}'"),
+            pubkey,
             "--chain-id",
             chain_id,
             "--from",

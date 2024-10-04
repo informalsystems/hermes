@@ -1,3 +1,6 @@
+use chrono::DateTime;
+use chrono::Duration as ChronoDuration;
+use chrono::Utc;
 use core::str::FromStr;
 use eyre::eyre;
 use hdpath::StandardHDPath;
@@ -16,7 +19,7 @@ use crate::chain::cli::bootstrap::{
 };
 use crate::chain::cli::provider::{
     copy_validator_key_pair, create_consumer, query_consumer_genesis, query_gov_proposal,
-    replace_genesis_state, submit_consumer_chain_proposal, update_consumer, validator_opt_in,
+    replace_genesis_state, update_consumer, validator_opt_in,
 };
 use crate::chain::cli::query::query_auth_module;
 use crate::chain::driver::ChainDriver;
@@ -100,15 +103,6 @@ pub trait ChainBootstrapMethodsExt {
        value is dropped.
     */
     fn start(&self) -> Result<ChildProcess, Error>;
-
-    /**
-       Submit a consumer chain proposal.
-    */
-    fn submit_consumer_chain_proposal(
-        &self,
-        consumer_chain_id: &str,
-        fees: &str,
-    ) -> Result<(), Error>;
 
     fn create_permisionless_consumer(
         &self,
@@ -289,82 +283,6 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         )
     }
 
-    fn submit_consumer_chain_proposal(
-        &self,
-        consumer_chain_id: &str,
-        fees: &str,
-    ) -> Result<(), Error> {
-        let gov_address = query_auth_module(
-            self.chain_id.as_str(),
-            &self.command_path,
-            &self.home_path,
-            &self.rpc_listen_address(),
-            "gov",
-        )?;
-        let res = simple_exec(
-            self.chain_id.as_str(),
-            "jq",
-            &[
-                "-r",
-                ".genesis_time",
-                &format!("{}/config/genesis.json", self.home_path),
-            ],
-        )?;
-        let mut spawn_time = res.stdout;
-        // Remove newline character
-        spawn_time.pop();
-        let raw_proposal = r#"
-        {
-            "@type": "/interchain_security.ccv.provider.v1.MsgUpdateConsumer",
-            "consumer_id": "{consumer_chain_id}",
-            "owner": "{gov_address}",
-            "metadata": "{\"title\":\"update consumer 0 to top N\",\"authors\":[\"\"],\"summary\":\"update consumer 0 to top N\",\"details\":\"\",\"proposal_forum_url\":\"\",\"vote_option_context\":\"\"}",
-            "initialization_parameters": {
-                "initial_height": {
-                    "revision_number": 0,
-                    "revision_height": 1
-                },
-                "genesis_hash": "2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
-                "binary_hash": "2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
-                "spawn_time": "2023-03-11T09:02:14.718477-08:00",
-                "ccv_timeout_period": "2419200s",
-                "unbonding_period": "2419200s",
-                "transfer_timeout_period": "3600s",
-                "consumer_redistribution_fraction": "0.75",
-                "blocks_per_distribution_transmission": 1500,
-                "historical_entries": 1000,
-                "distribution_transmission_channel": ""
-            },
-            "power_shaping_parameters": {
-                "top_N": 100,
-                "validators_power_cap": 0,
-                "validator_set_cap": 50,
-                "allowlist": [],
-                "denylist": [],
-                "min_stake": 1000,
-                "allow_inactive_vals": true
-            },
-            "metadata": "ipfs://CID",
-            "deposit": "10000000stake",
-            "title": "update consumer 0 to top N",
-            "summary": "update consumer 0 to top N",
-            "expedited": false
-        }"#;
-
-        let proposal = raw_proposal.replace("{consumer_chain_id}", consumer_chain_id);
-        let proposal = proposal.replace("{gov_address}", &gov_address);
-
-        self.write_file("consumer_proposal_topn.json", &proposal)?;
-
-        submit_consumer_chain_proposal(
-            self.chain_id.as_str(),
-            &self.command_path,
-            &self.home_path,
-            &self.rpc_listen_address(),
-            fees,
-        )
-    }
-
     fn create_permisionless_consumer(
         &self,
         consumer_chain_id: &str,
@@ -377,10 +295,30 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                 "name": "consumer-1-metadata-name",
                 "description":"consumer-1-metadata-description",
                 "metadata": "consumer-1-metadata-metadata"
+            },
+            "initialization_parameters": {
+                "initial_height": {
+                    "revision_number": 0,
+                    "revision_height": 1
+                },
+                "genesis_hash": "Z2VuX2hhc2g=",
+                "binary_hash": "YmluX2hhc2g=",
+                "spawn_time": "{spawn_time}",
+                "unbonding_period": 1728000000000000,
+                "ccv_timeout_period": 2419200000000000,
+                "transfer_timeout_period": 1800000000000,
+                "consumer_redistribution_fraction": "0.75",
+                "blocks_per_distribution_transmission": 1000,
+                "historical_entries": 10000,
+                "distribution_transmission_channel": ""
             }
         }"#;
+        let current_time: DateTime<Utc> = Utc::now();
+        let future_time = current_time + ChronoDuration::seconds(30);
+        let spawn_time = future_time.to_rfc3339();
 
         let proposal = raw_proposal.replace("{consumer_chain_id}", consumer_chain_id);
+        let proposal = proposal.replace("{spawn_time}", &spawn_time);
 
         self.write_file("consumer_proposal.json", &proposal)?;
 
@@ -394,15 +332,12 @@ impl ChainBootstrapMethodsExt for ChainDriver {
     }
 
     fn validator_opt_in(&self, consumer_chain_id: &str, fees: &str) -> Result<(), Error> {
-        let validator_seed = self.read_file("user1-seed.json")?;
-        let parsed: serde_json::Value =
-            serde_json::from_str(&validator_seed).expect("Invalid JSON");
+        let show_validator_output = simple_exec(
+            "test",
+            &self.command_path,
+            &["comet", "show-validator", "--home", &self.home_path],
+        )?;
 
-        let pubkey = if let Some(pubkey) = parsed.get("pubkey") {
-            pubkey.as_str().unwrap()
-        } else {
-            ""
-        };
         validator_opt_in(
             self.chain_id.as_str(),
             &self.command_path,
@@ -410,7 +345,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             &self.rpc_listen_address(),
             fees,
             consumer_chain_id,
-            pubkey,
+            &show_validator_output.stdout,
         )
     }
 
@@ -448,31 +383,6 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                 "name": "consumer-1-metadata-name",
                 "description":"consumer-1-metadata-description",
                 "metadata": "consumer-1-metadata-metadata"
-            },
-            "initialization_parameters": {
-                "initial_height": {
-                    "revision_number": 0,
-                    "revision_height": 1
-                },
-                "genesis_hash": "2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
-                "binary_hash": "2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
-                "spawn_time": "2023-03-11T09:02:14.718477-08:00",
-                "ccv_timeout_period": 2419200,
-                "unbonding_period": 2419200,
-                "transfer_timeout_period": 3600,
-                "consumer_redistribution_fraction": "0.75",
-                "blocks_per_distribution_transmission": 1500,
-                "historical_entries": 1000,
-                "distribution_transmission_channel": ""
-            },
-            "power_shaping_parameters":{
-                "top_N":50,
-                "validators_power_cap":50,
-                "validator_set_cap":50,
-                "allowlist":[],
-                "denylist":[],
-                "min_stake": 1000,
-                "allow_inactive_vals":true
             }
         }"#;
 
