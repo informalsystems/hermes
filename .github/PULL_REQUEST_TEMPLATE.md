@@ -25,6 +25,7 @@ ______
 - [ ] Added tests: integration (for Hermes) or unit/mock tests (for modules).
 - [ ] Linked to GitHub issue.
 - [ ] Updated code comments and documentation (e.g., `docs/`).
+  - [ ] If guide has been updated, tag @mircea-c
 - [ ] Tagged *one* reviewer who will be the one responsible for shepherding this PR.
 
 ### Reviewer checklist:
