@@ -1513,11 +1513,9 @@ impl ChainEndpoint for CosmosSdkChain {
             use ibc_proto::ibc::core::connection::v1 as connection;
             use tonic::IntoRequest;
 
-            let mut client = create_grpc_client(
-                &chain.grpc_addr,
-                connection::query_client::QueryClient::new,
-            )
-            .await?;
+            let mut client =
+                create_grpc_client(&chain.grpc_addr, connection::query_client::QueryClient::new)
+                    .await?;
 
             client = client.max_decoding_message_size(
                 chain.config().max_grpc_decoding_size.get_bytes() as usize,
