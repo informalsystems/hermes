@@ -18,11 +18,11 @@ pub mod task;
 
 /// Helper function to create a gRPC client.
 pub async fn create_grpc_client<T>(
-    grpc_addr: tonic::transport::Uri,
+    grpc_addr: &tonic::transport::Uri,
     client_constructor: impl FnOnce(tonic::transport::Channel) -> T,
 ) -> Result<T, crate::error::Error> {
     let tls_config = tonic::transport::ClientTlsConfig::new().with_native_roots();
-    let channel = tonic::transport::Channel::builder(grpc_addr)
+    let channel = tonic::transport::Channel::builder(grpc_addr.clone())
         .tls_config(tls_config)
         .map_err(crate::error::Error::grpc_transport)?
         .connect()
