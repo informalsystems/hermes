@@ -13,6 +13,7 @@ use tendermint_rpc::HttpClientUrl;
 use tracing::{debug, info};
 
 use ibc_proto::cosmos::bank::v1beta1::query_client::QueryClient;
+use ibc_relayer::util::create_grpc_client;
 use ibc_relayer::HERMES_VERSION;
 use tendermint_rpc::{Client, Url};
 
@@ -159,7 +160,7 @@ impl QueryContext for GrpcHealthCheckQuerier {
 
         info!("Querying gRPC server at {tendermint_url}");
 
-        QueryClient::connect(uri)
+        create_grpc_client(uri, QueryClient::new)
             .await
             .map_err(|_| RegistryError::unable_to_connect_with_grpc())?;
 

@@ -393,7 +393,6 @@ define_error! {
                 address: String,
                 endpoint: String,
             }
-            [ DisplayOnly<tonic::transport::Error> ]
             |e| {
                 format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
@@ -592,7 +591,8 @@ define_error! {
 
         InvalidCompatMode
             [ TendermintRpcError ]
-            |_| { "Invalid CompatMode queried from chain and no `compat_mode` configured in Hermes. This can be fixed by specifying a `compat_mode` in Hermes config.toml" },
+            |_| { "Invalid compatibility mode queried from chain and no `compat_mode` configured in Hermes. \
+                   This can be fixed by specifying a `compat_mode` for chain '{}' in Hermes config.toml" },
 
         HttpRequest
             [ TraceError<reqwest::Error> ]

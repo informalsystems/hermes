@@ -379,6 +379,7 @@ pub fn check_channel_counterparty(
 ///  - received on counterparty chain but not yet acknowledged by this chain,
 pub fn commitments_on_chain(
     chain: &impl ChainHandle,
+    query_height: &QueryHeight,
     port_id: &PortId,
     channel_id: &ChannelId,
     paginate: Paginate,
@@ -386,6 +387,7 @@ pub fn commitments_on_chain(
     // get the packet commitments on the counterparty/ source chain
     let (mut commit_sequences, response_height) = chain
         .query_packet_commitments(QueryPacketCommitmentsRequest {
+            query_height: *query_height,
             port_id: port_id.clone(),
             channel_id: channel_id.clone(),
             pagination: paginate,
@@ -506,6 +508,7 @@ pub fn unreceived_packets(
 ) -> Result<(Vec<Sequence>, Height), Error> {
     let (commit_sequences, h) = commitments_on_chain(
         counterparty_chain,
+        &QueryHeight::Latest,
         &path.counterparty_port_id,
         &path.counterparty_channel_id,
         paginate,
@@ -543,6 +546,7 @@ pub fn acknowledgements_on_chain(
 
     let (commitments_on_counterparty, _) = commitments_on_chain(
         counterparty_chain,
+        &QueryHeight::Latest,
         &counterparty.port_id,
         counterparty_channel_id,
         Paginate::All,
@@ -594,8 +598,13 @@ pub fn unreceived_acknowledgements(
     path: &PathIdentifiers,
     pagination: Paginate,
 ) -> Result<Option<(Vec<Sequence>, Height)>, Error> {
-    let (commitments_on_src, _) =
-        commitments_on_chain(chain, &path.port_id, &path.channel_id, pagination)?;
+    let (commitments_on_src, _) = commitments_on_chain(
+        chain,
+        &QueryHeight::Latest,
+        &path.port_id,
+        &path.channel_id,
+        pagination,
+    )?;
 
     let acks_and_height_on_counterparty = packet_acknowledgements(
         counterparty_chain,
@@ -642,8 +651,13 @@ pub fn pending_packet_summary(
         .as_ref()
         .ok_or_else(Error::missing_counterparty_channel_id)?;
 
-    let (commitments_on_src, _) =
-        commitments_on_chain(chain, &channel.port_id, &channel.channel_id, pagination)?;
+    let (commitments_on_src, _) = commitments_on_chain(
+        chain,
+        &QueryHeight::Latest,
+        &channel.port_id,
+        &channel.channel_id,
+        pagination,
+    )?;
 
     let unreceived = unreceived_packets_sequences(
         counterparty_chain,

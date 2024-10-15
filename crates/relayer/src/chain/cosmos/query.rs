@@ -1,16 +1,16 @@
-use http::uri::Uri;
-use ibc_proto::cosmos::base::tendermint::v1beta1::service_client::ServiceClient;
-use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoRequest;
+use ibc_proto::cosmos::base::tendermint::v1beta1::GetNodeInfoResponse;
 use ibc_relayer_types::core::ics04_channel::packet::Sequence;
 use ibc_relayer_types::core::ics23_commitment::merkle::{
     convert_tm_to_ics_merkle_proof, MerkleProof,
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use prost::Message;
 use tendermint::block::Height;
 use tendermint_rpc::query::Query;
 use tendermint_rpc::{Client, HttpClient, Url};
 
 use crate::chain::cosmos::version::Specs;
+use crate::chain::requests::QueryHeight;
 use crate::chain::requests::{QueryClientEventRequest, QueryPacketEventDataRequest, QueryTxHash};
 use crate::error::Error;
 
@@ -121,36 +121,32 @@ pub async fn abci_query(
 }
 
 /// Queries the chain to obtain the version information.
-pub async fn fetch_version_specs(chain_id: &ChainId, grpc_address: &Uri) -> Result<Specs, Error> {
-    let grpc_addr_string = grpc_address.to_string();
-
-    // Construct a gRPC client
-    let mut client = ServiceClient::connect(grpc_address.clone())
-        .await
-        .map_err(|e| {
-            Error::fetch_version_grpc_transport(
-                chain_id.clone(),
-                grpc_addr_string.clone(),
-                "tendermint::ServiceClient".to_string(),
+pub async fn fetch_version_specs(
+    chain_id: &ChainId,
+    rpc_client: &HttpClient,
+    rpc_addr: &Url,
+) -> Result<Specs, Error> {
+    let query_response = abci_query(
+        rpc_client,
+        rpc_addr,
+        "/cosmos.base.tendermint.v1beta1.Service/GetNodeInfo".to_owned(),
+        "".to_owned(),
+        QueryHeight::Latest.into(),
+        false,
+    )
+    .await?;
+    let node_info_response =
+        GetNodeInfoResponse::decode(query_response.value.as_ref()).map_err(|e| {
+            Error::protobuf_decode(
+                "cosmos.base.tendermint.v1beta1.Service/GetNodeInfo".to_owned(),
                 e,
             )
         })?;
 
-    let request = tonic::Request::new(GetNodeInfoRequest {});
-
-    let response = client.get_node_info(request).await.map_err(|e| {
-        Error::fetch_version_grpc_status(
-            chain_id.clone(),
-            grpc_addr_string.clone(),
-            "tendermint::ServiceClient".to_string(),
-            e,
-        )
-    })?;
-
-    let version = response.into_inner().application_version.ok_or_else(|| {
+    let version = node_info_response.application_version.ok_or_else(|| {
         Error::fetch_version_invalid_version_response(
             chain_id.clone(),
-            grpc_addr_string.clone(),
+            rpc_addr.to_string(),
             "tendermint::GetNodeInfoRequest".to_string(),
         )
     })?;
@@ -158,5 +154,5 @@ pub async fn fetch_version_specs(chain_id: &ChainId, grpc_address: &Uri) -> Resu
     // Parse the raw version info into a domain-type `version::Specs`
     version
         .try_into()
-        .map_err(|e| Error::fetch_version_parsing(chain_id.clone(), grpc_addr_string.clone(), e))
+        .map_err(|e| Error::fetch_version_parsing(chain_id.clone(), rpc_addr.to_string(), e))
 }

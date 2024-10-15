@@ -13,15 +13,14 @@ use tonic::Code;
 
 use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
+use crate::util::create_grpc_client;
 
 pub async fn query_counterparty_payee(
     grpc_address: &Uri,
     channel_id: &ChannelId,
     address: &Signer,
 ) -> Result<Option<String>, Error> {
-    let mut client = QueryClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
@@ -53,9 +52,7 @@ pub async fn query_incentivized_packets(
     channel_id: &ChannelId,
     port_id: &PortId,
 ) -> Result<Vec<IdentifiedPacketFees>, Error> {
-    let mut client = QueryClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
@@ -87,9 +84,7 @@ pub async fn query_incentivized_packet(
     grpc_address: &Uri,
     request: QueryIncentivizedPacketRequest,
 ) -> Result<QueryIncentivizedPacketResponse, Error> {
-    let mut client = QueryClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 

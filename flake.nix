@@ -5,7 +5,7 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.url = "github:oxalica/rust-overlay";
-    cosmos-nix.url = "github:informalsystems/cosmos.nix";
+    cosmos-nix.url = "github:informalsystems/cosmos.nix/luca_joss/ibc-go-v9-wasm";
   };
 
   outputs = inputs:

@@ -10,14 +10,11 @@ use tendermint_rpc::client::CompatMode as TmCompatMode;
 use crate::config::Error;
 
 /// CometBFT RPC compatibility mode
-///
-/// Can be removed in favor of the one in tendermint-rs, once
-/// <https://github.com/informalsystems/tendermint-rs/pull/1367> is merged.
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum CompatMode {
     /// Use version 0.34 of the protocol.
     V0_34,
-    /// Use version 0.37 of the protocol.
+    /// Use version 0.37+ of the protocol.
     V0_37,
 }
 
@@ -34,12 +31,13 @@ impl FromStr for CompatMode {
     type Err = Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        const VALID_COMPAT_MODES: &str = "0.34, 0.37";
+        const VALID_COMPAT_MODES: &str = "0.34, 0.37, 0.38";
 
         // Trim leading 'v', if present
         match s.trim_start_matches('v') {
             "0.34" => Ok(CompatMode::V0_34),
             "0.37" => Ok(CompatMode::V0_37),
+            "0.38" => Ok(CompatMode::V0_37), // v0.38 is compatible with v0.37
             _ => Err(Error::invalid_compat_mode(
                 s.to_string(),
                 VALID_COMPAT_MODES,

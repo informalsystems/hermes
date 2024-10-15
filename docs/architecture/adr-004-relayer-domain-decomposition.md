@@ -91,7 +91,7 @@ Channel datagrams are built similarly. Packet datagrams are triggered by events,
 
 ### IBC Module
 
-For every a transaction in a block of height H:
+For every transaction in a block of height H:
 
 - call appropriate handler (this is realized by ICS26 routing sub-module),
 - If handler succeeds (transaction does not abort), then
@@ -236,7 +236,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let src_chain = ChainRuntime::new();
     let dst_chain = ChainRuntime::new();
 
-    /// chains expose handlers for commuicating with the chain related runtime
+    /// chains expose handlers for communicating with the chain related runtime
     /// which move into their own threads
     let src_chain_handle = src_chain.handle();
     thread::spawn(move || {

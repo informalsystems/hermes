@@ -7,6 +7,7 @@ use tracing::info;
 use crate::chain::cosmos::types::account::Account;
 use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
+use crate::util::create_grpc_client;
 
 /// Get a `&mut Account` from an `&mut Option<Account>` if it is `Some(Account)`.
 /// Otherwise query for the account information, update the `Option` to `Some`,
@@ -54,9 +55,7 @@ pub async fn query_account(
     grpc_address: &Uri,
     account_address: &str,
 ) -> Result<BaseAccount, Error> {
-    let mut client = QueryClient::connect(grpc_address.clone())
-        .await
-        .map_err(Error::grpc_transport)?;
+    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
