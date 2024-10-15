@@ -298,7 +298,6 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         consumer_chain_id: &str,
         fees: &str,
     ) -> Result<(), Error> {
-
         let raw_proposal = r#"
         {
             "chain_id": "{consumer_chain_id}",

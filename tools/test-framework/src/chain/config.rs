@@ -97,10 +97,7 @@ pub fn set_block_sync(config: &mut Value, value: bool) -> Result<(), Error> {
     config
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
-        .insert(
-            "block_sync".to_string(),
-            value.into(),
-        );
+        .insert("block_sync".to_string(), value.into());
 
     Ok(())
 }
@@ -222,30 +219,6 @@ pub fn add_allow_message_interchainaccounts(
     if allow_messages.iter().all(|v| v.as_str() != Some("*")) {
         allow_messages.push(serde_json::Value::String(message.to_string()));
     }
-
-    Ok(())
-}
-
-pub fn add_pub_key_types(genesis: &mut serde_json::Value, pub_key_type: &str) -> Result<(), Error> {
-    let pub_key_types = if let Some(consensus) = genesis.get_mut("consensus") {
-        consensus.get_mut("params")
-            .and_then(|params| params.get_mut("validator"))
-            .and_then(|validator| validator.get_mut("pub_key_types"))
-            .and_then(|pub_key_types| pub_key_types.as_array_mut())
-            .ok_or_else(|| {
-                eyre!("failed to retrieve pub_key_types as a vector, in the genesis file under `consensus`")
-            })?
-    } else {
-        genesis.get_mut("consensus_params")
-            .and_then(|consensus_params| consensus_params.get_mut("validator"))
-            .and_then(|validator| validator.get_mut("pub_key_types"))
-            .and_then(|pub_key_types| pub_key_types.as_array_mut())
-            .ok_or_else(|| {
-                eyre!("failed to retrieve pub_key_types as a vector, in the genesis file under `consensus_params`")
-            })?
-    };
-
-    pub_key_types.push(serde_json::Value::String(pub_key_type.to_string()));
 
     Ok(())
 }

@@ -84,27 +84,6 @@ pub fn submit_consumer_chain_proposal(
         )?;
     }
 
-    thread::sleep(core::time::Duration::from_secs(3));
-
-    let query_txhash_output = simple_exec(
-        chain_id,
-        command_path,
-        &[
-            "--home",
-            home_path,
-            "--node",
-            rpc_listen_address,
-            "query",
-            "tx",
-            "--type=hash",
-            txhash,
-            "--output",
-            "json",
-        ],
-    )?;
-
-    tracing::warn!("{}", query_txhash_output.stdout);
-
     Ok(())
 }
 
