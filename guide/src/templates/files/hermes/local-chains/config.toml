@@ -30,7 +30,7 @@ id = 'ibc-0'
 type = "CosmosSdk"
 rpc_addr = 'http://localhost:27030'
 grpc_addr = 'http://localhost:27032'
-event_source = { mode = 'push', url = 'ws://localhost:27030/websocket', batch_delay = '200ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 rpc_timeout = '15s'
 trusted_node = true
 account_prefix = 'cosmos'
@@ -59,7 +59,7 @@ id = 'ibc-1'
 type = "CosmosSdk"
 rpc_addr = 'http://localhost:27040'
 grpc_addr = 'http://localhost:27042'
-event_source = { mode = 'push', url = 'ws://localhost:27040/websocket', batch_delay = '200ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 rpc_timeout = '15s'
 trusted_node = true
 account_prefix = 'cosmos'

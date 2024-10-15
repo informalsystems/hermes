@@ -22,11 +22,11 @@ hermes [--config CONFIG_FILE] COMMAND
 
 ## Configuration
 
-### Automatically Generating A Config File 
+### Automatically Generating A Config File
 
 The simplest way to configure Hermes for a given chain is by running the command
 
-```shell 
+```shell
 {{#template ../../templates/commands/hermes/config/auto_1.md PATH=~/<OUTPUT_PATH>/config.toml CHAIN1_NAME:OPTIONAL_KEY_NAME=<CHAIN_1> <CHAIN_2>}}
 ```
 
@@ -63,15 +63,13 @@ please refer to the [Keys](../commands/keys/index.md) sections in order to learn
 
 ## Connecting via TLS
 
-Hermes supports connection via TLS for use-cases such as connecting from behind
-a proxy or a load balancer. In order to enable this, you'll want to set the
-`rpc_addr`, `grpc_addr`, or `event_source` parameters to specify a TLS
-connection via HTTPS using the following scheme (note that the port number 443
-is just used for example):
+Hermes supports connection via TLS for use-cases such as connecting from behind a proxy or a load balancer.
+In order to enable this, you'll want to set the `rpc_addr`, `grpc_addr`, or `event_source` parameters to specify a TLS
+connection via HTTPS using the following scheme (note that the port number 443 is just used for example):
 ```
 rpc_addr = 'https://domain.com:443'
 grpc_addr = 'https://domain.com:443'
-event_source = { mode = 'push', url = 'wss://domain.com:443/websocket', batch_delay = '500ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 ```
 
 ## Configuring Support for Interchain Accounts
@@ -115,22 +113,22 @@ list = [
 ]
 ```
 
-## Configuring Support for Consumer Chains that Utilize Cross-Chain Validation 
+## Configuring Support for Consumer Chains that Utilize Cross-Chain Validation
 
 As of version 1.4.1, Hermes supports relaying for consumer chains that utilize [cross-chain validation][ccv] (CCV).
 
 > **Note:** A consumer chain is essentially a regular Cosmos-SDK based chain that uses the interchain security
-module to achieve economic security by stake deposited on a provider chain instead of on the consumer chain 
-itself. Consumer chains are bound to their provider chains by the provider's validator set. By being bound 
+module to achieve economic security by stake deposited on a provider chain instead of on the consumer chain
+itself. Consumer chains are bound to their provider chains by the provider's validator set. By being bound
 together in this way, consumer chains inherit the economic security guarantees of the provider chain.
 >
 > You can read more about consumer chains, and Interchain Security more generally, at [https://cosmos.github.io/interchain-security][cosmos-github-io].
 
-If you are configuring Hermes in order to relay for a consumer chain, set `ccv_consumer_chain = true` under its `[[chains]]` section in the `config.toml` file. 
+If you are configuring Hermes in order to relay for a consumer chain, set `ccv_consumer_chain = true` under its `[[chains]]` section in the `config.toml` file.
 By default, this option is set to `false`. It should *ONLY* be toggled on for CCV consumer chains, *NOT* for sovereign chains.
 
 This parameter is required because consumer chains do not utilize the same staking module as sovereign chains.
-Consumer chains must query a different gRPC endpoint in order to fetch the relevant `ccvconsumer` parameters that Hermes 
+Consumer chains must query a different gRPC endpoint in order to fetch the relevant `ccvconsumer` parameters that Hermes
 needs in order to relay on behalf of consumer chains.
 
 ## Connecting to a full node protected by HTTP Basic Authentication
@@ -139,7 +137,7 @@ To connect to a full node protected by [HTTP Basic Authentication][http-basic-au
 specify the username and password in the `rpc_addr`, `grpc_addr` and `event_source` settings
 under the chain configuration in `config.toml`.
 
-Here is an example with username `hello` and password `world`, assuming the RPC, WebSocket and gRPC servers
+Here is an example with username `hello` and password `world`, assuming the RPC and gRPC servers
 listen on domain `mydomain.com` with TLS enabled (HTTPS/WSS).
 
 ```toml
@@ -150,39 +148,13 @@ id = 'my-chain-0'
 
 rpc_addr = 'https://hello:world@mydomain.com:26657'
 grpc_addr = 'https://hello:world@mydomain.com:9090'
-event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/websocket', batch_delay = '500ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 
 # ...
 ```
 
 > **Caution:** The "Basic" authentication scheme sends the credentials encoded but not encrypted.
 > This would be completely insecure unless the exchange was over a secure connection (HTTPS/TLS).
-
-## Configuring Support for Wasm Relaying
-
-Hermes supports the relaying of wasm messages natively. This is facilitated by configuring
-Hermes to use pull-based relaying by polling for IBC events via the `/block_results` RPC endpoint. Set
-the `event_source` parameter to pull mode in `config.toml` like so:
-
-```toml
-# When specified like this, Hermes defaults to a poll interval of 1 second
-event_source = { mode = 'pull' }
-```
-
-The default interval at which Hermes polls the RPC endpoint is 1 second. If you need to change the interval,
-you can specify it like so:
-
-```toml
-event_source = { mode = 'pull', interval = '2s' }
-```
-
-The pull model of relaying is in contrast with Hermes' default push model, where IBC events are received
-over WebSocket. 
-
-> **Note:** This mode should only be used in situations where Hermes misses events that it should
-be receiving, such as when relaying for CosmWasm-enabled blockchains which emit IBC events without the
-`message` attribute. Without this attribute, the WebSocket is not able to catch these events to stream
-to Hermes, so the `/block_results` RPC endpoint must be used instead. 
 
 [ccv]: https://github.com/cosmos/ibc/blob/main/spec/app/ics-028-cross-chain-validation/README.md
 [cosmos-github-io]: https://cosmos.github.io/interchain-security

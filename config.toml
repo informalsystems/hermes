@@ -1,7 +1,7 @@
 # This is an example configuration for Hermes. It is meant to be
-# used as a reference, _NOT_ for configuring a production relayer. 
-# If you're looking to configure a production relayer for some chains, 
-# try using the `hermes config auto` command to generate a config 
+# used as a reference, _NOT_ for configuring a production relayer.
+# If you're looking to configure a production relayer for some chains,
+# try using the `hermes config auto` command to generate a config
 # file that serves as the starting point for configuring Hermes.
 
 # The global section has parameters that apply globally to the relayer operation.
@@ -175,37 +175,37 @@ grpc_addr = 'http://127.0.0.1:9090'
 # The type of event source to use for getting events from the chain.
 #
 # This setting can take two types of values, as an inline table:
-# 
-# a) Push: for receiving IBC events over WebSocket.
+#
+# a) Pull: for polling for IBC events via the `/block_results` RPC endpoint.
+#
+#     `{ mode = 'pull', interval = '500ms', max_retries = 3 }`
+#
+#    where
+#
+#    - `interval` is the interval at which to poll for blocks. Default: 500ms
+#      Lower values will result in faster event processing, improving the latency of Hermes,
+#      but may increase the load on the full node.
+#    - `max_retries` is the maximum number of retries to collect events for each block. Default: 3
+#      Higher values will increase the likelihood of collecting all events for a block, but may
+#      increase the load on the full node. The default value provides a good balance between
+#      reliability and load on the full node.
+#
+#    This mode is recommended by default as it is more reliable than the WebSocket-based push mode.
+#
+# b) Push: for receiving IBC events over WebSocket.
 #
 #      `{ mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }`
 #
 #    where
 #
 #    - `url` is the WebSocket URL to connect to. Required
-#    - `batch_delay` is the delay until event batch is
-#      emitted in the absence of NewBlock event. Default: 500ms
+#    - `batch_delay` is the delay until event batch is emitted in the absence of NewBlock event. Default: 500ms
 #      Lower values will result in faster event processing, improving the latency of Hermes,
 #      but may split the events into more batches than necessary, requiring more client updates
 #      to be submitted, yielding higher costs. Higher values will result in slower event
 #      processing, increasing the latency of Hermes, but are more likely to batch events together.
 #      The default value provides good latency while minimizing the number of client updates needed.
-
-# b) Pull: for polling for IBC events via the `/block_results` RPC endpoint.
-#
-#     `{ mode = 'pull', interval = '1s', max_retries = 4 }`
-#
-#    where
-#
-#    - `interval` is the interval at which to poll for blocks. Default: 1s
-#    - `max_retries` is the maximum number of retries to collect events for each block. Default: 4
-#
-#    This mode should only be used in situations where Hermes misses events that it should be
-#    receiving, such as when relaying for CosmWasm-enabled chains which emit IBC events without
-#    the `message` attribute. Without this attribute, the WebSocket is not able to catch these
-#    events, so the `/block_results` RPC must be used instead.
-#
-event_source = { mode = 'push', url = 'ws://127.0.0.1:26657/websocket', batch_delay = '500ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 
 # Specify the maximum amount of time (duration) that the RPC requests should
 # take before timing out. Default: 10s (10 seconds)
@@ -255,22 +255,22 @@ address_type = { derivation = 'cosmos' }
 store_prefix = 'ibc'
 
 # Gas Parameters
-# 
+#
 # The term 'gas' is used to denote the amount of computation needed to execute
-# and validate a transaction on-chain. It can be thought of as fuel that gets 
+# and validate a transaction on-chain. It can be thought of as fuel that gets
 # spent in order to power the on-chain execution of a transaction.
 #
-# Hermes attempts to simulate how much gas a transaction will expend on its 
+# Hermes attempts to simulate how much gas a transaction will expend on its
 # target chain. From that, it calculates the cost of that gas by multiplying the
 # amount of estimated gas by the `gas_multiplier` and the `gas_price`
-# (estimated gas * `gas_multiplier` * `gas_price`) in order to compute the 
+# (estimated gas * `gas_multiplier` * `gas_price`) in order to compute the
 # total fee to be deducted from the relayer's wallet.
-# 
+#
 # The `simulate_tx` operation does not always correctly estimate the appropriate
-# amount of gas that a transaction requires. In those cases when the operation 
-# fails, Hermes will attempt to submit the transaction using the specified 
-# `default_gas` and `max_gas` parameters. In the case that a transaction would 
-# require more than `max_gas`, it doesn't get submitted and a 
+# amount of gas that a transaction requires. In those cases when the operation
+# fails, Hermes will attempt to submit the transaction using the specified
+# `default_gas` and `max_gas` parameters. In the case that a transaction would
+# require more than `max_gas`, it doesn't get submitted and a
 # `TxSimulateGasEstimateExceeded` error is returned.
 
 # Specify the default amount of gas to be used in case the tx simulation fails,
@@ -284,12 +284,12 @@ default_gas = 100000
 max_gas = 4000000
 
 # Specify the price per gas used of the fee to submit a transaction and
-# the denomination of the fee. 
-# 
+# the denomination of the fee.
+#
 # The specified gas price should always be greater or equal to the `min-gas-price`
-# configured on the chain. This is to ensure that at least some minimal price is 
+# configured on the chain. This is to ensure that at least some minimal price is
 # paid for each unit of gas per transaction.
-# 
+#
 # Required
 gas_price = { price = 0.025, denom = 'stake' }
 
@@ -298,8 +298,8 @@ gas_price = { price = 0.025, denom = 'stake' }
 #
 # The purpose of multiplying by `gas_multiplier` is to provide a bit of a buffer
 # to catch some of the cases when the gas estimation calculation is on the low
-# end. 
-# 
+# end.
+#
 # Example: With this setting set to 1.1, then if the estimated gas
 # is 80_000, then gas used to compute the fee will be adjusted to
 # 80_000 * 1.1 = 88_000.
@@ -309,7 +309,7 @@ gas_price = { price = 0.025, denom = 'stake' }
 gas_multiplier = 1.1
 
 # Query the current gas price from the chain instead of using the static `gas_price` from the config.
-# Useful for chains which have [EIP-1559][eip]-like dynamic gas price. 
+# Useful for chains which have [EIP-1559][eip]-like dynamic gas price.
 #
 # At the moment, only chains which support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
 # query or have enabled Skip's `x/feemarket` module https://github.com/skip-mev/feemarket
@@ -317,7 +317,7 @@ gas_multiplier = 1.1
 #
 # See this page in the Hermes guide for more information:
 # https://hermes.informal.systems/documentation/configuration/dynamic-gas-fees.html
-# 
+#
 # Default: { enabled = false, multiplier = 1.1, max = 0.6 }
 dynamic_gas_price = { enabled = false, multiplier = 1.1, max = 0.6 }
 
@@ -469,7 +469,7 @@ memo_prefix = ''
 id = 'ibc-1'
 rpc_addr = 'http://127.0.0.1:26557'
 grpc_addr = 'http://127.0.0.1:9091'
-event_source = { mode = 'push', url = 'ws://127.0.0.1:26557/websocket', batch_delay = '500ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 rpc_timeout = '10s'
 trusted_node = false
 account_prefix = 'cosmos'
