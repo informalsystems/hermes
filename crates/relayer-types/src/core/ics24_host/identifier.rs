@@ -178,6 +178,7 @@ impl ClientId {
     pub fn prefix(client_type: ClientType) -> &'static str {
         match client_type {
             ClientType::Tendermint => ClientType::Tendermint.as_str(),
+            ClientType::Wasm => ClientType::Wasm.as_str(),
         }
     }
 

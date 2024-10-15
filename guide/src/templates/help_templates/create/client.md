@@ -30,6 +30,12 @@ OPTIONS:
             The trusting period specifies how long a validator set is trusted for (must be shorter
             than the chain's unbonding period).
 
+        --wasm-checksum <WASM_CHECKSUM>
+            The hex-encoded SHA256 checksum of the WASM contract that backs this client. If
+            specified, the client will be created as an ICS 08 Wasm client. Otherwise, the client
+            will be created as an ICS 07 Tendermint client. Only Wasm clients wrapping an ICS 07
+            Tendermint client are supported
+
 REQUIRED:
         --host-chain <HOST_CHAIN_ID>
             Identifier of the chain that hosts the client

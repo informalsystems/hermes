@@ -21,7 +21,7 @@ use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 
 use ibc_relayer::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use ibc_relayer::client_state::AnyClientState;
-use ibc_relayer::foreign_client::CreateOptions;
+use ibc_relayer::foreign_client::{CreateOptions, TendermintCreateOptions};
 use ibc_relayer::object::ObjectType;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::ClientState as TmClientState;
 
@@ -42,37 +42,41 @@ fn test_client_filter_allows_connection() -> Result<(), Error> {
 
 impl TestOverrides for ClientFilterBlocksConnectionTest {
     fn client_options_a_to_b(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(120_000)),
             trust_threshold: Some(TrustThreshold::new(20, 23).unwrap()),
         }
+        .into()
     }
 
     fn client_options_b_to_a(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(340_000)),
             trust_threshold: Some(TrustThreshold::TWO_THIRDS),
         }
+        .into()
     }
 }
 
 impl TestOverrides for ClientFilterAllowsConnectionTest {
     fn client_options_a_to_b(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(3)),
             trusting_period: Some(Duration::from_secs(120_000)),
             trust_threshold: Some(TrustThreshold::new(13, 23).unwrap()),
         }
+        .into()
     }
 
     fn client_options_b_to_a(&self) -> CreateOptions {
-        CreateOptions {
+        TendermintCreateOptions {
             max_clock_drift: Some(Duration::from_secs(6)),
             trusting_period: Some(Duration::from_secs(340_000)),
             trust_threshold: Some(TrustThreshold::ONE_THIRD),
         }
+        .into()
     }
 }
 

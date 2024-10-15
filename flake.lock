@@ -178,6 +178,7 @@
         "ibc-go-v8-src": "ibc-go-v8-src",
         "ibc-go-v8-wasm-src": "ibc-go-v8-wasm-src",
         "ibc-go-v9-src": "ibc-go-v9-src",
+        "ibc-go-v9-wasm-src": "ibc-go-v9-wasm-src",
         "ibc-rs-src": "ibc-rs-src",
         "ica-src": "ica-src",
         "ignite-cli-src": "ignite-cli-src",
@@ -225,15 +226,16 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1727709426,
-        "narHash": "sha256-Q+uchaRWUNGOksfHY8x6HAz7nADkRtLHUl11A0mBc7Y=",
+        "lastModified": 1728981438,
+        "narHash": "sha256-53JaN2jALyvQIHvaw1AqPZ4K7S4OI45z4lAWeupY3Bw=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "706d3206feb0c816765768dd164790874c221bd3",
+        "rev": "7205f2b1dcd867bc2d5967fe436dbc2a13f46189",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
+        "ref": "luca_joss/ibc-go-v9-wasm",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1063,6 +1065,23 @@
         "type": "github"
       }
     },
+    "ibc-go-v9-wasm-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1724696463,
+        "narHash": "sha256-g6WzwHmlxUwAo6onvQp//2Hehoqjv8YQ/a1ZvgZ5Zbc=",
+        "owner": "cosmos",
+        "repo": "ibc-go",
+        "rev": "f516e48796f1a86f083c0a22575b7af748e29eff",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "08-wasm/release/v0.5.x+ibc-go-v9.0.x-wasmvm-v2.1.x",
+        "repo": "ibc-go",
+        "type": "github"
+      }
+    },
     "ibc-rs-src": {
       "flake": false,
       "locked": {
@@ -1444,15 +1463,31 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1727648392,
-        "narHash": "sha256-VTlVv1nSxImFxY6RPQpNZxvEOQ0u5s1wBFDgixySNDo=",
+        "lastModified": 1728538411,
+        "narHash": "sha256-f0SBJz1eZ2yOuKUr5CA9BHULGXVSn6miBuUWdTyhUhU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "4e0c36e4dd53f35d5a6385bdae88895ec5832f70",
+        "rev": "b69de56fac8c2b6f8fd27f2eca01dcda8e0a4221",
         "type": "github"
       },
       "original": {
         "owner": "nixos",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "nixpkgs_6": {
+      "locked": {
+        "lastModified": 1718428119,
+        "narHash": "sha256-WdWDpNaq6u1IPtxtYHHWpl5BmabtpmLnMAx0RdJ/vo8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "e6cea36f83499eb4e9cd184c8a8e823296b50ad5",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
         "ref": "nixpkgs-unstable",
         "repo": "nixpkgs",
         "type": "github"
@@ -1575,7 +1610,8 @@
       "inputs": {
         "cosmos-nix": "cosmos-nix",
         "flake-utils": "flake-utils_7",
-        "nixpkgs": "nixpkgs_5"
+        "nixpkgs": "nixpkgs_5",
+        "rust-overlay": "rust-overlay_2"
       }
     },
     "rust-overlay": {
@@ -1589,6 +1625,24 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "rev": "7ff8e9a04ac7777a3446788cb4018b452157ab8a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "type": "github"
+      }
+    },
+    "rust-overlay_2": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_6"
+      },
+      "locked": {
+        "lastModified": 1728959392,
+        "narHash": "sha256-fp4he1QQjE+vasDMspZYeXrwTm9otwEqLwEN6FKZ5v0=",
+        "owner": "oxalica",
+        "repo": "rust-overlay",
+        "rev": "4c6e317300f05b8871f585b826b6f583e7dc4a9b",
         "type": "github"
       },
       "original": {
