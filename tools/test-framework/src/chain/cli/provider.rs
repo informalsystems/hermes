@@ -47,8 +47,6 @@ pub fn submit_consumer_chain_proposal(
     let output: serde_json::Value =
         serde_json::from_str(&raw_output.stdout).map_err(handle_generic_error)?;
 
-    let txhash = output.get("txhash").and_then(|code| code.as_str()).ok_or_else(|| Error::generic(eyre!("failed to extract 'code' from 'tx gov submit-legacy-proposal consumer-addition' command")))?;
-
     let output_code = output.get("code").and_then(|code| code.as_u64()).ok_or_else(|| Error::generic(eyre!("failed to extract 'code' from 'tx gov submit-legacy-proposal consumer-addition' command")))?;
 
     // Proposal submission might fail due to account sequence error.
