@@ -226,16 +226,15 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1727786196,
+        "lastModified": 1728982270,
         "narHash": "sha256-iAzKmzrUm6BD6Vwb6rtbkTy1e/nFTsgo+Y5WNrrY2vc=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "a79a38c35a4b6606ea2a7db2e3a2ae661049dc1e",
+        "rev": "8b7f6e8d2c2e6455fcc9d86ef098e7f182827637",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/update-juno-to-v25",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1446,11 +1445,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1727716680,
-        "narHash": "sha256-uMVkVHL4r3QmlZ1JM+UoJwxqa46cgHnIfqGzVlw5ca4=",
+        "lastModified": 1728538411,
+        "narHash": "sha256-f0SBJz1eZ2yOuKUr5CA9BHULGXVSn6miBuUWdTyhUhU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b5b22b42c0d10c7d2463e90a546c394711e3a724",
+        "rev": "b69de56fac8c2b6f8fd27f2eca01dcda8e0a4221",
         "type": "github"
       },
       "original": {
