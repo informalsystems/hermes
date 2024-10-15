@@ -86,7 +86,7 @@ primitive-types          = { version = "0.12.1", default-features = false }
 prometheus               = "0.13.4"
 prost                    = "0.13"
 rand                     = "0.8.5"
-regex                    = "1.10.6"
+regex                    = "1.11.0"
 reqwest                  = { version = "0.11.27", default-features = false }
 retry                    = { version = "2.0.0", default-features = false }
 ripemd                   = "0.1.3"
