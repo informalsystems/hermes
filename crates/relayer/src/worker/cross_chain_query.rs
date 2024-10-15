@@ -8,6 +8,7 @@ use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::foreign_client::ForeignClient;
 use crate::object::CrossChainQuery;
+use crate::telemetry;
 use crate::util::task::{spawn_background_task, Next, TaskError, TaskHandle};
 use crate::worker::WorkerCmd;
 
@@ -74,6 +75,12 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
 
         // Handle of queried chain has to query data from it's RPC
         info!("request: {}", cross_chain_query.short_name());
+        telemetry!(
+            cross_chain_queries,
+            &cross_chain_query.src_chain_id,
+            &cross_chain_query.dst_chain_id,
+            queries.len()
+        );
         let response = chain_b_handle.cross_chain_query(queries);
         if let Ok(cross_chain_query_responses) = response {
             // Run only when cross chain query response is not empty
@@ -124,12 +131,22 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                     );
                 }
 
-                chain_a_handle
+                let _ccq_responses = chain_a_handle
                     .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(
                         chain_a_msgs,
                         Uuid::new_v4(),
                     ))
                     .map_err(|_| TaskError::Ignore(RunError::query()))?;
+
+                telemetry!(
+                    cross_chain_query_responses,
+                    &cross_chain_query.dst_chain_id,
+                    &cross_chain_query.src_chain_id,
+                    _ccq_responses
+                        .iter()
+                        .map(|ccq_response| ccq_response.code)
+                        .collect()
+                );
             }
         }
     }
