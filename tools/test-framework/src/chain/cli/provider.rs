@@ -47,6 +47,8 @@ pub fn submit_consumer_chain_proposal(
     let output: serde_json::Value =
         serde_json::from_str(&raw_output.stdout).map_err(handle_generic_error)?;
 
+    let txhash = output.get("txhash").and_then(|code| code.as_str()).ok_or_else(|| Error::generic(eyre!("failed to extract 'code' from 'tx gov submit-legacy-proposal consumer-addition' command")))?;
+
     let output_code = output.get("code").and_then(|code| code.as_u64()).ok_or_else(|| Error::generic(eyre!("failed to extract 'code' from 'tx gov submit-legacy-proposal consumer-addition' command")))?;
 
     // Proposal submission might fail due to account sequence error.
@@ -81,6 +83,27 @@ pub fn submit_consumer_chain_proposal(
             ],
         )?;
     }
+
+    thread::sleep(core::time::Duration::from_secs(3));
+
+    let query_txhash_output = simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "--home",
+            home_path,
+            "--node",
+            rpc_listen_address,
+            "query",
+            "tx",
+            "--type=hash",
+            txhash,
+            "--output",
+            "json",
+        ],
+    )?;
+
+    tracing::warn!("{}", query_txhash_output.stdout);
 
     Ok(())
 }
@@ -201,7 +224,6 @@ pub fn validator_opt_in(
     rpc_listen_address: &str,
     fees: &str,
     consumer_id: &str,
-    pubkey: &str,
 ) -> Result<(), Error> {
     simple_exec(
         chain_id,
@@ -211,7 +233,6 @@ pub fn validator_opt_in(
             "provider",
             "opt-in",
             consumer_id,
-            pubkey,
             "--chain-id",
             chain_id,
             "--from",

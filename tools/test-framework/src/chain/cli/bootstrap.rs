@@ -23,6 +23,14 @@ pub fn initialize(chain_id: &str, command_path: &str, home_path: &str) -> Result
             chain_id,
         ],
     )?;
+    simple_exec(
+        chain_id,
+        command_path,
+        &[
+            "version",
+            "--long",
+        ],
+    )?;
 
     Ok(())
 }

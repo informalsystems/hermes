@@ -10,7 +10,6 @@ use tracing::info;
 use crate::chain::builder::ChainBuilder;
 use crate::chain::cli::provider::validator_opt_in;
 use crate::chain::config;
-use crate::chain::exec::simple_exec;
 use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use crate::error::Error;
 use crate::prelude::{ChainDriver, Denom, FullNode, TestWallets, Token};
@@ -41,7 +40,7 @@ pub fn bootstrap_consumer_node(
         )))?;
 
     let initial_coin = Token::new(denom.clone(), initial_amount);
-    let chain_driver = builder.new_chain(prefix, false, chain_number)?;
+    let chain_driver = builder.new_chain("consumer", false, chain_number)?;
 
     chain_driver.initialize()?;
 
@@ -58,12 +57,6 @@ pub fn bootstrap_consumer_node(
     // Wait for the consumer chain to be initialized before querying the genesis
     thread::sleep(Duration::from_secs(5));
 
-    let show_validator_output = simple_exec(
-        "test",
-        &chain_driver.command_path,
-        &["comet", "show-validator", "--home", &chain_driver.home_path],
-    )?;
-
     validator_opt_in(
         provider_chain_driver.chain_id.as_str(),
         &provider_chain_driver.command_path,
@@ -71,7 +64,6 @@ pub fn bootstrap_consumer_node(
         &provider_chain_driver.rpc_listen_address(),
         provider_fee,
         prefix,
-        &show_validator_output.stdout,
     )?;
 
     // Wait enough time so that the spawn_time passed
@@ -161,7 +153,6 @@ pub fn bootstrap_consumer_node(
         wallets,
         process: Arc::new(RwLock::new(process)),
     };
-    thread::sleep(Duration::from_secs(180));
 
     Ok(node)
 }

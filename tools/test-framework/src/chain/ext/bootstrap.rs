@@ -17,6 +17,7 @@ use crate::chain::cli::bootstrap::{
     add_genesis_account, add_genesis_validator, add_wallet, collect_gen_txs, initialize,
     start_chain,
 };
+use crate::chain::cli::provider::submit_consumer_chain_proposal;
 use crate::chain::cli::provider::{
     copy_validator_key_pair, create_consumer, query_consumer_genesis, query_gov_proposal,
     replace_genesis_state, update_consumer, validator_opt_in,
@@ -103,6 +104,15 @@ pub trait ChainBootstrapMethodsExt {
        value is dropped.
     */
     fn start(&self) -> Result<ChildProcess, Error>;
+
+    /**
+       Submit a consumer chain proposal.
+    */
+    fn submit_consumer_chain_proposal(
+        &self,
+        consumer_chain_id: &str,
+        fees: &str,
+    ) -> Result<(), Error>;
 
     fn create_permisionless_consumer(
         &self,
@@ -283,6 +293,65 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         )
     }
 
+    fn submit_consumer_chain_proposal(
+        &self,
+        consumer_chain_id: &str,
+        fees: &str,
+    ) -> Result<(), Error> {
+
+        let raw_proposal = r#"
+        {
+            "chain_id": "{consumer_chain_id}",
+            "initialization_parameters": {
+                "initial_height": {
+                    "revision_number": 0,
+                    "revision_height": 1
+                },
+                "genesis_hash": "Z2VuX2hhc2g=",
+                "binary_hash": "YmluX2hhc2g=",
+                "spawn_time": "{spawn_time}",
+                "unbonding_period": 100000000000,
+                "ccv_timeout_period": 100000000000,
+                "transfer_timeout_period": 100000000000,
+                "consumer_redistribution_fraction": "0.75",
+                "blocks_per_distribution_transmission": 10,
+                "historical_entries": 10000,
+                "distribution_transmission_channel": ""
+            },
+            "power_shaping_parameters": {
+                "top_N": 100,
+                "validators_power_cap": 0,
+                "validator_set_cap": 0,
+                "allowlist": [],
+                "denylist": [],
+                "min_stake": 0,
+                "allow_inactive_vals": false
+            },
+            "metadata": "ipfs://CID",
+            "deposit": "10000000stake",
+            "title": "\"update consumer 0 to top N\"",
+            "summary": "\"update consumer 0 to top N\"",
+            "expedited": false
+        }"#;
+
+        let current_time: DateTime<Utc> = Utc::now();
+        let future_time = current_time + ChronoDuration::seconds(30);
+        let spawn_time = future_time.to_rfc3339();
+
+        let proposal = raw_proposal.replace("{consumer_chain_id}", consumer_chain_id);
+        let proposal = proposal.replace("{spawn_time}", &spawn_time);
+
+        self.write_file("consumer_proposal_topn.json", &proposal)?;
+
+        submit_consumer_chain_proposal(
+            self.chain_id.as_str(),
+            &self.command_path,
+            &self.home_path,
+            &self.rpc_listen_address(),
+            fees,
+        )
+    }
+
     fn create_permisionless_consumer(
         &self,
         consumer_chain_id: &str,
@@ -304,11 +373,11 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                 "genesis_hash": "Z2VuX2hhc2g=",
                 "binary_hash": "YmluX2hhc2g=",
                 "spawn_time": "{spawn_time}",
-                "unbonding_period": 1728000000000000,
-                "ccv_timeout_period": 2419200000000000,
-                "transfer_timeout_period": 1800000000000,
+                "unbonding_period": 100000000000,
+                "ccv_timeout_period": 100000000000,
+                "transfer_timeout_period": 100000000000,
                 "consumer_redistribution_fraction": "0.75",
-                "blocks_per_distribution_transmission": 1000,
+                "blocks_per_distribution_transmission": 10,
                 "historical_entries": 10000,
                 "distribution_transmission_channel": ""
             }
@@ -332,12 +401,6 @@ impl ChainBootstrapMethodsExt for ChainDriver {
     }
 
     fn validator_opt_in(&self, consumer_chain_id: &str, fees: &str) -> Result<(), Error> {
-        let show_validator_output = simple_exec(
-            "test",
-            &self.command_path,
-            &["comet", "show-validator", "--home", &self.home_path],
-        )?;
-
         validator_opt_in(
             self.chain_id.as_str(),
             &self.command_path,
@@ -345,7 +408,6 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             &self.rpc_listen_address(),
             fees,
             consumer_chain_id,
-            &show_validator_output.stdout,
         )
     }
 
