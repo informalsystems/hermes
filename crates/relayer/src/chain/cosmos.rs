@@ -2853,7 +2853,7 @@ pub async fn query_ccv_consumer_id(
     let grpc_addr = Uri::from_str(&config.grpc_addr.to_string())
         .map_err(|e| Error::invalid_uri(config.grpc_addr.to_string(), e))?;
 
-    let mut client = create_grpc_client(grpc_addr, QueryClient::new)
+    let mut client = create_grpc_client(&grpc_addr, QueryClient::new)
         .await?
         .max_decoding_message_size(config.max_grpc_decoding_size.get_bytes() as usize);
 
