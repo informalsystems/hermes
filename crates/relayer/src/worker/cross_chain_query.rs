@@ -94,7 +94,7 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                         },
                         IncludeProof::No,
                     )
-                    .map_err(|_| TaskError::Fatal(RunError::query()))?
+                    .map_err(|e| TaskError::Fatal(RunError::relayer(e)))?
                     .0;
 
                 // Retrieve client based on client id
@@ -103,19 +103,21 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                     chain_a_handle.clone(),
                     connection_end.client_id(),
                 )
-                .map_err(|_| TaskError::Fatal(RunError::query()))?;
+                .map_err(|e| TaskError::Fatal(RunError::foreign_client(e)))?;
 
                 let target_height = Height::new(
                     chain_b_handle.id().version(),
                     cross_chain_query_responses.first().unwrap().height as u64,
                 )
-                .map_err(|_| TaskError::Fatal(RunError::query()))?
+                .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?
                 .increment();
 
                 // Push update client msg
                 let mut chain_a_msgs = client_a
                     .wait_and_build_update_client(target_height)
-                    .map_err(|_| TaskError::Fatal(RunError::query()))?;
+                    .map_err(|e| TaskError::Fatal(RunError::foreign_client(e)))?;
+
+                let num_cross_chain_query_responses = cross_chain_query_responses.len();
 
                 for response in cross_chain_query_responses {
                     info!("response arrived: query_id: {}", response.query_id);
@@ -125,24 +127,36 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .try_to_any(
                                 chain_a_handle
                                     .get_signer()
-                                    .map_err(|_| TaskError::Fatal(RunError::query()))?,
+                                    .map_err(|e| TaskError::Fatal(RunError::relayer(e)))?,
                             )
-                            .map_err(|_| TaskError::Fatal(RunError::query()))?,
+                            .map_err(|e| TaskError::Fatal(RunError::ics31(e)))?,
                     );
                 }
 
-                let _ccq_responses = chain_a_handle
+                let ccq_responses = chain_a_handle
                     .send_messages_and_wait_check_tx(TrackedMsgs::new_uuid(
                         chain_a_msgs,
                         Uuid::new_v4(),
                     ))
-                    .map_err(|_| TaskError::Ignore(RunError::query()))?;
+                    .map_err(|e| {
+                        // Since all the CCQs failed, generate a failure code for the telemetry
+                        let failed_codes =
+                            vec![tendermint::abci::Code::from(1); num_cross_chain_query_responses];
+                        telemetry!(
+                            cross_chain_query_responses,
+                            &cross_chain_query.dst_chain_id,
+                            &cross_chain_query.src_chain_id,
+                            failed_codes
+                        );
+
+                        TaskError::Ignore(RunError::relayer(e))
+                    })?;
 
                 telemetry!(
                     cross_chain_query_responses,
                     &cross_chain_query.dst_chain_id,
                     &cross_chain_query.src_chain_id,
-                    _ccq_responses
+                    ccq_responses
                         .iter()
                         .map(|ccq_response| ccq_response.code)
                         .collect()
