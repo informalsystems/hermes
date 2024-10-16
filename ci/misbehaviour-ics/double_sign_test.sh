@@ -425,7 +425,7 @@ do
     CONS_ACCOUNT_ADDR=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY}.json)
     interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR $USER_COINS --home ${CONS_NODE_DIR}
 
-    ### this probably doesnt have to be done for each node
+    ### this probably does not have to be done for each node
     # Add consumer genesis states to genesis file
     RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
