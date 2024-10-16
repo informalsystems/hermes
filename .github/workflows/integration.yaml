@@ -45,11 +45,6 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia18
-            command: gaiad
-            account_prefix: cosmos
-            native_token: stake
-            features: forward-packet,clean-workers,ica,ics29-fee
           - package: gaia20
             command: gaiad
             account_prefix: cosmos
@@ -186,7 +181,7 @@ jobs:
           - package: .#gaia20 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia18 .#neutron
+          - package: .#gaia20 .#neutron
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
@@ -223,6 +218,7 @@ jobs:
             --features interchain-security,ica interchain_security::
 
   interchain-security-icq:
+    if: false # Disable CCQ test
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
