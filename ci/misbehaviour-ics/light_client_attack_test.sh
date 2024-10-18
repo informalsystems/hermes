@@ -631,7 +631,7 @@ waiting 10 "for Hermes relayer to start"
 diag "Running Hermes relayer evidence command"
 
 # Run hermes in evidence mode
-$HERMES_BIN evidence --chain consumer &> ${HOME_DIR}/hermes-evidence-logs.txt &
+$HERMES_BIN --debug=rpc evidence --chain consumer &> ${HOME_DIR}/hermes-evidence-logs.txt &
 
 # If we sleep 5 here and above, we end up on the forked block later
 waiting 10 "for Hermes evidence monitor to start"
