@@ -423,7 +423,7 @@ rpc_addr = "http://${NODE_IP}:26648"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "2days"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:26648/websocket' , batch_delay = '50ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 4 }
 
 [chains.gas_price]
        denom = "stake"
@@ -446,7 +446,7 @@ rpc_addr = "http://${NODE_IP}:26658"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "2days"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:26658/websocket' , batch_delay = '50ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 4 }
 
 [chains.gas_price]
        denom = "stake"
@@ -563,7 +563,7 @@ rpc_addr = "http://${NODE_IP}:26638"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "2days"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:26638/websocket' , batch_delay = '50ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 4 }
 
 [chains.gas_price]
        denom = "stake"
@@ -585,7 +585,7 @@ rpc_addr = "http://${NODE_IP}:26658"
 rpc_timeout = "10s"
 store_prefix = "ibc"
 trusting_period = "2days"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:26658/websocket' , batch_delay = '50ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 4 }
 
 [chains.gas_price]
        denom = "stake"
