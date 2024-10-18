@@ -5,11 +5,11 @@
 use alloc::sync::Arc;
 use core::time::Duration;
 use eyre::eyre;
-use ibc_relayer::config::compat_mode::CompatMode;
 use std::cmp::max;
 use tokio::runtime::Runtime;
 
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::config::compat_mode::CompatMode;
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
