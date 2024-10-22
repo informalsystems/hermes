@@ -101,15 +101,16 @@
     "cometbft-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-G5gchJMn/BFzwYx8/ikPDL5fS/TuFIBF4DKJbkalp/M=",
+        "lastModified": 1723450629,
+        "narHash": "sha256-2QO4KeEUX4HHT1AKhEdPplJHjBhalfM11Dn3/urIVig=",
         "owner": "cometbft",
         "repo": "cometbft",
-        "rev": "66a5a9da9f7a3306f382eb9142ccb9c9f7997d3f",
+        "rev": "e1b4453baf0af6487ad187c7f17dc50517126673",
         "type": "github"
       },
       "original": {
         "owner": "cometbft",
-        "ref": "v0.38.0",
+        "ref": "v0.38.11",
         "repo": "cometbft",
         "type": "github"
       }
@@ -227,11 +228,11 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1728984066,
-        "narHash": "sha256-cHgS2owRNuJnHFZ+UUW5mnPTXW2/IW+yLjlJiocz/Ok=",
+        "lastModified": 1729603468,
+        "narHash": "sha256-Ym4WfC/Iogqft2KOoHEv2FlWlgsxOAA5CZCbGXPf65o=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "302ca94602fb59af928e317ffb201dc676df55df",
+        "rev": "6abc05a6ada63de610adfb8c41a6a276bc77a5d8",
         "type": "github"
       },
       "original": {
@@ -1465,11 +1466,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1728538411,
-        "narHash": "sha256-f0SBJz1eZ2yOuKUr5CA9BHULGXVSn6miBuUWdTyhUhU=",
+        "lastModified": 1729428082,
+        "narHash": "sha256-xb4/Y+Y7ZlkQaA5rXnrXplDzdt2Jfgdmar3+qkb56UA=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b69de56fac8c2b6f8fd27f2eca01dcda8e0a4221",
+        "rev": "ca30f584e18024baf39c395001262ed936f27ebd",
         "type": "github"
       },
       "original": {
