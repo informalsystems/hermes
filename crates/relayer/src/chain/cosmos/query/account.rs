@@ -1,6 +1,6 @@
 use http::uri::Uri;
 use ibc_proto::cosmos::auth::v1beta1::query_client::QueryClient;
-use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, EthAccount, QueryAccountRequest};
+use ibc_proto::cosmos::auth::v1beta1::{BaseAccount, QueryAccountRequest};
 use prost::Message;
 use tracing::info;
 
@@ -8,6 +8,19 @@ use crate::chain::cosmos::types::account::Account;
 use crate::config::default::max_grpc_decoding_size;
 use crate::error::Error;
 use crate::util::create_grpc_client;
+
+/// EthAccount defines an Ethermint account.
+/// TODO: remove when/if a canonical `EthAccount`
+/// lands in the next Cosmos SDK release
+/// (note https://github.com/cosmos/cosmos-sdk/pull/9981
+/// only adds the PubKey type)
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EthAccount {
+    #[prost(message, optional, tag = "1")]
+    pub base_account: ::core::option::Option<BaseAccount>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub code_hash: ::prost::alloc::vec::Vec<u8>,
+}
 
 /// Get a `&mut Account` from an `&mut Option<Account>` if it is `Some(Account)`.
 /// Otherwise query for the account information, update the `Option` to `Some`,

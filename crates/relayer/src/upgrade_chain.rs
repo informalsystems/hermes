@@ -296,6 +296,7 @@ fn build_upgrade_proposal(
         metadata: "".to_string(),
         title: "proposal 0".to_string(),
         summary: "upgrade the chain software and unbonding period".to_string(),
+        expedited: true, // TODO: Correctly handle expedited argument
     };
 
     let mut buf_msg = Vec::new();
