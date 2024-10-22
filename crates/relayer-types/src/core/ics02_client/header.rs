@@ -8,6 +8,9 @@ use ibc_proto::Protobuf;
 use crate::clients::ics07_tendermint::header::{
     decode_header as tm_decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
 };
+use crate::clients::ics08_wasm::client_message::{
+    wasm_decode_client_message, ClientMessage, WASM_CLIENT_MESSAGE_TYPE_URL,
+};
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::timestamp::Timestamp;
@@ -41,24 +44,28 @@ pub fn decode_header(header_bytes: &[u8]) -> Result<AnyHeader, Error> {
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
     Tendermint(TendermintHeader),
+    Wasm(ClientMessage),
 }
 
 impl Header for AnyHeader {
     fn client_type(&self) -> ClientType {
         match self {
-            Self::Tendermint(header) => header.client_type(),
+            Self::Tendermint(_) => ClientType::Tendermint,
+            Self::Wasm(_) => ClientType::Wasm,
         }
     }
 
     fn height(&self) -> Height {
         match self {
             Self::Tendermint(header) => header.height(),
+            Self::Wasm(header) => header.height(),
         }
     }
 
     fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(header) => header.timestamp(),
+            Self::Wasm(header) => header.timestamp(),
         }
     }
 }
@@ -75,6 +82,11 @@ impl TryFrom<Any> for AnyHeader {
                 Ok(AnyHeader::Tendermint(val))
             }
 
+            WASM_CLIENT_MESSAGE_TYPE_URL => {
+                let val = wasm_decode_client_message(raw.value.as_slice())?;
+                Ok(AnyHeader::Wasm(val))
+            }
+
             _ => Err(Error::unknown_header_type(raw.type_url)),
         }
     }
@@ -83,11 +95,17 @@ impl TryFrom<Any> for AnyHeader {
 impl From<AnyHeader> for Any {
     fn from(value: AnyHeader) -> Self {
         use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+        use ibc_proto::ibc::lightclients::wasm::v1::ClientMessage as RawClientMessage;
 
         match value {
             AnyHeader::Tendermint(header) => Any {
                 type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
                 value: Protobuf::<RawHeader>::encode_vec(header),
+            },
+
+            AnyHeader::Wasm(header) => Any {
+                type_url: WASM_CLIENT_MESSAGE_TYPE_URL.to_string(),
+                value: Protobuf::<RawClientMessage>::encode_vec(header),
             },
         }
     }
@@ -96,5 +114,11 @@ impl From<AnyHeader> for Any {
 impl From<TendermintHeader> for AnyHeader {
     fn from(header: TendermintHeader) -> Self {
         Self::Tendermint(header)
+    }
+}
+
+impl From<ClientMessage> for AnyHeader {
+    fn from(header: ClientMessage) -> Self {
+        Self::Wasm(header)
     }
 }

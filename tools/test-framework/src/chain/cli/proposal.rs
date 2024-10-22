@@ -9,11 +9,13 @@ use crate::chain::exec::simple_exec;
 use crate::error::Error;
 use crate::prelude::{handle_generic_error, ChainDriver};
 
-pub fn vote_proposal(driver: &ChainDriver, proposal_id: &str, fees: &str) -> Result<(), Error> {
+pub fn vote_proposal(driver: &ChainDriver, fees: &str, proposal_id: &str) -> Result<(), Error> {
     let output = simple_exec(
         driver.chain_id.as_str(),
         &driver.command_path,
         &[
+            "--node",
+            &driver.rpc_listen_address(),
             "tx",
             "gov",
             "vote",
@@ -23,29 +25,21 @@ pub fn vote_proposal(driver: &ChainDriver, proposal_id: &str, fees: &str) -> Res
             driver.chain_id.as_str(),
             "--home",
             &driver.home_path,
-            "--node",
-            &driver.rpc_listen_address(),
             "--keyring-backend",
             "test",
             "--from",
             "validator",
             "--fees",
             fees,
-            "--yes",
             "--output",
             "json",
+            "--yes",
         ],
     )?;
 
     std::thread::sleep(core::time::Duration::from_secs(1));
 
-    query_tx_hash(
-        driver.chain_id.as_str(),
-        &driver.command_path,
-        &driver.home_path,
-        &driver.rpc_listen_address(),
-        &output.stdout,
-    )?;
+    query_tx_hash(driver, &output.stdout)?;
 
     Ok(())
 }
@@ -88,13 +82,7 @@ pub fn deposit_proposal(
 
     std::thread::sleep(core::time::Duration::from_secs(1));
 
-    query_tx_hash(
-        driver.chain_id.as_str(),
-        &driver.command_path,
-        &driver.home_path,
-        &driver.rpc_listen_address(),
-        &output.stdout,
-    )?;
+    query_tx_hash(driver, &output.stdout)?;
 
     Ok(())
 }

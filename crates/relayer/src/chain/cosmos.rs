@@ -28,9 +28,17 @@ use ibc_relayer_types::clients::ics07_tendermint::client_state::{
 };
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
+use ibc_relayer_types::clients::ics08_wasm::client_message::ClientMessage;
+use ibc_relayer_types::clients::ics08_wasm::client_state::{
+    ClientState as WasmClientState, WasmUnderlyingClientState,
+};
+use ibc_relayer_types::clients::ics08_wasm::consensus_state::{
+    ConsensusState as WasmConsensusState, WasmUnderlyingConsensusState,
+};
 use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
+use ibc_relayer_types::core::ics02_client::header::AnyHeader;
 use ibc_relayer_types::core::ics03_connection::connection::{
     ConnectionEnd, IdentifiedConnectionEnd,
 };
@@ -118,6 +126,8 @@ use crate::HERMES_VERSION;
 use self::gas::dynamic_gas_price;
 use self::types::gas::GasConfig;
 use self::version::Specs;
+
+use super::client::{WasmClientSettings, WasmUnderlyingClientSettings};
 
 pub mod batch;
 pub mod client;
@@ -1385,12 +1395,15 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
 
-        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
-            return Err(Error::consensus_state_type_mismatch(
-                ClientType::Tendermint,
-                consensus_state.client_type(),
-            ));
-        }
+        match &consensus_state {
+            AnyConsensusState::Tendermint(_) => Ok(()),
+            AnyConsensusState::Wasm(cs) => {
+                // We only expect the underlying consensus state to be a Tendermint consensus state.
+                match cs.underlying {
+                    WasmUnderlyingConsensusState::Tendermint(_) => Ok(()),
+                }
+            }
+        }?;
 
         match include_proof {
             IncludeProof::Yes => {
@@ -2413,28 +2426,34 @@ impl ChainEndpoint for CosmosSdkChain {
         &self,
         height: ICSHeight,
         settings: ClientSettings,
-    ) -> Result<Self::ClientState, Error> {
+    ) -> Result<AnyClientState, Error> {
         crate::time!(
             "build_client_state",
             {
                 "src_chain": self.config().id.to_string(),
             }
         );
-        let ClientSettings::Tendermint(settings) = settings;
+        let tm_settings = match &settings {
+            ClientSettings::Tendermint(settings) => settings,
+            ClientSettings::Wasm(WasmClientSettings { underlying, .. }) => match underlying {
+                WasmUnderlyingClientSettings::Tendermint(settings) => settings,
+            },
+        };
+
         let unbonding_period = self.unbonding_period()?;
-        let trusting_period = settings
+        let trusting_period = tm_settings
             .trusting_period
             .unwrap_or_else(|| self.trusting_period(unbonding_period));
 
         let proof_specs = self.config.proof_specs.clone().unwrap_or_default();
 
         // Build the client state.
-        TmClientState::new(
+        let tm_client_state = TmClientState::new(
             self.id().clone(),
-            settings.trust_threshold,
+            tm_settings.trust_threshold,
             trusting_period,
             unbonding_period,
-            settings.max_clock_drift,
+            tm_settings.max_clock_drift,
             height,
             proof_specs,
             vec!["upgrade".to_string(), "upgradedIBCState".to_string()],
@@ -2443,21 +2462,45 @@ impl ChainEndpoint for CosmosSdkChain {
                 after_misbehaviour: true,
             },
         )
-        .map_err(Error::ics07)
+        .map_err(Error::ics07)?;
+
+        match settings {
+            ClientSettings::Tendermint(_) => Ok(AnyClientState::Tendermint(tm_client_state)),
+            ClientSettings::Wasm(WasmClientSettings { checksum, .. }) => {
+                Ok(AnyClientState::Wasm(WasmClientState {
+                    checksum,
+                    latest_height: height,
+                    underlying: WasmUnderlyingClientState::Tendermint(tm_client_state),
+                }))
+            }
+        }
     }
 
     fn build_consensus_state(
-        &self,
-        light_block: Self::LightBlock,
-    ) -> Result<Self::ConsensusState, Error> {
+        &mut self,
+        trusted: ICSHeight,
+        target: ICSHeight,
+        client_state: &AnyClientState,
+    ) -> Result<AnyConsensusState, Error> {
         crate::time!(
             "build_consensus_state",
             {
                 "src_chain": self.config().id.to_string(),
+                "trusted_height": trusted,
+                "target_height": target,
+                "client_type": client_state.client_type().to_string(),
             }
         );
 
-        Ok(TmConsensusState::from(light_block.signed_header.header))
+        let light_block = self.verify_header(trusted, target, client_state)?;
+        let consensus_state = TmConsensusState::from(light_block.signed_header.header);
+
+        match client_state.client_type() {
+            ClientType::Tendermint => Ok(AnyConsensusState::from(consensus_state)),
+            ClientType::Wasm => Ok(AnyConsensusState::Wasm(WasmConsensusState {
+                underlying: WasmUnderlyingConsensusState::Tendermint(consensus_state),
+            })),
+        }
     }
 
     fn build_header(
@@ -2465,11 +2508,14 @@ impl ChainEndpoint for CosmosSdkChain {
         trusted_height: ICSHeight,
         target_height: ICSHeight,
         client_state: &AnyClientState,
-    ) -> Result<(Self::Header, Vec<Self::Header>), Error> {
+    ) -> Result<(AnyHeader, Vec<AnyHeader>), Error> {
         crate::time!(
             "build_header",
             {
                 "src_chain": self.config().id.to_string(),
+                "trusted_height": trusted_height,
+                "target_height": target_height,
+                "client_type": client_state.client_type().to_string(),
             }
         );
 
@@ -2483,7 +2529,28 @@ impl ChainEndpoint for CosmosSdkChain {
             now,
         )?;
 
-        Ok((target, supporting))
+        match client_state.client_type() {
+            ClientType::Tendermint => Ok((
+                AnyHeader::Tendermint(target),
+                supporting.into_iter().map(AnyHeader::Tendermint).collect(),
+            )),
+            ClientType::Wasm => {
+                let target = AnyHeader::Wasm(ClientMessage {
+                    data: Box::new(AnyHeader::Tendermint(target)),
+                });
+
+                let supporting = supporting
+                    .into_iter()
+                    .map(|header| {
+                        AnyHeader::from(ClientMessage {
+                            data: Box::new(AnyHeader::Tendermint(header)),
+                        })
+                    })
+                    .collect();
+
+                Ok((target, supporting))
+            }
+        }
     }
 
     fn maybe_register_counterparty_payee(

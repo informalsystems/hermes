@@ -1,7 +1,6 @@
 use std::env;
 
 use ibc_relayer::channel::version::Version;
-use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::config::{
     add_allow_message_interchainquery, set_floor_gas_price, set_max_deposit_period,
     set_min_deposit_amount, set_voting_period,
@@ -15,7 +14,7 @@ use ibc_test_framework::relayer::channel::{
 };
 use ibc_test_framework::util::proposal_status::ProposalStatus;
 use tendermint::abci::Event;
-use tendermint_rpc::{Client, HttpClient};
+use tendermint_rpc::Client;
 
 #[test]
 fn test_async_icq() -> Result<(), Error> {
@@ -65,7 +64,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -118,27 +117,17 @@ impl BinaryConnectionTest for AsyncIcqTest {
             "14472508",
         )?;
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
         driver_b.vote_proposal(&fee_denom_b.with_amount(381000000u64).to_string(), "1")?;
 
         info!("Assert that the wasm contract is successfully uploaded");
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "1")?;
 
         let init_args = r#"{"count": 1}"#;
         driver_b.update_oracle(
@@ -147,27 +136,17 @@ impl BinaryConnectionTest for AsyncIcqTest {
             init_args,
         )?;
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "2",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "2")?;
 
         driver_b.vote_proposal(&fee_denom_b.with_amount(381000000u64).to_string(), "2")?;
 
         info!("Assert that the update oracle proposal is eventually passed");
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "2",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "2")?;
 
         let query = r#"{"get_count":{"addr": "{my_addr}"}}"#;
         let query = query.replace("{my_addr}", &relayer_b.address().to_string());
@@ -178,7 +157,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
             &wallet_a.address().to_string(),
         )?;
 
-        assert_eventual_async_icq_success(&chains, &relayer)?;
+        assert_eventual_async_icq_success(&chains.node_a)?;
 
         Ok(())
     }
@@ -212,7 +191,7 @@ impl BinaryConnectionTest for FailedAsyncIcqTest {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
-        relayer: RelayerDriver,
+        _relayer: RelayerDriver,
         chains: ConnectedChains<ChainA, ChainB>,
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
@@ -265,27 +244,17 @@ impl BinaryConnectionTest for FailedAsyncIcqTest {
             "9972508",
         )?;
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "1")?;
 
         driver_b.vote_proposal(&fee_denom_b.with_amount(381000000u64).to_string(), "1")?;
 
         info!("Assert that the update oracle proposal is eventually passed");
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "1")?;
 
         let init_args = r#"{}"#;
         driver_b.update_oracle(
@@ -294,27 +263,17 @@ impl BinaryConnectionTest for FailedAsyncIcqTest {
             init_args,
         )?;
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "2",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, "2")?;
 
         driver_b.vote_proposal(&fee_denom_b.with_amount(381000000u64).to_string(), "2")?;
 
         info!("Assert that the update oracle proposal is eventually passed");
 
-        driver_b.value().assert_proposal_status(
-            driver_b.value().chain_id.as_str(),
-            &driver_b.value().command_path,
-            &driver_b.value().home_path,
-            &driver_b.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            "2",
-        )?;
+        driver_b
+            .value()
+            .assert_proposal_status(ProposalStatus::Passed, "2")?;
 
         let query = r#"{"query_version":{}}"#;
         chains.node_a.chain_driver().async_icq(
@@ -323,7 +282,7 @@ impl BinaryConnectionTest for FailedAsyncIcqTest {
             &wallet_a.address().to_string(),
         )?;
 
-        assert_eventual_async_icq_error(&chains, &relayer)?;
+        assert_eventual_async_icq_error(&chains.node_a)?;
 
         Ok(())
     }
@@ -331,19 +290,11 @@ impl BinaryConnectionTest for FailedAsyncIcqTest {
 
 /// Listen to events on the controller side to assert if the async ICQ is eventually
 /// successful
-fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    relayer: &RelayerDriver,
+fn assert_eventual_async_icq_success<ChainA: ChainHandle>(
+    chain: &MonoTagged<ChainA, FullNode>,
 ) -> Result<(), Error> {
-    let rpc_addr = match relayer.config.chains.first().unwrap() {
-        ChainConfig::CosmosSdk(c) => c.rpc_addr.clone(),
-    };
-
-    let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
-    rpc_client.set_compat_mode(tendermint_rpc::client::CompatMode::V0_37);
-
     for _ in 0..MAX_RETRIES {
-        if let Ok(result) = check_events_for_success(chains, &rpc_client) {
+        if let Ok(result) = check_events_for_success(&chain.chain_driver()) {
             match result {
                 EventOracleQueryStatus::Success(e) => {
                     debug!("async query successful with event: {e:#?}");
@@ -366,19 +317,11 @@ fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
 
 /// Listen to events on the controller side to assert if the async ICQ is eventually
 /// successful
-fn assert_eventual_async_icq_error<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    relayer: &RelayerDriver,
+fn assert_eventual_async_icq_error<ChainA: ChainHandle>(
+    chain: &MonoTagged<ChainA, FullNode>,
 ) -> Result<(), Error> {
-    let rpc_addr = match relayer.config.chains.first().unwrap() {
-        ChainConfig::CosmosSdk(c) => c.rpc_addr.clone(),
-    };
-
-    let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
-    rpc_client.set_compat_mode(tendermint_rpc::client::CompatMode::V0_37);
-
     for _ in 0..MAX_RETRIES {
-        if let Ok(result) = check_events_for_error(chains, &rpc_client) {
+        if let Ok(result) = check_events_for_error(&chain.chain_driver()) {
             match result {
                 EventOracleQueryStatus::Success(e) => {
                     debug!("async query successful with event: {e:#?}");
@@ -400,16 +343,13 @@ fn assert_eventual_async_icq_error<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 /// Checks if there is an Oracle event in the given events
-fn check_events_for_success<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    rpc_client: &HttpClient,
+fn check_events_for_success<Chain: ChainHandle>(
+    driver: &MonoTagged<Chain, &ChainDriver>,
 ) -> Result<EventOracleQueryStatus, Error> {
-    let response = chains
-        .node_a
-        .chain_driver()
+    let response = driver
         .value()
         .runtime
-        .block_on(rpc_client.latest_block_results())
+        .block_on(driver.rpc_client().unwrap().value().latest_block_results())
         .map_err(|err| Error::generic(eyre!("Failed to fetch block results: {}", err)))?;
 
     if let Some(txs_results) = response.txs_results {
@@ -427,16 +367,13 @@ fn check_events_for_success<ChainA: ChainHandle, ChainB: ChainHandle>(
 }
 
 /// Checks if there is an Oracle event in the given events
-fn check_events_for_error<ChainA: ChainHandle, ChainB: ChainHandle>(
-    chains: &ConnectedChains<ChainA, ChainB>,
-    rpc_client: &HttpClient,
+fn check_events_for_error<Chain: ChainHandle>(
+    driver: &MonoTagged<Chain, &ChainDriver>,
 ) -> Result<EventOracleQueryStatus, Error> {
-    let response = chains
-        .node_a
-        .chain_driver()
+    let response = driver
         .value()
         .runtime
-        .block_on(rpc_client.latest_block_results())
+        .block_on(driver.rpc_client().unwrap().value().latest_block_results())
         .map_err(|err| Error::generic(eyre!("Failed to fetch block results: {}", err)))?;
 
     if let Some(txs_results) = response.txs_results {

@@ -20,7 +20,7 @@ use crate::Height;
 pub const TENDERMINT_HEADER_TYPE_URL: &str = "/ibc.lightclients.tendermint.v1.Header";
 
 /// Tendermint consensus header
-#[derive(Clone, PartialEq, Eq, Deserialize, Serialize)]
+#[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 pub struct Header {
     pub signed_header: SignedHeader, // contains the commitment root
     pub validator_set: ValidatorSet, // the validator set that signed Header
@@ -29,15 +29,16 @@ pub struct Header {
     pub trusted_validator_set: ValidatorSet, // the last trusted validator set at trusted height
 }
 
-impl core::fmt::Debug for Header {
-    fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        write!(f, " Header {{...}}")
-    }
-}
-
 impl Display for Header {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
-        write!(f, "Header {{ signed_header: {}, validator_set: {}, trusted_height: {}, trusted_validator_set: {} }}", PrettySignedHeader(&self.signed_header), PrettyValidatorSet(&self.validator_set), self.trusted_height, PrettyValidatorSet(&self.trusted_validator_set))
+        write!(
+            f,
+            "Header {{ signed_header: {}, validator_set: {}, trusted_height: {}, trusted_validator_set: {} }}",
+            PrettySignedHeader(&self.signed_header),
+            PrettyValidatorSet(&self.validator_set),
+            self.trusted_height,
+            PrettyValidatorSet(&self.trusted_validator_set)
+        )
     }
 }
 

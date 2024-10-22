@@ -21,16 +21,7 @@ impl<'a, Chain: Send> AsyncIcqMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
             &driver.rpc_listen_address(),
         )?;
 
-        instantiate_wasm_contract(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            relayer,
-            fees,
-            &wasm_code,
-            init_args,
-        )?;
+        instantiate_wasm_contract(driver, relayer, fees, &wasm_code, init_args)?;
 
         let address = query_wasm_list_contracts_by_code(
             driver.chain_id.as_str(),
@@ -40,26 +31,11 @@ impl<'a, Chain: Send> AsyncIcqMethodsExt<Chain> for MonoTagged<Chain, &'a ChainD
             &wasm_code,
         )?;
 
-        update_oracle(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            &address,
-            relayer,
-        )
+        update_oracle(driver, &address, relayer)
     }
 
     fn async_icq(&self, channel_id: &ChannelId, query_json: &str, from: &str) -> Result<(), Error> {
         let driver = *self.value();
-        async_icq(
-            driver.chain_id.as_str(),
-            &driver.command_path,
-            &driver.home_path,
-            &driver.rpc_listen_address(),
-            channel_id.as_str(),
-            query_json,
-            from,
-        )
+        async_icq(driver, channel_id.as_str(), query_json, from)
     }
 }
