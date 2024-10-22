@@ -179,7 +179,7 @@ pub mod default {
     }
 
     pub fn max_retries() -> u32 {
-        4
+        3
     }
 
     pub fn batch_delay() -> Duration {

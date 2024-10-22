@@ -9,7 +9,7 @@ if [ "$DEBUG" = true ]; then
     set -x
 fi
 
-# User balance of stake tokens 
+# User balance of stake tokens
 USER_COINS="100000000000stake"
 # Amount of stake tokens staked
 STAKE="100000000stake"
@@ -144,7 +144,7 @@ do
     interchain-security-pd genesis gentx $PROV_KEY  $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
     sleep 1
 
-    # Copy gentxs to the lead validator for possible future collection. 
+    # Copy gentxs to the lead validator for possible future collection.
     # Obviously we don't need to copy the first validator's gentx to itself
     if [ $MONIKER != $LEAD_VALIDATOR_MONIKER ]; then
         cp ${PROV_NODE_DIR}/config/gentx/* ${LEAD_VALIDATOR_PROV_DIR}/config/gentx/
@@ -496,7 +496,7 @@ enabled = true
 id = "consumer"
 type = "CosmosSdk"
 rpc_addr = "http://${NODE_IP}:${CRPC_LADDR_PORT}"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:${CRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 grpc_addr = "tcp://${NODE_IP}:${CGRPC_LADDR_PORT}"
 account_prefix = "cosmos"
 clock_drift = "5s"
@@ -520,7 +520,7 @@ ccv_consumer_chain = true
 id = "provider"
 type = "CosmosSdk"
 rpc_addr = "http://${NODE_IP}:${PRPC_LADDR_PORT}"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:${PRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
+event_source = { mode = 'pull', interval = '500ms', max_retries = 3 }
 grpc_addr = "tcp://${NODE_IP}:${PGRPC_LADDR_PORT}"
 account_prefix = "cosmos"
 clock_drift = "5s"
@@ -590,7 +590,7 @@ do
     sleep 5
 
     MSG="successfully submitted double voting evidence to chain"
-    
+
     if grep -c "$MSG" $HOME_DIR/hermes-evidence-logs.txt; then
         echo "[SUCCESS] Successfully submitted double voting evidence to provider chain"
         exit 0
