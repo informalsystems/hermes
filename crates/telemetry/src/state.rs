@@ -215,6 +215,15 @@ pub struct TelemetryState {
 
     /// Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits
     filtered_packets: Counter<u64>,
+
+    /// Observed ICS31 CrossChainQueries
+    cross_chain_queries: Counter<u64>,
+
+    /// Observed ICS31 CrossChainQuery successful Responses
+    cross_chain_query_responses: Counter<u64>,
+
+    /// Observed ICS31 CrossChainQuery error Responses
+    cross_chain_query_error_responses: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -422,6 +431,21 @@ impl TelemetryState {
             filtered_packets: meter
                 .u64_counter("filtered_packets")
                 .with_description("Number of ICS-20 packets filtered because the memo and/or the receiver fields were exceeding the configured limits")
+                .init(),
+
+            cross_chain_queries: meter
+                .u64_counter("cross_chain_queries")
+                .with_description("Number of ICS-31 queries received")
+                .init(),
+
+            cross_chain_query_responses: meter
+                .u64_counter("cross_chain_query_responses")
+                .with_description("Number of ICS-31 successful query responses")
+                .init(),
+
+            cross_chain_query_error_responses: meter
+                .u64_counter("cross_chain_query_error_responses")
+                .with_description("Number of ICS-31 error query responses")
                 .init(),
         }
     }
@@ -1234,6 +1258,41 @@ impl TelemetryState {
             ];
 
             self.filtered_packets.add(&cx, count, labels);
+        }
+    }
+
+    pub fn cross_chain_queries(&self, src_chain: &ChainId, dst_chain: &ChainId, count: usize) {
+        let cx = Context::current();
+
+        if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
+            ];
+
+            self.cross_chain_queries.add(&cx, count as u64, labels);
+        }
+    }
+
+    pub fn cross_chain_query_responses(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        ccq_responses_codes: Vec<tendermint::abci::Code>,
+    ) {
+        let cx = Context::current();
+
+        let labels = &[
+            KeyValue::new("src_chain", src_chain.to_string()),
+            KeyValue::new("dst_chain", dst_chain.to_string()),
+        ];
+
+        for code in ccq_responses_codes.iter() {
+            if code.is_ok() {
+                self.cross_chain_query_responses.add(&cx, 1, labels);
+            } else {
+                self.cross_chain_query_error_responses.add(&cx, 1, labels);
+            }
         }
     }
 }
