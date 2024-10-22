@@ -41,7 +41,7 @@ tendermint-testgen               = { version = "0.38.1" }
 # Other dependencies
 abscissa_core            = "=0.6.0"
 anyhow                   = "1.0"
-async-stream             = "0.3.5"
+async-stream             = "0.3.6"
 async-trait              = "0.1.83"
 axum                     = "0.6.18"
 bech32                   = "0.9.1"
