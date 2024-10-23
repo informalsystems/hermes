@@ -228,16 +228,15 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1729603468,
+        "lastModified": 1729681912,
         "narHash": "sha256-Ym4WfC/Iogqft2KOoHEv2FlWlgsxOAA5CZCbGXPf65o=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "6abc05a6ada63de610adfb8c41a6a276bc77a5d8",
+        "rev": "04a2efd0e01206b5df601b205d7662db79a765f0",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/add-gaia-v20-alpha",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1466,11 +1465,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1729428082,
-        "narHash": "sha256-xb4/Y+Y7ZlkQaA5rXnrXplDzdt2Jfgdmar3+qkb56UA=",
+        "lastModified": 1729658218,
+        "narHash": "sha256-9Rg+AqLqvqqJniP/OQB3GtgXoAd8IlazsHp97va042Y=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "ca30f584e18024baf39c395001262ed936f27ebd",
+        "rev": "dfffb2e7a52d29a0ef8e21ec8a0f30487b227f1a",
         "type": "github"
       },
       "original": {

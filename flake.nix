@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    cosmos-nix.url = "github:informalsystems/cosmos.nix/luca_joss/add-gaia-v20-alpha";
+    cosmos-nix.url = "github:informalsystems/cosmos.nix";
   };
 
   outputs = inputs: let
