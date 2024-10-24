@@ -1,7 +1,6 @@
 use tracing::warn;
 
 use tendermint::Version;
-use tendermint_rpc::client::CompatMode as TmCompatMode;
 
 use crate::chain::cosmos::version::ConsensusVersion;
 use crate::config::compat_mode::CompatMode;
@@ -11,21 +10,21 @@ pub fn compat_mode_from_node_version(
     configured_version: &Option<CompatMode>,
     version: Version,
 ) -> Result<CompatMode, Error> {
-    let queried_version = TmCompatMode::from_version(version);
+    let queried_version = CompatMode::from_version(version);
 
     // This will prioritize the use of the CompatMode specified in Hermes configuration file
     match (configured_version, queried_version) {
-        (Some(configured), Ok(queried)) if !configured.equal_to_tm_compat_mode(queried) => {
+        (Some(configured), Ok(queried)) if configured != &queried => {
             warn!(
                 "potential `compat_mode` misconfiguration! Configured version '{configured}' does not match chain version '{queried}'. \
                 Hermes will use the configured `compat_mode` version '{configured}'. \
                 If this configuration is done on purpose this message can be ignored.",
             );
 
-            Ok(configured.clone())
+            Ok(*configured)
         }
-        (Some(configured), _) => Ok(configured.clone()),
-        (_, Ok(queried)) => Ok(queried.into()),
+        (Some(configured), _) => Ok(*configured),
+        (_, Ok(queried)) => Ok(queried),
         (_, Err(e)) => Err(Error::invalid_compat_mode(e)),
     }
 }
@@ -50,7 +49,7 @@ pub fn compat_mode_from_version_specs(
                 If this configuration is done on purpose this message can be ignored."
             );
 
-            Ok(configured.clone())
+            Ok(*configured)
         }
         (Some(configured), None) => {
             warn!(
@@ -58,7 +57,7 @@ pub fn compat_mode_from_version_specs(
                 and will use the configured `compat_mode` version `{configured}`."
             );
 
-            Ok(configured.clone())
+            Ok(*configured)
         }
         (None, Some(queried)) => Ok(queried),
         (None, None) => {
@@ -77,7 +76,7 @@ fn compat_mode_from_semver(v: semver::Version) -> Option<CompatMode> {
     match (v.major, v.minor) {
         (0, 34) => Some(CompatMode::V0_34),
         (0, 37) => Some(CompatMode::V0_37),
-        (0, 38) => Some(CompatMode::V0_37),
+        (0, 38) => Some(CompatMode::V0_38),
         _ => None,
     }
 }

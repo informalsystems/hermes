@@ -185,6 +185,7 @@ pub fn encode_to_bech32(address: &str, account_prefix: &str) -> Result<String, E
 }
 
 fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, Vec<u8>), Error> {
+    #[allow(deprecated)]
     let auth_info = AuthInfo {
         signer_infos: vec![signer_info],
         fee: Some(fee),

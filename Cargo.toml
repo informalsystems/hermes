@@ -29,14 +29,19 @@ ibc-telemetry        = { version = "0.29.3", path = "crates/telemetry" }
 ibc-test-framework   = { version = "0.29.3", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.29.3", path = "tools/integration-test" }
 
+# IBC dependencies
+ibc-proto                = "0.51.0"
+ics23                    = "0.12.0"
+
 # Tendermint dependencies
-tendermint                       = { version = "0.38.1", default-features = false }
-tendermint-light-client          = { version = "0.38.1", default-features = false }
-tendermint-light-client-detector = { version = "0.38.1", default-features = false }
-tendermint-light-client-verifier = { version = "0.38.1", default-features = false }
-tendermint-proto                 = { version = "0.38.1" }
-tendermint-rpc                   = { version = "0.38.1" }
-tendermint-testgen               = { version = "0.38.1" }
+tendermint                       = { version = "0.40.0", default-features = false }
+tendermint-light-client          = { version = "0.40.0", default-features = false }
+tendermint-light-client-detector = { version = "0.40.0", default-features = false }
+tendermint-light-client-verifier = { version = "0.40.0", default-features = false }
+tendermint-proto                 = { version = "0.40.0" }
+tendermint-rpc                   = { version = "0.40.0" }
+tendermint-testgen               = { version = "0.40.0" }
+
 
 # Other dependencies
 abscissa_core            = "=0.6.0"
@@ -72,8 +77,6 @@ hex                      = "0.4.3"
 http                     = "1.0.0"
 humantime                = "2.1.0"
 humantime-serde          = "1.1.1"
-ibc-proto                = "0.47.1"
-ics23                    = "0.12.0"
 itertools                = "0.13.0"
 moka                     = "0.12.8"
 num-bigint               = "0.4"

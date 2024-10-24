@@ -10,6 +10,7 @@ use crate::signer::Signer;
 use crate::tx_msg::Msg;
 
 use super::error::Error;
+use super::ConsumerId;
 
 pub const ICS_MISBEHAVIOR_TYPE_URL: &str =
     "/interchain_security.ccv.provider.v1.MsgSubmitConsumerMisbehaviour";
@@ -18,6 +19,7 @@ pub const ICS_MISBEHAVIOR_TYPE_URL: &str =
 pub struct MsgSubmitIcsConsumerMisbehaviour {
     pub submitter: Signer,
     pub misbehaviour: Misbehaviour,
+    pub consumer_id: ConsumerId,
 }
 
 impl Msg for MsgSubmitIcsConsumerMisbehaviour {
@@ -48,6 +50,7 @@ impl TryFrom<RawIcsMisbehaviour> for MsgSubmitIcsConsumerMisbehaviour {
                 .map_err(|_e| {
                     Error::invalid_raw_misbehaviour("cannot convert misbehaviour".into())
                 })?,
+            consumer_id: ConsumerId::new(raw.consumer_id),
         })
     }
 }
@@ -57,6 +60,7 @@ impl From<MsgSubmitIcsConsumerMisbehaviour> for RawIcsMisbehaviour {
         RawIcsMisbehaviour {
             submitter: value.submitter.to_string(),
             misbehaviour: Some(value.misbehaviour.into()),
+            consumer_id: value.consumer_id.to_string(),
         }
     }
 }
