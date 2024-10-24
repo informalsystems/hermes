@@ -30,17 +30,17 @@ ibc-test-framework   = { version = "0.29.3", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.29.3", path = "tools/integration-test" }
 
 # IBC dependencies
-ibc-proto                = "0.49.1"
+ibc-proto                = "0.51.0"
 ics23                    = "0.12.0"
 
 # Tendermint dependencies
-tendermint                       = { version = "0.39.1", default-features = false }
-tendermint-light-client          = { version = "0.39.1", default-features = false }
-tendermint-light-client-detector = { version = "0.39.1", default-features = false }
-tendermint-light-client-verifier = { version = "0.39.1", default-features = false }
-tendermint-proto                 = { version = "0.39.1" }
-tendermint-rpc                   = { version = "0.39.1" }
-tendermint-testgen               = { version = "0.39.1" }
+tendermint                       = { version = "0.40.0", default-features = false }
+tendermint-light-client          = { version = "0.40.0", default-features = false }
+tendermint-light-client-detector = { version = "0.40.0", default-features = false }
+tendermint-light-client-verifier = { version = "0.40.0", default-features = false }
+tendermint-proto                 = { version = "0.40.0" }
+tendermint-rpc                   = { version = "0.40.0" }
+tendermint-testgen               = { version = "0.40.0" }
 
 
 # Other dependencies
@@ -123,11 +123,10 @@ uuid                     = "1.11.0"
 overflow-checks = true
 
 [patch.crates-io]
-ibc-proto                        = { git = "https://github.com/cosmos/ibc-proto-rs", branch = "romac/permissionless-ics" }
-tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/v038-evidence" }
-tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/v038-evidence" }
-tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/v038-evidence" }
-tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/v038-evidence" }
-tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/v038-evidence" }
-tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/v038-evidence" }
-tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "romac/v038-evidence" }
+# tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+# tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+# tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+# tendermint-light-client          = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+# tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+# tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+# tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
