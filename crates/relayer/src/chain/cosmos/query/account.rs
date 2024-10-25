@@ -12,7 +12,7 @@ use crate::util::create_grpc_client;
 /// EthAccount defines an Ethermint account.
 /// TODO: remove when/if a canonical `EthAccount`
 /// lands in the next Cosmos SDK release
-/// (note https://github.com/cosmos/cosmos-sdk/pull/9981
+/// (note <https://github.com/cosmos/cosmos-sdk/pull/9981>
 /// only adds the PubKey type)
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EthAccount {
