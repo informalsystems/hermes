@@ -620,7 +620,7 @@ $HERMES_BIN keys add --key-file  ${HERMES_CONS_NODE_DIR}/${HERMES_KEY}.json --ch
 sleep 5
 
 $HERMES_BIN create connection \
-     --a-chain consumer \
+    --a-chain consumer \
     --a-client 07-tendermint-0 \
     --b-client 07-tendermint-0
 
