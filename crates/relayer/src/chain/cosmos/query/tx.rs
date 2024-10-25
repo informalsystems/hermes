@@ -8,6 +8,7 @@ use tendermint::Hash as TxHash;
 use tendermint_rpc::endpoint::tx::Response as TxResponse;
 use tendermint_rpc::{Client, HttpClient, Order, Url};
 use tracing::warn;
+use tracing::trace;
 
 use crate::chain::cosmos::query::{header_query, packet_query, tx_hash_query};
 use crate::chain::cosmos::types::events;
@@ -136,6 +137,7 @@ pub async fn query_packets_from_txs(
             .map_err(|e| Error::rpc(rpc_address.clone(), e))?;
 
         if response.txs.is_empty() {
+            trace!("/tx_search response.txs is empty");
             continue;
         }
 
@@ -339,6 +341,8 @@ pub fn filter_matching_event(
     if event.kind != request.event_id.as_str() {
         return None;
     }
+
+    trace!("Will convert the following ABCI event to IBC event: {event:#?}");
 
     let ibc_event = ibc_event_try_from_abci_event(event).ok()?;
 
