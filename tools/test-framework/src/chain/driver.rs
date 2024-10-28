@@ -176,7 +176,7 @@ impl ChainDriver {
         if self.ipv6_grpc {
             format!("http://[::1]:{}", self.grpc_port)
         } else {
-            format!("http://localhost:{}", self.grpc_port)
+            format!("http://127.0.0.1:{}", self.grpc_port)
         }
     }
 
@@ -202,7 +202,7 @@ impl ChainDriver {
         if self.ipv6_grpc {
             format!("[::1]:{}", self.grpc_port)
         } else {
-            format!("localhost:{}", self.grpc_port)
+            format!("127.0.0.1:{}", self.grpc_port)
         }
     }
 
