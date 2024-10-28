@@ -98,6 +98,8 @@ pub struct ChainDriver {
     pub runtime: Arc<Runtime>,
 
     pub compat_mode: Option<CompatMode>,
+
+    pub ipv6_grpc: bool,
 }
 
 impl ExportEnv for ChainDriver {
@@ -125,12 +127,18 @@ impl ChainDriver {
         runtime: Arc<Runtime>,
         native_token: String,
         compat_mode: Option<CompatMode>,
+        ipv6_grpc: bool,
     ) -> Result<Self, Error> {
+        let grpc_address = if ipv6_grpc {
+            format!("http://[::1]:{grpc_port}")
+        } else {
+            format!("http://localhost:{grpc_port}")
+        };
         let tx_config = new_tx_config_for_test(
             chain_id.clone(),
             chain_type.clone(),
             format!("http://localhost:{rpc_port}"),
-            format!("http://localhost:{grpc_port}"),
+            grpc_address,
             chain_type.address_type(),
             native_token,
         )?;
@@ -149,6 +157,7 @@ impl ChainDriver {
             tx_config,
             runtime,
             compat_mode,
+            ipv6_grpc,
         })
     }
 
@@ -164,7 +173,11 @@ impl ChainDriver {
 
     /// Returns the full URL for the GRPC address.
     pub fn grpc_address(&self) -> String {
-        format!("http://localhost:{}", self.grpc_port)
+        if self.ipv6_grpc {
+            format!("http://[::1]:{}", self.grpc_port)
+        } else {
+            format!("http://localhost:{}", self.grpc_port)
+        }
     }
 
     /**
@@ -186,7 +199,11 @@ impl ChainDriver {
         as it requires no scheme to be specified.
     */
     pub fn grpc_listen_address(&self) -> String {
-        format!("localhost:{}", self.grpc_port)
+        if self.ipv6_grpc {
+            format!("[::1]:{}", self.grpc_port)
+        } else {
+            format!("localhost:{}", self.grpc_port)
+        }
     }
 
     /**
