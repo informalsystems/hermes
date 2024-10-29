@@ -50,6 +50,11 @@ pub fn init_test() -> Result<TestConfig, Error> {
 
     let compat_modes = env::var("COMPAT_MODES").ok().map(parse_chain_command_paths);
 
+    let ipv6_grpc = env::var("IPV6_GRPC")
+        .ok()
+        .map(|val| val == "true")
+        .unwrap_or(false);
+
     let account_prefixes = parse_chain_command_paths(account_prefix);
 
     let native_tokens = parse_chain_command_paths(native_token);
@@ -72,6 +77,7 @@ pub fn init_test() -> Result<TestConfig, Error> {
         hang_on_fail,
         bootstrap_with_random_ids: false,
         native_tokens,
+        ipv6_grpc,
         compat_modes,
     })
 }
