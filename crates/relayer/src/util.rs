@@ -22,11 +22,27 @@ pub async fn create_grpc_client<T>(
     client_constructor: impl FnOnce(tonic::transport::Channel) -> T,
 ) -> Result<T, crate::error::Error> {
     let tls_config = tonic::transport::ClientTlsConfig::new().with_native_roots();
-    let channel = tonic::transport::Channel::builder(grpc_addr.clone())
-        .tls_config(tls_config)
-        .map_err(crate::error::Error::grpc_transport)?
+    let builder = tonic::transport::Channel::builder(grpc_addr.clone());
+
+    // Don't configures TLS for the endpoint if using IPv6
+    let builder = if is_ipv6(grpc_addr) {
+        builder
+    } else {
+        builder
+            .tls_config(tls_config)
+            .map_err(crate::error::Error::grpc_transport)?
+    };
+    let channel = builder
         .connect()
         .await
         .map_err(crate::error::Error::grpc_transport)?;
     Ok(client_constructor(channel))
+}
+
+fn is_ipv6(uri: &tonic::transport::Uri) -> bool {
+    if let Some(host) = uri.host() {
+        host.starts_with('[') && host.ends_with(']')
+    } else {
+        false
+    }
 }
