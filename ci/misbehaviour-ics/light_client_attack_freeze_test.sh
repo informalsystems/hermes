@@ -170,6 +170,31 @@ tee ${PROV_NODE_DIR}/create-consumer-msg.json<<EOF
         "name": "consumer-1-metadata-name",
         "description":"consumer-1-metadata-description",
         "metadata": "consumer-1-metadata-metadata"
+    },
+    "initialization_parameters": {
+        "initial_height": {
+            "revision_number": 0,
+            "revision_height": 1
+        },
+        "genesis_hash": "Z2VuX2hhc2g=",
+        "binary_hash": "YmluX2hhc2g=",
+        "spawn_time": "2024-08-29T12:26:16.529913Z",
+        "unbonding_period": 1728000000000000,
+        "ccv_timeout_period": 2419200000000000,
+        "transfer_timeout_period": 1800000000000,
+        "consumer_redistribution_fraction": "0.75",
+        "blocks_per_distribution_transmission": 1000,
+        "historical_entries": 10000,
+        "distribution_transmission_channel": ""
+    },
+    "power_shaping_parameters": {
+        "top_N": 0,
+        "validators_power_cap": 0,
+        "validator_set_cap": 0,
+        "allowlist": [],
+        "denylist": [],
+        "min_stake": 0,
+        "allow_inactive_vals": false
     }
 }
 EOF
@@ -202,21 +227,21 @@ fi
 EVENTS=$(echo $TX_RES | jq -c '.events[]')
 found=false
 CONSUMER_ID=""
-for event in $EVENTS; do
+while IFS= read -r event; do
     type=$(echo "$event" | jq -r '.type')
     echo $type
     if [ "$type" = "create_consumer" ]; then
-       attrs=$(echo $event | jq -c '.attributes[]')
-       for attr in $attrs; do
+        attrs=$(echo $event | jq -c '.attributes[]')
+        while IFS= read -r attr; do
             key=$(echo "$attr" | jq -r '.key')
             if [ "$key" = "consumer_id" ]; then
                 CONSUMER_ID=$(echo "$attr" | jq -r '.value')
+                found=true
+                break 2
             fi
-       done
-       found=true
-       break
+       done <<< "$attrs"
     fi
-done
+done <<< "$EVENTS"
 
 if [ "$found" = false ]; then
     echo "consumer creation event not found"
