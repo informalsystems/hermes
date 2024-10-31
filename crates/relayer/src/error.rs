@@ -606,6 +606,10 @@ define_error! {
             [ TraceError<reqwest::Error> ]
             |_| { "HTTP response body error" },
 
+        InvalidHttpHost
+            { endpoint: String }
+            |e| { format!("HTTP host is invalid for the endpoint `{}`", e.endpoint) },
+
         JsonDeserialize
             [ TraceError<serde_json::Error> ]
             |_| { "JSON deserialization error" },
