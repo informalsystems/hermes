@@ -28,6 +28,9 @@ time           = { workspace = true }
 toml           = { workspace = true }
 tonic          = { workspace = true, features = ["tls", "tls-roots"] }
 
+hermes-cosmos-integration-tests = { workspace = true }
+hermes-cosmos-wasm-relayer      = { workspace = true }
+
 [features]
 default                         = []
 example                         = []

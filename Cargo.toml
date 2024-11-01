@@ -116,6 +116,32 @@ tracing-subscriber       = "0.3.14"
 uint                     = "0.9"
 uuid                     = "1.11.0"
 
+hermes-runtime-components           = { version = "0.1.0" }
+hermes-async-runtime-components     = { version = "0.1.0" }
+hermes-tokio-runtime-components     = { version = "0.1.0" }
+hermes-chain-components             = { version = "0.1.0" }
+hermes-chain-type-components        = { version = "0.1.0" }
+hermes-runtime                      = { version = "0.1.0" }
+hermes-error                        = { version = "0.1.0" }
+hermes-encoding-components          = { version = "0.1.0" }
+hermes-logging-components           = { version = "0.1.0" }
+hermes-tracing-logging-components   = { version = "0.1.0" }
+hermes-logger                       = { version = "0.1.0" }
+hermes-relayer-components           = { version = "0.1.0" }
+hermes-cosmos-chain-components      = { version = "0.1.0" }
+hermes-cosmos-encoding-components   = { version = "0.1.0" }
+hermes-cosmos-relayer               = { version = "0.1.0" }
+hermes-cosmos-wasm-relayer          = { version = "0.1.0" }
+hermes-cosmos-test-components       = { version = "0.1.0" }
+hermes-cosmos-integration-tests     = { version = "0.1.0" }
+hermes-any-counterparty             = { version = "0.1.0" }
+hermes-wasm-client-components       = { version = "0.1.0" }
+hermes-wasm-encoding-components     = { version = "0.1.0" }
+hermes-cli-components               = { version = "0.1.0" }
+hermes-test-components              = { version = "0.1.0" }
+hermes-cairo-encoding-components    = { version = "0.1.0" }
+hermes-protobuf-encoding-components = { version = "0.1.0" }
+
 [profile.release]
 overflow-checks = true
 
@@ -127,3 +153,50 @@ overflow-checks = true
 # tendermint-light-client-verifier = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-light-client-detector = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-testgen               = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
+
+ibc-relayer             = { path = "crates/relayer" }
+ibc-relayer-types       = { path = "crates/relayer-types" }
+ibc-telemetry           = { path = "crates/telemetry" }
+
+cgp                     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-core                = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-extra               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-async               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-async-macro         = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component           = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component-macro     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component-macro-lib = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-type                = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field-macro         = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field-macro-lib     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-error               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-run                 = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-inner               = { git = "https://github.com/contextgeneric/cgp.git" }
+
+hermes-chain-components             = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-chain-type-components        = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-relayer-components           = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-relayer-components-extra     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-runtime-components           = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-async-runtime-components     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-tokio-runtime-components     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-runtime                      = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-error                        = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-encoding-components          = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-protobuf-encoding-components = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-logging-components           = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-tracing-logging-components   = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-logger                       = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-test-components              = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-ibc-test-suite               = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-any-counterparty             = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-chain-components      = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-relayer               = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-wasm-relayer          = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-test-components       = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-encoding-components   = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-integration-tests     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-wasm-test-components         = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-wasm-client-components       = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-wasm-encoding-components     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
