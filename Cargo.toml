@@ -10,7 +10,7 @@ members = [
     "crates/telemetry",
     "crates/chain-registry",
     "tools/integration-test",
-    "tools/test-framework",
+    "tools/test-framework", "tools/sdk-integration-test", "tools/sdk-integration-test",
 ]
 
 exclude = [
@@ -78,13 +78,13 @@ itertools                = "0.13.0"
 moka                     = "0.12.8"
 num-bigint               = "0.4"
 num-rational             = "0.4.1"
-once_cell                = "1.19.0"
+once_cell                = "1.20.2"
 oneline-eyre             = "0.1"
 opentelemetry            = "0.19.0"
 opentelemetry-prometheus = "0.12.0"
 primitive-types          = { version = "0.12.1", default-features = false }
 prometheus               = "0.13.4"
-prost                    = "0.13"
+prost                    = "0.13.3"
 rand                     = "0.8.5"
 regex                    = "1.11.1"
 reqwest                  = { version = "0.11.27", default-features = false }
@@ -120,6 +120,52 @@ uuid                     = "1.11.0"
 overflow-checks = true
 
 [patch.crates-io]
+ibc-relayer-types  = { path = "crates/relayer-types" }
+ibc-relayer        = { path = "crates/relayer" }
+
+cgp                     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-core                = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-extra               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-async               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-async-macro         = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component           = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component-macro     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component-macro-lib = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-type                = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field-macro         = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field-macro-lib     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-error               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-run                 = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-inner               = { git = "https://github.com/contextgeneric/cgp.git" }
+
+hermes-chain-components             = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-chain-type-components        = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-relayer-components           = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-relayer-components-extra     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-runtime-components           = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-async-runtime-components     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-tokio-runtime-components     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-runtime                      = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-error                        = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-encoding-components          = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-protobuf-encoding-components = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-logging-components           = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-tracing-logging-components   = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-logger                       = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-test-components              = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-ibc-test-suite               = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-any-counterparty             = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-chain-components      = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-relayer               = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-wasm-relayer          = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-test-components       = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-encoding-components   = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-cosmos-integration-tests     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-wasm-test-components         = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-wasm-client-components       = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+hermes-wasm-encoding-components     = { git = "https://github.com/informalsystems/hermes-sdk.git" }
+
 # tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
