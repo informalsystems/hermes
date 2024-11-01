@@ -1,8 +1,8 @@
 use core::str::FromStr;
 use core::time::Duration;
 use std::path::PathBuf;
+use std::thread;
 use std::time::Instant;
-use std::{thread, u64};
 
 use ibc_proto::google::protobuf::Any;
 use itertools::Itertools;
