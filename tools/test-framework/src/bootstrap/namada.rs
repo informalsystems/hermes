@@ -61,6 +61,9 @@ pub fn bootstrap_namada_node(
         config::namada::set_default_mint_limit(parameters, i64::MAX)?;
         config::namada::set_epochs_per_year(parameters, 31536)?;
         config::namada::set_default_per_epoch_throughput_limit(parameters, i64::MAX)?;
+        config::namada::set_pipeline_len(parameters, 2000)?;
+
+        parameters_modifier(parameters)?;
 
         Ok(())
     })?;
@@ -163,16 +166,6 @@ pub fn bootstrap_namada_node(
         config::namada::set_block_cache_bytes(config, 268435456)?;
 
         config_modifier(config)?;
-
-        Ok(())
-    })?;
-
-    let parameters_path = format!("{home_path}/setup/validator-0/{chain_id}/parameters.toml");
-
-    chain_driver.update_chain_config(&parameters_path, |parameters| {
-        config::namada::set_pipeline_len(parameters, 2000)?;
-
-        parameters_modifier(parameters)?;
 
         Ok(())
     })?;

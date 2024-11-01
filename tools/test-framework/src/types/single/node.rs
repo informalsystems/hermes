@@ -230,7 +230,7 @@ impl FullNode {
                 key_store_folder: Some(hermes_keystore_dir.into()),
                 store_prefix: "ibc".to_string(),
                 default_gas: None,
-                max_gas: Some(3000000),
+                max_gas: Some(4000000),
                 gas_adjustment: None,
                 gas_multiplier: Some(GasMultiplier::unsafe_new(1.2)),
                 dynamic_gas_price: DynamicGasPrice::default(),

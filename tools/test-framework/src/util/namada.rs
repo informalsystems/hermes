@@ -5,8 +5,8 @@ use ibc_relayer_types::core::ics24_host::identifier::{ChannelId, ClientId, PortI
 use ibc_relayer_types::events::IbcEventType;
 use ibc_relayer_types::Height;
 use itertools::Itertools;
-use namada_sdk::ibc::storage::{consensus_height, consensus_state_prefix};
 use namada_sdk::events::extend::Height as HeightAttr;
+use namada_sdk::ibc::storage::{consensus_height, consensus_state_prefix};
 use namada_sdk::queries::RPC;
 use namada_sdk::storage::{Key, PrefixValue};
 use namada_sdk::tx::Tx;

@@ -1,8 +1,10 @@
 use alloc::sync::Arc;
 use bytes::Buf;
 use bytes::Bytes;
+use config::CosmosSdkConfig;
 use core::{future::Future, str::FromStr, time::Duration};
 use futures::future::join_all;
+use itertools::Itertools;
 use num_bigint::BigInt;
 use prost::Message;
 use std::cmp::Ordering;
@@ -107,9 +109,8 @@ use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
-use crate::util::compat_mode::compat_mode_from_version;
+use crate::util::collate::CollatedIterExt;
 use crate::util::create_grpc_client;
-use crate::util::pretty::PrettySlice;
 use crate::util::pretty::{
     PrettyIdentifiedChannel, PrettyIdentifiedClientState, PrettyIdentifiedConnection,
 };
@@ -376,7 +377,7 @@ impl CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_ccv_consumer_chain_params");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::interchain_security::ccv::consumer::v1::query_client::QueryClient::new,
         ))?;
 
@@ -917,11 +918,10 @@ impl ChainEndpoint for CosmosSdkChain {
             .build()
             .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
 
-        let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
-
-        let compat_mode = compat_mode_from_version(&config.compat_mode, node_info.version)?.into();
+        let compat_mode = rt.block_on(fetch_compat_mode(&rpc_client, &config))?;
         rpc_client.set_compat_mode(compat_mode);
 
+        let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
         let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
 
         // Initialize key store and load key
@@ -1227,7 +1227,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_clients");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::client::v1::query_client::QueryClient::new,
         ))?;
 
@@ -1415,7 +1415,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_client_connections");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::connection::v1::query_client::QueryClient::new,
         ))?;
 
@@ -1458,7 +1458,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_connections");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::connection::v1::query_client::QueryClient::new,
         ))?;
 
@@ -1512,11 +1512,9 @@ impl ChainEndpoint for CosmosSdkChain {
             use ibc_proto::ibc::core::connection::v1 as connection;
             use tonic::IntoRequest;
 
-            let mut client = create_grpc_client(
-                chain.grpc_addr.clone(),
-                connection::query_client::QueryClient::new,
-            )
-            .await?;
+            let mut client =
+                create_grpc_client(&chain.grpc_addr, connection::query_client::QueryClient::new)
+                    .await?;
 
             client = client.max_decoding_message_size(
                 chain.config().max_grpc_decoding_size.get_bytes() as usize,
@@ -1595,7 +1593,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_connection_channels");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::channel::v1::query_client::QueryClient::new,
         ))?;
 
@@ -1664,7 +1662,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_channels");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::channel::v1::query_client::QueryClient::new,
         ))?;
 
@@ -1785,7 +1783,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_channel_client_state");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::channel::v1::query_client::QueryClient::new,
         ))?;
 
@@ -1853,7 +1851,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(create_grpc_client(
-                self.grpc_addr.clone(),
+                &self.grpc_addr,
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::new,
             ))
             .map(|client| {
@@ -1861,6 +1859,8 @@ impl ChainEndpoint for CosmosSdkChain {
                     self.config().max_grpc_decoding_size.get_bytes() as usize
                 )
             })?;
+
+        let height_param = AsciiMetadataValue::try_from(request.query_height)?;
 
         if request.pagination.is_enabled() {
             let mut results = Vec::new();
@@ -1888,6 +1888,10 @@ impl ChainEndpoint for CosmosSdkChain {
                 let mut tonic_request = tonic::Request::new(raw_request);
                 // TODO: This should either be configurable or inferred from the pagination
                 tonic_request.set_timeout(Duration::from_secs(10));
+
+                tonic_request
+                    .metadata_mut()
+                    .insert("x-cosmos-block-height", height_param.clone());
 
                 let response = self.rt.block_on(async {
                     client
@@ -1945,9 +1949,14 @@ impl ChainEndpoint for CosmosSdkChain {
 
             Ok((commitment_sequences, height))
         } else {
-            let request = tonic::Request::new(request.into());
+            let mut tonic_request = tonic::Request::new(request.clone().into());
+
+            tonic_request
+                .metadata_mut()
+                .insert("x-cosmos-block-height", height_param);
+
             let response = self
-                .block_on(client.packet_commitments(request))
+                .block_on(client.packet_commitments(tonic_request))
                 .map_err(|e| Error::grpc_status(e, "query_packet_commitments".to_owned()))?
                 .into_inner();
 
@@ -2013,7 +2022,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_unreceived_packets");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::channel::v1::query_client::QueryClient::new,
         ))?;
 
@@ -2086,7 +2095,7 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let mut client = self
             .block_on(create_grpc_client(
-                self.grpc_addr.clone(),
+                &self.grpc_addr,
                 ibc_proto::ibc::core::channel::v1::query_client::QueryClient::new,
             ))
             .map(|client| {
@@ -2204,7 +2213,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_unreceived_acknowledgements");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::ibc::core::channel::v1::query_client::QueryClient::new,
         ))?;
 
@@ -2542,7 +2551,7 @@ impl ChainEndpoint for CosmosSdkChain {
         crate::telemetry!(query, self.id(), "query_consumer_chains");
 
         let mut client = self.block_on(create_grpc_client(
-            self.grpc_addr.clone(),
+            &self.grpc_addr,
             ibc_proto::interchain_security::ccv::provider::v1::query_client::QueryClient::new,
         ))?;
 
@@ -2682,7 +2691,7 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
             if !seqs.is_empty() {
                 warn!(
                     "chain '{chain_id}' will not clear packets on channel '{channel_id}' with sequences: {}. \
-                    Ignore this warning if this configuration is correct.", PrettySlice(seqs)
+                    Ignore this warning if this configuration is correct.", seqs.iter().copied().collated().format(", ")
                 );
             }
         }
@@ -2732,17 +2741,16 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
 
             if !found_matching_denom {
                 warn!(
-                        "chain '{}' has no minimum gas price of denomination '{}' \
-                        that is strictly less than the `gas_price` specified for that chain in the Hermes configuration. \
-                        This is usually a sign of misconfiguration, please check your chain and Hermes configurations",
-                        chain_id, relayer_gas_price.denom
-                    );
+                    "chain '{}' does not provide a minimum gas price for denomination '{}'.\
+                    This is usually a sign of misconfiguration, please check your chain configuration",
+                    chain_id, relayer_gas_price.denom
+                );
             }
         }
 
         Some(_) => warn!(
-            "chain '{}' has no minimum gas price value configured for denomination '{}'. \
-            This is usually a sign of misconfiguration, please check your chain and relayer configurations",
+            "chain '{}' does not provide a minimum gas price for denomination '{}'. \
+            This is usually a sign of misconfiguration, please check your chain configuration",
             chain_id, relayer_gas_price.denom
         ),
 
@@ -2772,6 +2780,40 @@ fn do_health_check(chain: &CosmosSdkChain) -> Result<(), Error> {
     }
 
     Ok(())
+}
+
+pub async fn fetch_compat_mode(
+    client: &HttpClient,
+    config: &CosmosSdkConfig,
+) -> Result<CompatMode, Error> {
+    use crate::util::compat_mode::compat_mode_from_node_version;
+    use crate::util::compat_mode::compat_mode_from_version_specs;
+
+    let version_specs = fetch_version_specs(&config.id, client, &config.rpc_addr).await;
+
+    let compat_mode = match version_specs {
+        Ok(specs) => compat_mode_from_version_specs(&config.compat_mode, specs.consensus),
+        Err(e) => {
+            warn!(
+                "Failed to fetch version specs for chain '{}': {e}",
+                config.id
+            );
+
+            let status = client
+                .status()
+                .await
+                .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+
+            warn!(
+                "Will fall back on using the node version: {}",
+                status.node_info.version
+            );
+
+            compat_mode_from_node_version(&config.compat_mode, status.node_info.version)
+        }
+    }?;
+
+    Ok(compat_mode.into())
 }
 
 #[cfg(test)]

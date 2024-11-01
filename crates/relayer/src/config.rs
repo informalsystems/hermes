@@ -106,7 +106,7 @@ impl PartialOrd for GasPrice {
 /// the parsing of other prices.
 pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
     prices
-        .split(|c| c == ',' || c == ';')
+        .split([',', ';'])
         .filter_map(|gp| GasPrice::from_str(gp).ok())
         .collect()
 }

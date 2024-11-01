@@ -7,9 +7,12 @@ use serde_json as json;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer::chain::cosmos::tx::simple_send_tx;
 use ibc_relayer::chain::cosmos::types::config::TxConfig;
+use ibc_relayer::config::compat_mode::CompatMode;
 use ibc_relayer::event::IbcEventWithHeight;
-use ibc_relayer::util::compat_mode::compat_mode_from_version;
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tendermint_rpc::client::{Client, HttpClient};
+use tendermint_rpc::Url;
+use tracing::warn;
 
 use crate::chain::cli::query::query_auth_module;
 use crate::chain::cli::query::query_recipient_transactions;
@@ -121,12 +124,16 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
         let rpc_address = self.value().tx_config.rpc_address.clone();
         let rt = &self.value().runtime;
 
-        let mut client = HttpClient::new(rpc_address).map_err(handle_generic_error)?;
+        let mut client = HttpClient::new(rpc_address.clone()).map_err(handle_generic_error)?;
 
-        let status = rt.block_on(client.status()).map_err(handle_generic_error)?;
-        let compat_mode =
-            compat_mode_from_version(&self.value().compat_mode, status.node_info.version)?.into();
-        client.set_compat_mode(compat_mode);
+        let compat_mode = rt.block_on(fetch_compat_mode(
+            &client,
+            &self.value().chain_id,
+            &rpc_address,
+            &self.value().compat_mode,
+        ))?;
+
+        client.set_compat_mode(compat_mode.into());
 
         Ok(MonoTagged::new(client))
     }
@@ -215,4 +222,35 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
             module_name,
         )
     }
+}
+
+pub async fn fetch_compat_mode(
+    client: &HttpClient,
+    id: &ChainId,
+    rpc_addr: &Url,
+    configured_mode: &Option<CompatMode>,
+) -> Result<CompatMode, Error> {
+    use ibc_relayer::chain::cosmos::query::fetch_version_specs;
+    use ibc_relayer::util::compat_mode::compat_mode_from_node_version;
+    use ibc_relayer::util::compat_mode::compat_mode_from_version_specs;
+
+    let version_specs = fetch_version_specs(id, client, rpc_addr).await;
+
+    let compat_mode = match version_specs {
+        Ok(specs) => compat_mode_from_version_specs(configured_mode, specs.consensus),
+        Err(e) => {
+            warn!("Failed to fetch version specs for chain '{id}': {e}");
+
+            let status = client.status().await.map_err(handle_generic_error)?;
+
+            warn!(
+                "Will fall back on using the node version: {}",
+                status.node_info.version
+            );
+
+            compat_mode_from_node_version(configured_mode, status.node_info.version)
+        }
+    }?;
+
+    Ok(compat_mode)
 }

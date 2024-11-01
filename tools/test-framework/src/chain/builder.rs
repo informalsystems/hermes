@@ -45,6 +45,8 @@ pub struct ChainBuilder {
 
     pub compat_modes: Option<Vec<String>>,
 
+    pub ipv6_grpc: bool,
+
     pub runtime: Arc<Runtime>,
 }
 
@@ -58,6 +60,7 @@ impl ChainBuilder {
         account_prefixes: Vec<String>,
         native_tokens: Vec<String>,
         compat_modes: Option<Vec<String>>,
+        ipv6_grpc: bool,
         runtime: Arc<Runtime>,
     ) -> Self {
         Self {
@@ -66,6 +69,7 @@ impl ChainBuilder {
             account_prefixes,
             native_tokens,
             compat_modes,
+            ipv6_grpc,
             runtime,
         }
     }
@@ -80,6 +84,7 @@ impl ChainBuilder {
             config.account_prefixes.clone(),
             config.native_tokens.clone(),
             config.compat_modes.clone(),
+            config.ipv6_grpc,
             runtime,
         )
     }
@@ -146,6 +151,7 @@ impl ChainBuilder {
             self.runtime.clone(),
             self.native_tokens[native_token_number].clone(),
             compat_mode,
+            self.ipv6_grpc,
         )?;
 
         Ok(driver)

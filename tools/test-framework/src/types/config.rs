@@ -34,6 +34,8 @@ pub struct TestConfig {
 
     pub compat_modes: Option<Vec<String>>,
 
+    pub ipv6_grpc: bool,
+
     /**
        The directory path for storing the chain and relayer files.
        Defaults to `"data"`. This can be overridden with the `$CHAIN_STORE_DIR`
