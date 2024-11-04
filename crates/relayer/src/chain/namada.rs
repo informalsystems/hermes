@@ -159,12 +159,7 @@ impl NamadaChain {
             .rt
             .block_on(Client::status(self.ctx.client()))
             .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-        Ok(status
-            .sync_info
-            .latest_block_time
-            .to_string()
-            .parse()
-            .unwrap())
+        Ok(status.sync_info.latest_block_time)
     }
 }
 
@@ -591,7 +586,8 @@ impl ChainEndpoint for NamadaChain {
             if key.to_string().ends_with("clientState") {
                 let client_id =
                     storage::client_id(&key).map_err(|e| Error::query(e.to_string()))?;
-                let client_id = ClientId::from_str(&client_id.to_string()).unwrap();
+                let client_id = ClientId::from_str(&client_id.to_string())
+                    .expect("ibc-rs ClientId should be parsable with the relayer-types one");
                 let client_state = AnyClientState::decode_vec(&value).map_err(Error::decode)?;
                 states.push(IdentifiedAnyClientState::new(client_id, client_state));
             }
@@ -656,7 +652,8 @@ impl ChainEndpoint for NamadaChain {
             let PrefixValue { key, value: _ } = prefix_value;
             match storage::consensus_height(&key) {
                 Ok(h) => {
-                    let height = ICSHeight::new(h.revision_number(), h.revision_height()).unwrap();
+                    let height = ICSHeight::new(h.revision_number(), h.revision_height())
+                        .expect("ibc-rs height should be parsable with the relayer-types one");
                     heights.push(height);
                 }
                 Err(_) => {
@@ -851,8 +848,14 @@ impl ChainEndpoint for NamadaChain {
             }
             let (port_id, channel_id) =
                 storage::port_channel_id(&key).map_err(|e| Error::query(e.to_string()))?;
-            let port_id = port_id.as_ref().parse().unwrap();
-            let channel_id = channel_id.as_ref().parse().unwrap();
+            let port_id = port_id
+                .as_ref()
+                .parse()
+                .expect("ibc-rs PortId should be parsable with the relayer-types one");
+            let channel_id = channel_id
+                .as_ref()
+                .parse()
+                .expect("ibc-rs ChannelId should be parsable with the relayer-types one");
             let channel = ChannelEnd::decode_vec(&value).map_err(Error::decode)?;
             channels.push(IdentifiedChannelEnd::new(port_id, channel_id, channel))
         }
@@ -1192,7 +1195,10 @@ impl ChainEndpoint for NamadaChain {
             unbonding_period,
             settings.max_clock_drift,
             height,
-            self.config.proof_specs.clone().unwrap(),
+            self.config
+                .proof_specs
+                .clone()
+                .expect("ProofSpecs should be set"),
             vec![
                 COMMITMENT_PREFIX.to_string(),
                 UPGRADED_IBC_STATE.to_string(),
