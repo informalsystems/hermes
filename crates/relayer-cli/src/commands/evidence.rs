@@ -6,7 +6,6 @@ use std::time::Duration;
 
 use abscissa_core::clap::Parser;
 use ibc_relayer::config::{ChainConfig, Config};
-use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerId;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use tendermint::block::Height as TendermintHeight;
@@ -319,17 +318,15 @@ fn submit_duplicate_vote_evidence(
 
     let signer = counterparty_chain_handle.get_signer()?;
 
-    let consumer_id = fetch_ccv_consumer_id(counterparty_chain_handle, counterparty_client_id)?;
-
-    if !is_counterparty_provider(
-        chain,
-        &consumer_id,
-        counterparty_chain_handle,
-        counterparty_client_id,
-    ) {
-        debug!("counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` is not a CCV client, skipping...");
-        return Ok(ControlFlow::Continue(()));
-    }
+    let consumer_id = match fetch_ccv_consumer_id(counterparty_chain_handle, counterparty_client_id)
+    {
+        Ok(consumer_id) => consumer_id,
+        Err(e) => {
+            info!("Failed to query Consumer ID: {e}. \
+            Counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` might not be a CCV client, skipping...");
+            return Ok(ControlFlow::Continue(()));
+        }
+    };
 
     let infraction_height = evidence.vote_a.height;
 
@@ -651,32 +648,6 @@ fn has_consensus_state(
     );
 
     res.is_ok()
-}
-
-/// If the misbehaving chain is a CCV consumer chain,
-/// then try fetch the consumer chains of the counterparty chains.
-/// If that fails, then the counterparty chain is not a provider chain.
-/// Otherwise, check if the misbehaving chain is a consumer of the counterparty chain,
-/// which is then definitely a provider.
-fn is_counterparty_provider(
-    chain: &CosmosSdkChain,
-    consumer_id: &ConsumerId,
-    counterparty_chain_handle: &BaseChainHandle,
-    counterparty_client_id: &ClientId,
-) -> bool {
-    if chain.config().ccv_consumer_chain {
-        let consumer_chains = counterparty_chain_handle
-            .query_consumer_chains()
-            .unwrap_or_default(); // If the query fails, use an empty list of consumers
-
-        consumer_chains.iter().any(|consumer| {
-            &consumer.chain_id == chain.id()
-                && &consumer.client_id == counterparty_client_id
-                && &consumer.consumer_id == consumer_id
-        })
-    } else {
-        false
-    }
 }
 
 /// Fetch all the counterparty clients of the given chain.
