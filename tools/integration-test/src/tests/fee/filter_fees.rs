@@ -22,6 +22,8 @@ struct FilterIncentivizedFeesRelayerTest;
 
 impl TestOverrides for FilterIncentivizedFeesRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.clear_on_start = false;
+        config.mode.packets.clear_interval = 0;
         config.mode.packets.auto_register_counterparty_payee = true;
         let recv_fee = MinFee::new(50, Some("samoleans".to_owned()));
         let fees_filters = FeePolicy::new(vec![recv_fee]);
