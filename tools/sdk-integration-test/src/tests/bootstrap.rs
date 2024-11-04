@@ -6,6 +6,7 @@ use hermes_cosmos_integration_tests::contexts::bootstrap::CosmosBootstrap;
 use hermes_cosmos_integration_tests::init::init_test_runtime;
 use hermes_cosmos_relayer::contexts::build::CosmosBuilder;
 use hermes_error::types::Error;
+use hermes_test_components::bootstrap::traits::chain::CanBootstrapChain;
 use ibc_relayer::chain::cosmos::client::Settings;
 use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
@@ -38,7 +39,7 @@ fn cosmos_integration_tests() -> Result<(), Error> {
 
     let _setup = CosmosBinaryChannelSetup {
         bootstrap_a: bootstrap.clone(),
-        bootstrap_b: bootstrap,
+        bootstrap_b: bootstrap.clone(),
         create_client_settings,
         init_connection_options: Default::default(),
         init_channel_options: Default::default(),
@@ -46,10 +47,12 @@ fn cosmos_integration_tests() -> Result<(), Error> {
     };
 
     // TODO: Use a test suite entry point for running multiple tests
-    runtime
-        .runtime
-        .clone()
-        .block_on(async move { <Result<(), Error>>::Ok(()) })?;
+    runtime.runtime.clone().block_on(async move {
+        let _chain_driver = bootstrap.bootstrap_chain("chain-1").await?;
+        let _chain_driver = bootstrap.bootstrap_chain("chain-2").await?;
+
+        <Result<(), Error>>::Ok(())
+    })?;
 
     Ok(())
 }
