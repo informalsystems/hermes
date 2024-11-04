@@ -77,20 +77,22 @@ impl BinaryChannelTest for SequentialCommitTest {
         {
             let denom_a = chains.node_a.denom();
 
-            let transfer_message = build_transfer_message(
-                &channel.port_a.as_ref(),
-                &channel.channel_id_a.as_ref(),
-                &wallet_a.as_ref(),
-                &wallet_b.address(),
-                &denom_a.with_amount(100u64).as_ref(),
-                Duration::from_secs(30),
-                None,
-            )?;
+            let mut transfer_messages = Vec::new();
+            for i in 0..TOTAL_MESSAGES {
+                let transfer_message = build_transfer_message(
+                    &channel.port_a.as_ref(),
+                    &channel.channel_id_a.as_ref(),
+                    &wallet_a.as_ref(),
+                    &wallet_b.address(),
+                    &denom_a.with_amount(100u64).as_ref(),
+                    Duration::from_secs(30),
+                    // Namada batch transaction can't have the exact same message
+                    Some(i.to_string()),
+                )?;
+                transfer_messages.push(transfer_message);
+            }
 
-            let messages = TrackedMsgs::new_static(
-                vec![transfer_message; TOTAL_MESSAGES],
-                "test_error_events",
-            );
+            let messages = TrackedMsgs::new_static(transfer_messages, "test_sequential_commit");
 
             let start = Instant::now();
 
@@ -132,20 +134,22 @@ impl BinaryChannelTest for SequentialCommitTest {
         {
             let denom_b = chains.node_b.denom();
 
-            let transfer_message = build_transfer_message(
-                &channel.port_b.as_ref(),
-                &channel.channel_id_b.as_ref(),
-                &wallet_b.as_ref(),
-                &wallet_a.address(),
-                &denom_b.with_amount(100u64).as_ref(),
-                Duration::from_secs(30),
-                None,
-            )?;
+            let mut transfer_messages = Vec::new();
+            for i in 0..TOTAL_MESSAGES {
+                let transfer_message = build_transfer_message(
+                    &channel.port_b.as_ref(),
+                    &channel.channel_id_b.as_ref(),
+                    &wallet_b.as_ref(),
+                    &wallet_a.address(),
+                    &denom_b.with_amount(100u64).as_ref(),
+                    Duration::from_secs(30),
+                    // Namada batch transaction can't have the exact same message
+                    Some(i.to_string()),
+                )?;
+                transfer_messages.push(transfer_message);
+            }
 
-            let messages = TrackedMsgs::new_static(
-                vec![transfer_message; TOTAL_MESSAGES],
-                "test_error_events",
-            );
+            let messages = TrackedMsgs::new_static(transfer_messages, "test_sequential_commit");
 
             let start = Instant::now();
 
