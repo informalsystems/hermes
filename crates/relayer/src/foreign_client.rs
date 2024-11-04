@@ -32,7 +32,6 @@ use ibc_relayer_types::tx_msg::Msg;
 use ibc_relayer_types::Height;
 
 use crate::chain::client::ClientSettings;
-use crate::chain::cosmos::query_ccv_consumer_id;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
@@ -43,7 +42,6 @@ use crate::error::Error as RelayerError;
 use crate::event::IbcEventWithHeight;
 use crate::misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence};
 use crate::telemetry;
-use crate::util::block_on;
 use crate::util::collate::CollatedIterExt;
 use crate::util::pretty::{PrettyDuration, PrettySlice};
 
@@ -1950,26 +1948,16 @@ pub fn fetch_ccv_consumer_id(
     provider: &impl ChainHandle,
     client_id: &ClientId,
 ) -> Result<ConsumerId, ForeignClientError> {
-    let provider_config = provider.config().map_err(|e| {
+    let consumer_id = provider.query_ccv_consumer_id(client_id).map_err(|e| {
         ForeignClientError::misbehaviour(
-            format!("failed to get config of provider chain {}", provider.id(),),
+            format!(
+                "failed to query CCV consumer id corresponding to client {} from provider {}",
+                client_id,
+                provider.id()
+            ),
             e,
         )
     })?;
-
-    let ChainConfig::CosmosSdk(provider_config) = provider_config;
-
-    let consumer_id =
-        block_on(query_ccv_consumer_id(&provider_config, client_id)).map_err(|e| {
-            ForeignClientError::misbehaviour(
-                format!(
-                    "failed to query CCV consumer id corresponding to client {} from provider {}",
-                    client_id,
-                    provider.id()
-                ),
-                e,
-            )
-        })?;
 
     Ok(consumer_id)
 }

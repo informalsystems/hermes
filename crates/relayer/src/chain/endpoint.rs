@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
-use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerChain;
+use ibc_relayer_types::applications::ics28_ccv::msgs::{ConsumerChain, ConsumerId};
 use ibc_relayer_types::core::ics02_client::height::Height;
 use tokio::runtime::Runtime as TokioRuntime;
 
@@ -704,4 +704,6 @@ pub trait ChainEndpoint: Sized {
         height: Height,
         include_proof: IncludeProof,
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error>;
+
+    fn query_ccv_consumer_id(&self, client_id: ClientId) -> Result<ConsumerId, Error>;
 }

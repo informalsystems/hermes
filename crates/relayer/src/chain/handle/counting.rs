@@ -9,7 +9,7 @@ use ibc_proto::ibc::apps::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
-use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerChain;
+use ibc_relayer_types::applications::ics28_ccv::msgs::{ConsumerChain, ConsumerId};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics02_client::header::AnyHeader;
@@ -532,5 +532,10 @@ impl<Handle: ChainHandle> ChainHandle for CountingChainHandle<Handle> {
         self.inc_metric("query_upgrade_error");
         self.inner
             .query_upgrade_error(request, height, include_proof)
+    }
+
+    fn query_ccv_consumer_id(&self, client_id: &ClientId) -> Result<ConsumerId, Error> {
+        self.inc_metric("query_ccv_consumer_id");
+        self.inner.query_ccv_consumer_id(client_id)
     }
 }

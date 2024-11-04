@@ -10,7 +10,10 @@ use ibc_proto::ibc::{
     core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest},
 };
 use ibc_relayer_types::{
-    applications::{ics28_ccv::msgs::ConsumerChain, ics31_icq::response::CrossChainQueryResponse},
+    applications::{
+        ics28_ccv::msgs::{ConsumerChain, ConsumerId},
+        ics31_icq::response::CrossChainQueryResponse,
+    },
     core::{
         ics02_client::{events::UpdateClient, header::AnyHeader},
         ics03_connection::{
@@ -361,6 +364,10 @@ where
 
                         ChainRequest::QueryUpgradeError { request, height, include_proof, reply_to } => {
                             self.query_upgrade_error(request, height, include_proof, reply_to)?
+                        },
+
+                        ChainRequest::QueryConsumerId { client_id, reply_to } => {
+                            self.query_ccv_consumer_id(client_id, reply_to)?
                         },
                     }
                 },
@@ -894,6 +901,17 @@ where
         let result = self
             .chain
             .query_upgrade_error(request, height, include_proof);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_ccv_consumer_id(
+        &self,
+        client_id: ClientId,
+        reply_to: ReplyTo<ConsumerId>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_ccv_consumer_id(client_id);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

@@ -1,5 +1,6 @@
 use core::fmt::{Display, Error as FmtError, Formatter};
 use crossbeam_channel as channel;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerId;
 use tracing::Span;
 
 use ibc_proto::ibc::apps::fee::v1::QueryIncentivizedPacketRequest;
@@ -537,5 +538,9 @@ impl<Handle: ChainHandle> ChainHandle for CachingChainHandle<Handle> {
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
         self.inner
             .query_upgrade_error(request, height, include_proof)
+    }
+
+    fn query_ccv_consumer_id(&self, client_id: &ClientId) -> Result<ConsumerId, Error> {
+        self.inner.query_ccv_consumer_id(client_id)
     }
 }
