@@ -516,43 +516,13 @@ fn submit_light_client_attack_evidence(
         counterparty.id(),
     );
 
-    let consumer_id = fetch_ccv_consumer_id(counterparty, &counterparty_client_id)?;
-
-    let counterparty_is_provider =
-        is_counterparty_provider(chain, &consumer_id, counterparty, &counterparty_client_id);
-
     let counterparty_client_is_frozen = counterparty_client.is_frozen();
-
-    if !counterparty_is_provider && counterparty_client_is_frozen {
-        warn!(
-            "cannot submit light client attack evidence to client `{}` on counterparty chain `{}`",
-            counterparty_client_id,
-            counterparty.id()
-        );
-        warn!("reason: client is frozen and chain is not a CCV provider chain");
-
-        return Ok(());
-    }
 
     let signer = counterparty.get_signer()?;
     let common_height = Height::from_tm(evidence.common_height, chain.id());
 
     let counterparty_has_common_consensus_state =
         has_consensus_state(counterparty, &counterparty_client_id, common_height);
-
-    if counterparty_is_provider
-        && counterparty_client_is_frozen
-        && !counterparty_has_common_consensus_state
-    {
-        warn!(
-            "cannot submit light client attack evidence to client `{}` on provider chain `{}`",
-            counterparty_client_id,
-            counterparty.id()
-        );
-        warn!("reason: client is frozen and does not have a consensus state at height {common_height}");
-
-        return Ok(());
-    }
 
     let mut msgs = if counterparty_has_common_consensus_state {
         info!(
@@ -561,8 +531,8 @@ fn submit_light_client_attack_evidence(
             counterparty.id()
         );
         info!(
-            "reason: counterparty chain already has consensus state at common height {common_height}"
-        );
+                "reason: counterparty chain already has consensus state at common height {common_height}"
+            );
 
         Vec::new()
     } else {
@@ -582,32 +552,31 @@ fn submit_light_client_attack_evidence(
         }
     };
 
-    if counterparty_is_provider {
+    if let Ok(consumer_id) = fetch_ccv_consumer_id(counterparty, &counterparty_client_id) {
+        if counterparty_client_is_frozen && !counterparty_has_common_consensus_state {
+            warn!(
+                "cannot submit light client attack evidence to client `{}` on provider chain `{}`",
+                counterparty_client_id,
+                counterparty.id()
+            );
+            warn!("reason: client is frozen and does not have a consensus state at height {common_height}");
+
+            return Ok(());
+        }
         info!(
             "will submit consumer light client attack evidence to client `{}` on provider chain `{}`",
             counterparty_client_id,
             counterparty.id(),
         );
-
-        match fetch_ccv_consumer_id(counterparty, &counterparty_client_id) {
-            Ok(consumer_id) => {
-                msgs.push(
-                    MsgSubmitIcsConsumerMisbehaviour {
-                        submitter: signer.clone(),
-                        misbehaviour: misbehaviour.clone(),
-                        consumer_id,
-                    }
-                    .to_any(),
-                );
+        msgs.push(
+            MsgSubmitIcsConsumerMisbehaviour {
+                submitter: signer.clone(),
+                misbehaviour: misbehaviour.clone(),
+                consumer_id,
             }
-            Err(e) => {
-                error!(
-                    "cannot submit CCV light client attack evidence to client `{}` on provider chain `{}`: {e}",
-                    counterparty_client_id, counterparty.id()
-                );
-            }
-        }
-    };
+            .to_any(),
+        );
+    }
 
     // We do not need to submit the misbehaviour if the client is already frozen.
     if !counterparty_client_is_frozen {
