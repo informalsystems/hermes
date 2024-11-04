@@ -148,7 +148,7 @@ pub mod wait;
 /// might be un-necessarily restrictive on the relayer side.
 /// The [default max. block size in Tendermint 0.37 is 21MB](tm-37-max).
 /// With a fraction of `0.9`, then Hermes will never permit the configuration
-/// of `max_tx_size` to exceed ~18.9MB
+/// of `max_tx_size` to exceed ~18.9MB.
 ///
 /// [tm-37-max]: https://github.com/tendermint/tendermint/blob/v0.37.0-rc1/types/params.go#L79
 pub const BLOCK_MAX_BYTES_MAX_FRACTION: f64 = 0.9;
