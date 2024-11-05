@@ -21,9 +21,9 @@ use crate::{
 /// The purpose of this type is to avoid spawning multiple runtimes for a single `ChainId`.
 #[derive(Debug)]
 pub struct Registry<Chain: ChainHandle> {
-    config: Config,
-    handles: HashMap<ChainId, Chain>,
-    rt: Arc<TokioRuntime>,
+    pub config: Config,
+    pub handles: HashMap<ChainId, Chain>,
+    pub rt: Arc<TokioRuntime>,
 }
 
 #[derive(Clone)]
