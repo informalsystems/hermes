@@ -348,14 +348,52 @@ impl HasExpiredOrFrozenError for ForeignClientError {
 }
 
 /// User-supplied options for the [`ForeignClient::build_create_client`] operation.
-///
-/// Currently, the parameters are specific to the Tendermint-based chains.
-/// A future revision will bring differentiated options for other chain types.
-#[derive(Debug, Default)]
-pub struct CreateOptions {
+#[derive(Clone, Debug)]
+pub enum CreateOptions {
+    Tendermint(TendermintCreateOptions),
+    Wasm(WasmCreateOptions),
+}
+
+impl From<TendermintCreateOptions> for CreateOptions {
+    fn from(opts: TendermintCreateOptions) -> Self {
+        Self::Tendermint(opts)
+    }
+}
+
+impl From<WasmCreateOptions> for CreateOptions {
+    fn from(opts: WasmCreateOptions) -> Self {
+        Self::Wasm(opts)
+    }
+}
+
+impl Default for CreateOptions {
+    fn default() -> Self {
+        CreateOptions::Tendermint(TendermintCreateOptions::default())
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct TendermintCreateOptions {
     pub max_clock_drift: Option<Duration>,
     pub trusting_period: Option<Duration>,
     pub trust_threshold: Option<TrustThreshold>,
+}
+
+#[derive(Clone, Debug)]
+pub struct WasmCreateOptions {
+    pub checksum: Vec<u8>,
+    pub underlying: WasmUnderlyingCreateOptions,
+}
+
+#[derive(Clone, Debug)]
+pub enum WasmUnderlyingCreateOptions {
+    Tendermint(TendermintCreateOptions),
+}
+
+impl From<TendermintCreateOptions> for WasmUnderlyingCreateOptions {
+    fn from(opts: TendermintCreateOptions) -> Self {
+        Self::Tendermint(opts)
+    }
 }
 
 /// Captures the diagnostic of verifying whether a certain
@@ -410,9 +448,10 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
     /// Creates a new foreign client on `dst_chain`. Blocks until the client is created, or
     /// an error occurs.
     /// Post-condition: `dst_chain` hosts an IBC client for `src_chain`.
-    pub fn new(
+    pub fn create(
         dst_chain: DstChain,
         src_chain: SrcChain,
+        create_options: CreateOptions,
     ) -> Result<ForeignClient<DstChain, SrcChain>, ForeignClientError> {
         // Sanity check
         if src_chain.id().eq(&dst_chain.id()) {
@@ -425,7 +464,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             src_chain,
         };
 
-        client.create()?;
+        client.perform_create(create_options)?;
 
         Ok(client)
     }
@@ -642,7 +681,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             )
         })?;
 
-        let settings = ClientSettings::for_create_command(options, &src_config, &dst_config);
+        let settings = ClientSettings::create(options, &src_config, &dst_config);
 
         let client_state: AnyClientState = self
             .src_chain
@@ -655,7 +694,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        let consensus_state = self
+        let consensus_state: AnyConsensusState = self
             .src_chain
             .build_consensus_state(
                 client_state.latest_height(),
@@ -709,9 +748,9 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         skip(self),
         fields(client = %self)
     )]
-    fn create(&mut self) -> Result<(), ForeignClientError> {
+    fn perform_create(&mut self, create_options: CreateOptions) -> Result<(), ForeignClientError> {
         let event_with_height = self
-            .build_create_client_and_send(CreateOptions::default())
+            .build_create_client_and_send(create_options)
             .map_err(|e| {
                 error!("failed to create client: {}", e);
                 e
@@ -864,28 +903,28 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     pub fn refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
-        fn check_no_errors(
-            ibc_events: &[IbcEvent],
-            dst_chain_id: ChainId,
-        ) -> Result<(), ForeignClientError> {
-            // The assumption is that only one IbcEventType::ChainError will be
-            // in the resulting Vec<IbcEvent> if an error occurred.
-            let chain_error = ibc_events
-                .iter()
-                .find(|&e| e.event_type() == IbcEventType::ChainError);
+        if let Some(events) = self.try_refresh(false)? {
+            check_no_errors(&events, self.dst_chain().id())?;
 
-            match chain_error {
-                None => Ok(()),
-                Some(ev) => Err(ForeignClientError::chain_error_event(
-                    dst_chain_id,
-                    ev.to_owned(),
-                )),
-            }
+            Ok(Some(events))
+        } else {
+            Ok(None)
         }
+    }
 
-        // If elapsed < refresh_window for the client, `try_refresh()` will
-        // be successful with an empty vector.
-        if let Some(events) = self.try_refresh()? {
+    #[instrument(
+        name = "foreign_client.force_refresh",
+        level = "error",
+        skip_all,
+        fields(client = %self)
+    )]
+    pub fn force_refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+        if let Some(events) = self.try_refresh(true)? {
+            if events.is_empty() {
+                warn!("no events emitted after forced client refresh");
+                return Ok(None);
+            }
+
             check_no_errors(&events, self.dst_chain().id())?;
             Ok(Some(events))
         } else {
@@ -893,7 +932,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         }
     }
 
-    fn try_refresh(&mut self) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
+    fn try_refresh(&mut self, force: bool) -> Result<Option<Vec<IbcEvent>>, ForeignClientError> {
         let (client_state, elapsed) = self.validated_client_state()?;
 
         let src_config = self.src_chain.config().map_err(|e| {
@@ -912,18 +951,19 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             .trusting_period()
             .mul_f64(refresh_rate.as_f64());
 
-        match (elapsed, refresh_period) {
-            (None, _) => Ok(None),
-            (Some(elapsed), refresh_period) => {
-                if elapsed > refresh_period {
-                    info!(?elapsed, ?refresh_period, "client needs to be refreshed");
+        let elapsed = elapsed.unwrap_or_default();
 
-                    self.build_latest_update_client_and_send()
-                        .map_or_else(Err, |ev| Ok(Some(ev)))
-                } else {
-                    Ok(None)
-                }
-            }
+        if force || elapsed > refresh_period {
+            info!(
+                ?elapsed,
+                ?refresh_period,
+                ?force,
+                "refreshing client, will send a client update"
+            );
+
+            self.build_latest_update_client_and_send().map(Some)
+        } else {
+            Ok(None)
         }
     }
 
@@ -1928,6 +1968,25 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
         IbcEvent::UpdateClient(ev) => Ok(ev.client_id()),
         _ => Err(ForeignClientError::missing_client_id_from_event(
             event.clone(),
+        )),
+    }
+}
+
+fn check_no_errors(
+    ibc_events: &[IbcEvent],
+    dst_chain_id: ChainId,
+) -> Result<(), ForeignClientError> {
+    // The assumption is that only one IbcEventType::ChainError will be
+    // in the resulting Vec<IbcEvent> if an error occurred.
+    let chain_error = ibc_events
+        .iter()
+        .find(|&e| e.event_type() == IbcEventType::ChainError);
+
+    match chain_error {
+        None => Ok(()),
+        Some(ev) => Err(ForeignClientError::chain_error_event(
+            dst_chain_id,
+            ev.to_owned(),
         )),
     }
 }

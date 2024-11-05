@@ -8,6 +8,7 @@ use tracing::debug;
 
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
+use crate::prelude::ChainDriver;
 
 pub fn query_balance(
     chain_id: &str,
@@ -293,13 +294,7 @@ pub fn query_auth_module(
     Ok(res.to_owned())
 }
 
-pub fn query_tx_hash(
-    chain_id: &str,
-    command_path: &str,
-    home_path: &str,
-    rpc_listen_address: &str,
-    command_output: &str,
-) -> Result<(), Error> {
+pub fn query_tx_hash(driver: &ChainDriver, command_output: &str) -> Result<(), Error> {
     let json_output: serde_json::Value =
         serde_json::from_str(command_output).map_err(handle_generic_error)?;
 
@@ -313,13 +308,13 @@ pub fn query_tx_hash(
         })?;
 
     let raw_output = simple_exec(
-        chain_id,
-        command_path,
+        driver.chain_id.as_str(),
+        &driver.command_path,
         &[
             "--home",
-            home_path,
+            &driver.home_path,
             "--node",
-            rpc_listen_address,
+            &driver.rpc_listen_address(),
             "query",
             "tx",
             output_tx_hash,

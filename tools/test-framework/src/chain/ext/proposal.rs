@@ -1,17 +1,10 @@
-use eyre::eyre;
 use http::Uri;
-use ibc_relayer::config::default::max_grpc_decoding_size;
-use prost::Message;
 
-use ibc_proto::cosmos::gov::v1beta1::{query_client::QueryClient, QueryProposalRequest};
-use ibc_proto::ibc::core::client::v1::{MsgIbcSoftwareUpgrade, UpgradeProposal};
-use ibc_relayer::error::Error as RelayerError;
-
-use crate::chain::cli::proposal::deposit_proposal;
-use crate::chain::cli::upgrade::{submit_gov_proposal, vote_proposal};
+use crate::chain::cli::proposal::{deposit_proposal, submit_gov_proposal, vote_proposal};
+use crate::chain::cli::upgrade::query_upgrade_proposal_height;
 use crate::chain::driver::ChainDriver;
 use crate::error::Error;
-use crate::prelude::{handle_generic_error, TaggedChainDriverExt};
+use crate::prelude::TaggedChainDriverExt;
 use crate::types::tagged::*;
 use crate::util::proposal_status::ProposalStatus;
 
@@ -33,7 +26,9 @@ pub trait ChainProposalMethodsExt {
         fees: &str,
         gas: &str,
     ) -> Result<(), Error>;
+}
 
+pub trait ChannelProposalMethodsExt {
     fn initialise_channel_upgrade(
         &self,
         port_id: &str,
@@ -60,20 +55,11 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
         proposal_id: u64,
     ) -> Result<u64, Error> {
         self.value()
-            .runtime
-            .block_on(query_upgrade_proposal_height(grpc_address, proposal_id))
+            .query_upgrade_proposal_height(grpc_address, proposal_id)
     }
 
     fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error> {
-        vote_proposal(
-            self.value().chain_id.as_str(),
-            &self.value().command_path,
-            &self.value().home_path,
-            &self.value().rpc_listen_address(),
-            fees,
-            proposal_id,
-        )?;
-        Ok(())
+        self.value().vote_proposal(fees, proposal_id)
     }
 
     fn deposit_proposal(
@@ -83,10 +69,12 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
         fees: &str,
         gas: &str,
     ) -> Result<(), Error> {
-        deposit_proposal(self.value(), amount, proposal_id, fees, gas)?;
-        Ok(())
+        self.value()
+            .deposit_proposal(amount, proposal_id, fees, gas)
     }
+}
 
+impl<'a, Chain: Send> ChannelProposalMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
     fn initialise_channel_upgrade(
         &self,
         port_id: &str,
@@ -116,32 +104,13 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &channel_upgrade_proposal,
         )?;
 
-        self.value().assert_proposal_status(
-            self.value().chain_id.as_str(),
-            &self.value().command_path,
-            &self.value().home_path,
-            &self.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            proposal_id,
-        )?;
+        self.value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, proposal_id)?;
 
-        vote_proposal(
-            self.value().chain_id.as_str(),
-            &self.value().command_path,
-            &self.value().home_path,
-            &self.value().rpc_listen_address(),
-            "1200stake",
-            proposal_id,
-        )?;
+        self.value().vote_proposal("1200stake", proposal_id)?;
 
-        self.value().assert_proposal_status(
-            self.value().chain_id.as_str(),
-            &self.value().command_path,
-            &self.value().home_path,
-            &self.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            proposal_id,
-        )?;
+        self.value()
+            .assert_proposal_status(ProposalStatus::Passed, proposal_id)?;
 
         Ok(())
     }
@@ -165,99 +134,41 @@ impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDri
             &channel_update_params_proposal,
         )?;
 
-        self.value().assert_proposal_status(
-            self.value().chain_id.as_str(),
-            &self.value().command_path,
-            &self.value().home_path,
-            &self.value().rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            proposal_id,
-        )?;
+        self.value()
+            .assert_proposal_status(ProposalStatus::VotingPeriod, proposal_id)?;
 
-        vote_proposal(
-            self.value().chain_id.as_str(),
-            &self.value().command_path,
-            &self.value().home_path,
-            &self.value().rpc_listen_address(),
-            "1200stake",
-            proposal_id,
-        )?;
+        self.value().vote_proposal("1200stake", proposal_id)?;
 
-        self.value().assert_proposal_status(
-            self.value().chain_id.as_str(),
-            &self.value().command_path,
-            &self.value().home_path,
-            &self.value().rpc_listen_address(),
-            ProposalStatus::Passed,
-            proposal_id,
-        )?;
+        self.value()
+            .assert_proposal_status(ProposalStatus::Passed, proposal_id)?;
 
         Ok(())
     }
 }
 
-/// Query the proposal with the given proposal_id, which is supposed to be an UpgradeProposal.
-/// Extract the Plan from the UpgradeProposal and get the height at which the chain upgrades,
-/// from the Plan.
-pub async fn query_upgrade_proposal_height(
-    grpc_address: &Uri,
-    proposal_id: u64,
-) -> Result<u64, Error> {
-    let mut client = match QueryClient::connect(grpc_address.clone()).await {
-        Ok(client) => client,
-        Err(_) => {
-            return Err(Error::query_client());
-        }
-    };
+impl ChainProposalMethodsExt for ChainDriver {
+    fn query_upgrade_proposal_height(
+        &self,
+        grpc_address: &Uri,
+        proposal_id: u64,
+    ) -> Result<u64, Error> {
+        self.runtime
+            .block_on(query_upgrade_proposal_height(grpc_address, proposal_id))
+    }
 
-    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
+    fn vote_proposal(&self, fees: &str, proposal_id: &str) -> Result<(), Error> {
+        vote_proposal(self, fees, proposal_id)
+    }
 
-    let request = tonic::Request::new(QueryProposalRequest { proposal_id });
-
-    let response = client
-        .proposal(request)
-        .await
-        .map(|r| r.into_inner())
-        .map_err(|e| RelayerError::grpc_status(e, "query_upgrade_proposal_height".to_owned()))?;
-
-    // Querying for proposal might not exist if the proposal id is incorrect
-    let proposal = response
-        .proposal
-        .ok_or_else(|| RelayerError::empty_proposal(proposal_id.to_string()))?;
-
-    let proposal_content = proposal
-        .content
-        .ok_or_else(|| eyre!("failed to retrieve content of Proposal"))?;
-
-    let height = match proposal_content.type_url.as_str() {
-        "/ibc.core.client.v1.MsgIBCSoftwareUpgrade" => {
-            let upgrade_plan = MsgIbcSoftwareUpgrade::decode(&proposal_content.value as &[u8])
-                .map_err(handle_generic_error)?;
-
-            let plan = upgrade_plan
-                .plan
-                .ok_or_else(|| eyre!("failed to plan from MsgIbcSoftwareUpgrade"))?;
-
-            plan.height as u64
-        }
-        "/ibc.core.client.v1.UpgradeProposal" => {
-            let upgrade_plan = UpgradeProposal::decode(&proposal_content.value as &[u8])
-                .map_err(handle_generic_error)?;
-
-            let plan = upgrade_plan
-                .plan
-                .ok_or_else(|| eyre!("failed to plan from MsgIbcSoftwareUpgrade"))?;
-
-            plan.height as u64
-        }
-        _ => {
-            return Err(Error::incorrect_proposal_type_url(
-                proposal_content.type_url,
-            ))
-        }
-    };
-
-    Ok(height)
+    fn deposit_proposal(
+        &self,
+        amount: &str,
+        proposal_id: &str,
+        fees: &str,
+        gas: &str,
+    ) -> Result<(), Error> {
+        deposit_proposal(self, amount, proposal_id, fees, gas)
+    }
 }
 
 fn create_channel_upgrade_proposal(

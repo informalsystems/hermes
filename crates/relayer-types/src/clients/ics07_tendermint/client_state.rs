@@ -39,6 +39,10 @@ pub struct ClientState {
     pub frozen_height: Option<Height>,
 }
 
+impl ClientState {
+    pub const TYPE_URL: &'static str = TENDERMINT_CLIENT_STATE_TYPE_URL;
+}
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AllowUpdate {
     pub after_expiry: bool,

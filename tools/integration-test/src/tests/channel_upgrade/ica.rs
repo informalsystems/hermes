@@ -6,6 +6,7 @@
 //! - `ChannelUpgradeICAUnordered` tests that after the after sending a packet on an ordered
 //!   ICA channel, the upgrade handshake is completed when the channel is upgraded to unordered.
 
+use ibc_test_framework::chain::ext::proposal::ChannelProposalMethodsExt;
 use serde_json as json;
 use std::collections::HashMap;
 use std::str::FromStr;

@@ -115,10 +115,6 @@ pub trait ChainBootstrapMethodsExt {
     */
     fn assert_proposal_status(
         &self,
-        chain_id: &str,
-        command_path: &str,
-        home_path: &str,
-        rpc_listen_address: &str,
         status: ProposalStatus,
         proposal_id: &str,
     ) -> Result<(), Error>;
@@ -335,13 +331,14 @@ impl ChainBootstrapMethodsExt for ChainDriver {
 
     fn assert_proposal_status(
         &self,
-        chain_id: &str,
-        command_path: &str,
-        home_path: &str,
-        rpc_listen_address: &str,
         status: ProposalStatus,
         proposal_id: &str,
     ) -> Result<(), Error> {
+        let chain_id = self.chain_id.as_str();
+        let command_path = &self.command_path;
+        let home_path = &self.home_path;
+        let rpc_listen_address = &self.rpc_listen_address();
+
         assert_eventually_succeed(
             &format!("proposal `{}` status: {}", proposal_id, status.as_str()),
             10,
@@ -356,9 +353,10 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                 Ok(exec_output) => {
                     let json_res = json::from_str::<json::Value>(&exec_output.stdout)
                         .map_err(handle_generic_error)?;
+
                     // Cosmos SDK v0.50.1 outputs the status of the proposal using an integer code
                     let proposal_status: ProposalStatus = match json_res.get("proposal") {
-                        Some(proposal_status) => proposal_status
+                        Some(proposal) => proposal
                             .get("status")
                             .ok_or_else(|| eyre!("expected `status` field"))?
                             .try_into()?,
@@ -380,14 +378,20 @@ impl ChainBootstrapMethodsExt for ChainDriver {
                 }
                 Err(e) => {
                     let msg = e.to_string();
+
                     if msg.contains(&format!("status:{}", status.as_str())) {
                         Ok(())
                     } else {
-                        Err(Error::generic(eyre!("Error querying proposal `{proposal_id}`. Potential issues could be due to not using enough gas or the proposal submitted is invalid. Error: {e}")))
+                        Err(Error::generic(eyre!(
+                            "Error querying proposal `{proposal_id}`. \
+                            Potential issues could be due to not using enough gas or the proposal submitted is invalid. \
+                            Error: {e}"
+                        )))
                     }
                 }
             },
         )?;
+
         Ok(())
     }
 

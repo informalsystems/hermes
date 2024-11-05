@@ -183,6 +183,16 @@ pub fn set_indexer(config: &mut Value, mode: &str) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_max_body_bytes(config: &mut toml::Value, bytes: i64) -> Result<(), Error> {
+    config
+        .get_mut("rpc")
+        .and_then(|rpc| rpc.as_table_mut())
+        .ok_or_else(|| eyre!("failed to update max_body_bytes in Comet config"))?
+        .insert("max_body_bytes".to_string(), toml::Value::Integer(bytes));
+
+    Ok(())
+}
+
 pub fn set_max_deposit_period(genesis: &mut serde_json::Value, period: &str) -> Result<(), Error> {
     let max_deposit_period = genesis
         .get_mut("app_state")
@@ -432,6 +442,24 @@ pub fn consensus_params_max_gas(
         "max_gas".to_owned(),
         serde_json::Value::String(max_gas.to_string()),
     );
+
+    Ok(())
+}
+
+pub fn add_allowed_client(genesis: &mut serde_json::Value, client: &str) -> Result<(), Error> {
+    let allowed_clients = genesis
+        .get_mut("app_state")
+        .and_then(|app_state| app_state.get_mut("ibc"))
+        .and_then(|ibc| ibc.get_mut("client_genesis"))
+        .and_then(|client_genesis| client_genesis.get_mut("params"))
+        .and_then(|params| params.get_mut("allowed_clients"))
+        .and_then(|allowed_clients| allowed_clients.as_array_mut())
+        .ok_or_else(|| eyre!("failed to get `allowed_clients` fields in genesis file"))?;
+
+    // Only add new allowed client if the wildcard '*' is not specified
+    if allowed_clients.iter().all(|v| v.as_str() != Some("*")) {
+        allowed_clients.push(serde_json::Value::String(client.to_string()));
+    }
 
     Ok(())
 }

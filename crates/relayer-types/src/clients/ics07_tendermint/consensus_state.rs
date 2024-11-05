@@ -23,6 +23,8 @@ pub struct ConsensusState {
 }
 
 impl ConsensusState {
+    pub const TYPE_URL: &'static str = TENDERMINT_CONSENSUS_STATE_TYPE_URL;
+
     pub fn new(root: CommitmentRoot, timestamp: Time, next_validators_hash: Hash) -> Self {
         Self {
             timestamp,
