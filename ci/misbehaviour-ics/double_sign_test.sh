@@ -1,6 +1,10 @@
 #!/bin/bash
 # shellcheck disable=2086,2004
 
+## Prerequisites:
+#  * ICS v6.x
+#  * Hermes v1.10.3+45a29cc00
+
 set -eu
 
 DEBUG=${DEBUG:-false}
@@ -8,13 +12,6 @@ DEBUG=${DEBUG:-false}
 if [ "$DEBUG" = true ]; then
     set -x
 fi
-
-# User balance of stake tokens 
-USER_COINS="100000000000stake"
-# Amount of stake tokens staked
-STAKE="100000000stake"
-# Node IP address
-NODE_IP="127.0.0.1"
 
 # Home directory
 HOME_DIR="/tmp/hermes-ics-double-sign"
@@ -25,10 +22,18 @@ if [ "$DEBUG" = true ]; then
 else
     HERMES_DEBUG=""
 fi
+
 # Hermes config
 HERMES_CONFIG="$HOME_DIR/hermes.toml"
 # Hermes binary
 HERMES_BIN="cargo run -q --bin hermes -- $HERMES_DEBUG --config $HERMES_CONFIG"
+
+# User balance of stake tokens
+USER_COINS="100000000000stake"
+# Amount of stake tokens staked
+STAKE="100000000stake"
+# Node IP address
+NODE_IP="127.0.0.1"
 
 # Validator moniker
 MONIKERS=("coordinator" "alice" "bob")
@@ -51,13 +56,8 @@ CLIENT_BASEPORT=29220
 
 # Clean start
 pkill -f interchain-security-pd &> /dev/null || true
-pkill -f interchain-security-cd &> /dev/null || true
-pkill -f hermes &> /dev/null || true
 sleep 1
-
-mkdir -p "${HOME_DIR}"
-rm -rf "${PROV_NODES_ROOT_DIR}"
-rm -rf "${CONS_NODES_ROOT_DIR}"
+rm -rf ${PROV_NODES_ROOT_DIR}
 
 # Let lead validator create genesis file
 LEAD_VALIDATOR_PROV_DIR=${PROV_NODES_ROOT_DIR}/provider-${LEAD_VALIDATOR_MONIKER}
@@ -70,7 +70,6 @@ do
     MONIKER=${MONIKERS[$index]}
     # validator key
     PROV_KEY=${MONIKER}-key
-    PROV_KEY2=${MONIKER}-key2
 
     # home directory of this validator on provider
     PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${MONIKER}
@@ -80,16 +79,17 @@ do
 
     # Build genesis file and node directory structure
     interchain-security-pd init $MONIKER --chain-id provider --home ${PROV_NODE_DIR}
-    jq ".app_state.gov.params.voting_period = \"5s\" | .app_state.staking.params.unbonding_time = \"86400s\"" \
+    jq ".app_state.gov.params.voting_period = \"10s\" \
+    | .app_state.gov.params.expedited_voting_period = \"9s\" \
+    | .app_state.staking.params.unbonding_time = \"86400s\" \
+    | .app_state.provider.params.blocks_per_epoch = \"5\"" \
     ${PROV_NODE_DIR}/config/genesis.json > \
     ${PROV_NODE_DIR}/edited_genesis.json && mv ${PROV_NODE_DIR}/edited_genesis.json ${PROV_NODE_DIR}/config/genesis.json
-
 
     sleep 1
 
     # Create account keypair
-    interchain-security-pd keys add $PROV_KEY  --home ${PROV_NODE_DIR} --keyring-backend test --output json > ${PROV_NODE_DIR}/${PROV_KEY}.json  2>&1
-    interchain-security-pd keys add $PROV_KEY2 --home ${PROV_NODE_DIR} --keyring-backend test --output json > ${PROV_NODE_DIR}/${PROV_KEY2}.json 2>&1
+    interchain-security-pd keys add $PROV_KEY --home ${PROV_NODE_DIR} --keyring-backend test --output json > ${PROV_NODE_DIR}/${PROV_KEY}.json 2>&1
     sleep 1
 
     # copy genesis in, unless this validator is the lead validator
@@ -100,9 +100,6 @@ do
     # Add stake to user
     PROV_ACCOUNT_ADDR=$(jq -r '.address' ${PROV_NODE_DIR}/${PROV_KEY}.json)
     interchain-security-pd genesis add-genesis-account $PROV_ACCOUNT_ADDR $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
-
-    PROV_ACCOUNT_ADDR2=$(jq -r '.address' ${PROV_NODE_DIR}/${PROV_KEY2}.json)
-    interchain-security-pd genesis add-genesis-account $PROV_ACCOUNT_ADDR2 $USER_COINS --home ${PROV_NODE_DIR} --keyring-backend test
     sleep 1
 
     # copy genesis out, unless this validator is the lead validator
@@ -141,10 +138,10 @@ do
     fi
 
     # Stake 1/1000 user's coins
-    interchain-security-pd genesis gentx $PROV_KEY  $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
+    interchain-security-pd genesis gentx $PROV_KEY $STAKE --chain-id provider --home ${PROV_NODE_DIR} --keyring-backend test --moniker $MONIKER
     sleep 1
 
-    # Copy gentxs to the lead validator for possible future collection. 
+    # Copy gentxs to the lead validator for possible future collection.
     # Obviously we don't need to copy the first validator's gentx to itself
     if [ $MONIKER != $LEAD_VALIDATOR_MONIKER ]; then
         cp ${PROV_NODE_DIR}/config/gentx/* ${LEAD_VALIDATOR_PROV_DIR}/config/gentx/
@@ -183,7 +180,6 @@ do
 
     # validator key
     PROV_KEY=${MONIKER}-key
-    PROV_KEY2=${MONIKER}-key2
 
     # home directory of this validator on provider
     PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${MONIKER}
@@ -219,89 +215,217 @@ do
 done
 
 # Build consumer chain proposal file
-tee ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json<<EOF
+tee ${PROV_NODE_DIR}/create-consumer-msg.json<<EOF
 {
-    "title": "Create a chain",
-    "summary": "Gonna be a great chain",
-    "chain_id": "consumer",
-    "initial_height": {
-        "revision_height": 1
+	"chain_id" : "consumer",
+	"metadata": {
+        "name": "consumer-1-metadata-name",
+        "description":"consumer-1-metadata-description",
+        "metadata": "consumer-1-metadata-metadata"
     },
-    "genesis_hash": "Z2VuX2hhc2g=",
-    "binary_hash": "YmluX2hhc2g=",
-    "spawn_time": "2023-03-11T09:02:14.718477-08:00",
-    "deposit": "10000001stake",
-    "consumer_redistribution_fraction": "0.75",
-    "blocks_per_distribution_transmission": 1000,
-    "historical_entries": 10000,
-    "unbonding_period": 864000000000000,
-    "ccv_timeout_period": 259200000000000,
-    "transfer_timeout_period": 1800000000000
+    "initialization_parameters": {
+        "initial_height": {
+            "revision_number": 0,
+            "revision_height": 1
+        },
+        "genesis_hash": "Z2VuX2hhc2g=",
+        "binary_hash": "YmluX2hhc2g=",
+        "spawn_time": "2024-08-29T12:26:16.529913Z",
+        "unbonding_period": 1728000000000000,
+        "ccv_timeout_period": 2419200000000000,
+        "transfer_timeout_period": 1800000000000,
+        "consumer_redistribution_fraction": "0.75",
+        "blocks_per_distribution_transmission": 1000,
+        "historical_entries": 10000,
+        "distribution_transmission_channel": ""
+    },
+    "power_shaping_parameters": {
+        "top_N": 0,
+        "validators_power_cap": 0,
+        "validator_set_cap": 0,
+        "allowlist": [],
+        "denylist": [],
+        "min_stake": 0,
+        "allow_inactive_vals": false
+    }
 }
 EOF
 
 sleep 5
-interchain-security-pd keys show $LEAD_PROV_KEY --keyring-backend test --home ${LEAD_VALIDATOR_PROV_DIR}
 
-# Submit consumer chain proposal
-interchain-security-pd tx gov submit-legacy-proposal consumer-addition ${LEAD_VALIDATOR_PROV_DIR}/consumer-proposal.json --chain-id provider --from $LEAD_PROV_KEY --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR  --keyring-backend test -y --gas auto
+TX_RES=$(interchain-security-pd tx provider create-consumer \
+    ${PROV_NODE_DIR}/create-consumer-msg.json \
+    --chain-id provider \
+    --from $PROV_KEY \
+    --keyring-backend test \
+    --home $PROV_NODE_DIR \
+    --node tcp://${NODE_IP}:${RPC_LADDR_PORT} \
+    -o json -y)
+
+sleep 5
+
+TX_RES=$(interchain-security-pd q tx --type=hash $(echo $TX_RES | jq -r '.txhash') \
+    --home ${PROV_NODE_DIR} \
+    --node tcp://${NODE_IP}:${RPC_LADDR_PORT} \
+    -o json)
+
+
+echo $TX_RES | jq .code
+
+if [ "$(echo $TX_RES | jq -r .code )" != "0" ]; then
+  echo consumer creation failed with code: $(echo $TX_RES | jq .code )
+  exit 1
+fi
+
+
+EVENTS=$(echo $TX_RES | jq -c '.events[]')
+found=false
+CONSUMER_ID=""
+while IFS= read -r event; do
+    type=$(echo "$event" | jq -r '.type')
+    echo $type
+    if [ "$type" = "create_consumer" ]; then
+        attrs=$(echo $event | jq -c '.attributes[]')
+        while IFS= read -r attr; do
+            key=$(echo "$attr" | jq -r '.key')
+            if [ "$key" = "consumer_id" ]; then
+                CONSUMER_ID=$(echo "$attr" | jq -r '.value')
+                found=true
+                break 2
+            fi
+       done <<< "$attrs"
+    fi
+done <<< "$EVENTS"
+
+if [ "$found" = false ]; then
+    echo "consumer creation event not found"
+    exit 1
+fi
+
+echo "consumer created: $CONSUMER_ID"
+
+
+AUTHORITY=cosmos10d07y265gmmuvt4z0w9aw880jnsr700j6zn9kn
+PROV_ACCOUNT_ADDR=$(jq -r '.address' ${PROV_NODE_DIR}/${PROV_KEY}.json)
+
+## Grant the consumer ownership to the Gov module
+tee ${PROV_NODE_DIR}/update-consumer-msg.json<<EOF
+{
+	"consumer_id" : "$CONSUMER_ID",
+    "owner_address": "$PROV_ACCOUNT_ADDR",
+    "new_owner_address": "$AUTHORITY",
+	"metadata": $(jq -r '.metadata' ${PROV_NODE_DIR}/create-consumer-msg.json)
+}
+EOF
+
+TX_RES=$(interchain-security-pd tx provider update-consumer \
+    ${PROV_NODE_DIR}/update-consumer-msg.json \
+    --chain-id provider \
+    --from $PROV_KEY \
+    --keyring-backend test \
+    --home $PROV_NODE_DIR \
+    --node tcp://${NODE_IP}:${RPC_LADDR_PORT} \
+    -o json -y)
+
+sleep 5
+
+## Update consumer to TopN by submitting a gov proposal
+tee ${PROV_NODE_DIR}/consumer_prop.json<<EOF
+{
+    "messages": [
+        {
+            "@type": "/interchain_security.ccv.provider.v1.MsgUpdateConsumer",
+            "consumer_id": "${CONSUMER_ID}",
+            "owner": "$AUTHORITY",
+            "metadata": $(jq -r '.metadata' ${PROV_NODE_DIR}/create-consumer-msg.json),
+            "initialization_parameters": {
+                "initial_height": {
+                    "revision_number": 0,
+                    "revision_height": 1
+                },
+                "genesis_hash": "2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
+                "binary_hash": "2D5C2110941DA54BE07CBB9FACD7E4A2E3253E79BE7BE3E5A1A7BDA518BAA4BE",
+                "spawn_time": "2023-03-11T09:02:14.718477-08:00",
+                "ccv_timeout_period": "2419200s",
+                "unbonding_period": "2419200s",
+                "transfer_timeout_period": "3600s",
+                "consumer_redistribution_fraction": "0.75",
+                "blocks_per_distribution_transmission": 1500,
+                "historical_entries": 1000,
+                "distribution_transmission_channel": ""
+            },
+            "power_shaping_parameters": {
+                "top_N": 100,
+                "validators_power_cap": 0,
+                "validator_set_cap": 50,
+                "allowlist": [],
+                "denylist": [],
+                "min_stake": 1000,
+                "allow_inactive_vals": true
+            }
+        }
+    ],
+    "metadata": "ipfs://CID",
+    "deposit": "10000000stake",
+    "title": "\"update consumer 0 to top N\"",
+    "summary": "\"update consumer 0 to top N\"",
+    "expedited": false
+}
+EOF
+
+PROP_ID=1
+
+interchain-security-pd tx gov submit-proposal ${PROV_NODE_DIR}/consumer_prop.json \
+    --chain-id provider \
+    --from $PROV_KEY \
+    --keyring-backend test \
+    --home $PROV_NODE_DIR \
+    --node tcp://${NODE_IP}:${RPC_LADDR_PORT} \
+    -o json -y
 
 sleep 3
 
-# Vote yes to proposal
+## Vote yes to proposal
 for index in "${!MONIKERS[@]}"
 do
     MONIKER=${MONIKERS[$index]}
-    PROV_KEY=${MONIKER}-key
-    RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
-    RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
 
+    # validator key
+    PROV_KEY=${MONIKER}-key
+
+    # home directory of this validator on provider
     PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${MONIKER}
-    interchain-security-pd tx gov vote 1 yes --from $PROV_KEY --chain-id provider --home ${PROV_NODE_DIR} --node $RPC_LADDR -y --keyring-backend test
+
+    RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
+
+    # Start gaia
+    interchain-security-pd tx gov vote $PROP_ID yes \
+        --home ${PROV_NODE_DIR} \
+        --chain-id provider \
+        --from $PROV_KEY \
+        --keyring-backend test \
+        --node tcp://${NODE_IP}:${RPC_LADDR_PORT} \
+        -o json -y
+
+    sleep 1
 done
 
-HERMES_PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${HERMES_VALIDATOR_MONIKER}
-HERMES_KEY=${HERMES_VALIDATOR_MONIKER}-key
-HERMES_KEY2=${HERMES_VALIDATOR_MONIKER}-key2
-HERMES_CONS_NODE_DIR=${CONS_NODES_ROOT_DIR}/consumer-${HERMES_VALIDATOR_MONIKER}
+sleep 10
+
+## Note that the validators should validate the consumer once the proposal passes
 
 # # ## CONSUMER CHAIN ##
 
-### Assert that the proposal for the consumer chain passed
-PROPOSAL_STATUS_PASSED="PROPOSAL_STATUS_PASSED"
-MAX_TRIES=10
-TRIES=0
-
-cat ${PROV_NODE_DIR}/config/genesis.json | grep "period"
-
-while [ $TRIES -lt $MAX_TRIES ]; do
-    output=$(interchain-security-pd query gov proposal 1 --home ${LEAD_VALIDATOR_PROV_DIR} --node $LEAD_PROV_LISTEN_ADDR --output json)
-
-    proposal_status=$(echo "$output" | grep -o '"status":"[^"]*' | awk -F ':"' '{print $2}')
-    if [ "$proposal_status" = "$PROPOSAL_STATUS_PASSED" ]; then
-        echo "Proposal status is now $proposal_status. Exiting loop."
-        break
-    else
-        echo "Proposal status is $proposal_status. Continuing to check..."
-    fi
-    TRIES=$((TRIES + 1))
-
-    sleep 2
-done
-
-if [ $TRIES -eq $MAX_TRIES ]; then
-    echo "[ERROR] Failed due to an issue with the consumer proposal"
-    echo "This is likely due to a misconfiguration in the test script."
-    exit 0
-fi
-
 # # Clean start
+pkill -f interchain-security-cd &> /dev/null || true
+sleep 1
+rm -rf ${CONS_NODES_ROOT_DIR}
+
 for index in "${!MONIKERS[@]}"
 do
     MONIKER=${MONIKERS[$index]}
     # validator key
     PROV_KEY=${MONIKER}-key
-    PROV_KEY2=${MONIKER}-key2
 
     PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${MONIKER}
 
@@ -314,8 +438,7 @@ do
     sleep 1
 
     # Create account keypair
-    interchain-security-cd keys add $PROV_KEY  --home ${CONS_NODE_DIR} --keyring-backend test --output json > ${CONS_NODE_DIR}/${PROV_KEY}.json  2>&1
-    interchain-security-cd keys add $PROV_KEY2 --home ${CONS_NODE_DIR} --keyring-backend test --output json > ${CONS_NODE_DIR}/${PROV_KEY2}.json 2>&1
+    interchain-security-cd keys add $PROV_KEY --home  ${CONS_NODE_DIR} --keyring-backend test --output json > ${CONS_NODE_DIR}/${PROV_KEY}.json 2>&1
     sleep 1
 
     # copy genesis in, unless this validator is the lead validator
@@ -326,15 +449,15 @@ do
     # Add stake to user
     CONS_ACCOUNT_ADDR=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY}.json)
     interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR $USER_COINS --home ${CONS_NODE_DIR}
-    CONS_ACCOUNT_ADDR2=$(jq -r '.address' ${CONS_NODE_DIR}/${PROV_KEY2}.json)
-    interchain-security-cd genesis add-genesis-account $CONS_ACCOUNT_ADDR2 $USER_COINS --home ${CONS_NODE_DIR}
-    sleep 10
 
     ### this probably does not have to be done for each node
     # Add consumer genesis states to genesis file
     RPC_LADDR_PORT=$(($RPC_LADDR_BASEPORT + $index))
     RPC_LADDR=tcp://${NODE_IP}:${RPC_LADDR_PORT}
-    interchain-security-pd query provider consumer-genesis consumer --home ${PROV_NODE_DIR} --node ${RPC_LADDR} -o json > consumer_gen.json
+    interchain-security-pd query provider consumer-genesis $CONSUMER_ID \
+        --home ${PROV_NODE_DIR} \
+        --node ${RPC_LADDR} -o json > consumer_gen.json
+
     jq -s '.[0].app_state.ccvconsumer = .[1] | .[0]' ${CONS_NODE_DIR}/config/genesis.json consumer_gen.json > ${CONS_NODE_DIR}/edited_genesis.json \
     && mv ${CONS_NODE_DIR}/edited_genesis.json ${CONS_NODE_DIR}/config/genesis.json
     rm consumer_gen.json
@@ -375,7 +498,6 @@ do
 done
 
 sleep 1
-
 
 for index in "${!MONIKERS[@]}"
 do
@@ -437,42 +559,13 @@ do
     sleep 6
 done
 
-## Cause double signing
+## Setup Hermes
 
-# create directory for double signing node
-mkdir $CONS_NODES_ROOT_DIR/consumer-bob-sybil/
-cp -r $CONS_NODES_ROOT_DIR/consumer-bob/* $CONS_NODES_ROOT_DIR/consumer-bob-sybil
+HERMES_PROV_NODE_DIR=${PROV_NODES_ROOT_DIR}/provider-${HERMES_VALIDATOR_MONIKER}
+HERMES_KEY=${HERMES_VALIDATOR_MONIKER}-key
+HERMES_CONS_NODE_DIR=${CONS_NODES_ROOT_DIR}/consumer-${HERMES_VALIDATOR_MONIKER}
 
-# clear state in consumer-bob-sybil
-echo '{"height": "0","round": 0,"step": 0,"signature":"","signbytes":""}' > $CONS_NODES_ROOT_DIR/consumer-bob-sybil/data/priv_validator_state.json
-
-# add new node key to sybil
-# key was generated using gaiad init
-# if the node key is not unique, double signing cannot be achieved
-# and errors such as this can be seen in the terminal
-# 5:54PM ERR found conflicting vote from ourselves; did you unsafe_reset a validator? height=1961 module=consensus round=0 type=2
-# 5:54PM ERR failed to process message err="conflicting votes from validator C888306A908A217B9A943D1DAD8790044D0947A4"
-echo '{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"tj55by/yYwruSz4NxsOG9y9k2WrPvKLXKQdz/9jL9Uptmi647OYpcisjwf92TyA+wCUYVDOgW7D53Q+638l9/w=="}}' > $CONS_NODES_ROOT_DIR/consumer-bob-sybil/config/node_key.json
-
-# does not use persistent peers; will do a lookup in genesis.json to find peers
-#ARGS="--address tcp://$CHAIN_PREFIX.252:26655 --rpc.laddr tcp://$CHAIN_PREFIX.252:26658 --grpc.address $CHAIN_PREFIX.252:9091 --log_level trace --p2p.laddr tcp://$CHAIN_PREFIX.252:26656 --grpc-web.enable=false"
-
-# start double signing node - it should not talk to the node with the same key
-#ip netns exec $HOME/nodes/consumer/consumer-bob-sybil $BIN $ARGS --home $HOME/nodes/consumer/consumer-bob-sybil  start &> $HOME/nodes/consumer/consumer-bob-sybil/logs &
-
-# Start gaia
-interchain-security-cd start \
-    --home $CONS_NODES_ROOT_DIR/consumer-bob-sybil \
-    --p2p.persistent_peers ${PERSISTENT_PEERS} \
-    --rpc.laddr tcp://${NODE_IP}:29179 \
-    --grpc.address ${NODE_IP}:29199 \
-    --address tcp://${NODE_IP}:29209 \
-    --p2p.laddr tcp://${NODE_IP}:29189 \
-    --grpc-web.enable=false &> $CONS_NODES_ROOT_DIR/consumer-bob-sybil/logs &
-
-# Setup Hermes config file
-
-tee $HERMES_CONFIG<<EOF
+tee $HERMES_CONFIG <<EOF
 [global]
 log_level = "debug"
 
@@ -492,52 +585,53 @@ enabled = false
 [mode.packets]
 enabled = true
 
-[[chains]]
-id = "consumer"
-type = "CosmosSdk"
-rpc_addr = "http://${NODE_IP}:${CRPC_LADDR_PORT}"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:${CRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
-grpc_addr = "tcp://${NODE_IP}:${CGRPC_LADDR_PORT}"
-account_prefix = "cosmos"
-clock_drift = "5s"
-gas_multiplier = 1.1
-key_name = "relayer"
-max_gas = 2000000
-rpc_timeout = "10s"
-store_prefix = "ibc"
-trusting_period = "1days"
-ccv_consumer_chain = true
+    [[chains]]
+        id = "provider"
+        account_prefix = "cosmos"
+        clock_drift = "5s"
+        gas_multiplier = 1.1
+        rpc_addr = "http://${NODE_IP}:${PRPC_LADDR_PORT}"
+        grpc_addr = "tcp://${NODE_IP}:${PGRPC_LADDR_PORT}"
+        key_name = "query"
+        max_gas = 20000000
+        rpc_timeout = "10s"
+        store_prefix = "ibc"
+        trusting_period = "14days"
+        event_source = { mode = 'pull', interval = '100ms' }
+        ccv_consumer_chain = false
 
-[chains.gas_price]
-      denom = "stake"
-      price = 0.00
+        [chains.gas_price]
+            denom = "stake"
+            price = 0.000
 
-[chains.trust_threshold]
-      denominator = "3"
-      numerator = "1"
+        [chains.trust_threshold]
+            denominator = "3"
+            numerator = "1"
 
-[[chains]]
-id = "provider"
-type = "CosmosSdk"
-rpc_addr = "http://${NODE_IP}:${PRPC_LADDR_PORT}"
-event_source = { mode = 'push', url = 'ws://${NODE_IP}:${PRPC_LADDR_PORT}/websocket' , batch_delay = '50ms' }
-grpc_addr = "tcp://${NODE_IP}:${PGRPC_LADDR_PORT}"
-account_prefix = "cosmos"
-clock_drift = "5s"
-gas_multiplier = 1.1
-key_name = "relayer"
-max_gas = 2000000
-rpc_timeout = "10s"
-store_prefix = "ibc"
-trusting_period = "1days"
 
-[chains.gas_price]
-      denom = "stake"
-      price = 0.00
 
-[chains.trust_threshold]
-      denominator = "3"
-      numerator = "1"
+    [[chains]]
+        id = "consumer"
+        account_prefix = "consumer"
+        clock_drift = "5s"
+        gas_multiplier = 1.1
+        rpc_addr = "http://${NODE_IP}:${CRPC_LADDR_PORT}"
+        grpc_addr = "tcp://${NODE_IP}:${CGRPC_LADDR_PORT}"
+        key_name = "query"
+        max_gas = 20000000
+        rpc_timeout = "10s"
+        store_prefix = "ibc"
+        trusting_period = "14days"
+        event_source = { mode = 'pull', interval = '100ms' }
+        ccv_consumer_chain = true
+
+        [chains.gas_price]
+            denom = "stake"
+            price = 0.000
+
+        [chains.trust_threshold]
+            denominator = "3"
+            numerator = "1"
 EOF
 
 # Delete all previous keys in relayer
@@ -545,34 +639,16 @@ $HERMES_BIN keys delete --chain consumer --all
 $HERMES_BIN keys delete --chain provider --all
 
 # Restore keys to hermes relayer
-$HERMES_BIN keys add --key-name relayer  --key-file ${HERMES_PROV_NODE_DIR}/${HERMES_KEY}.json  --chain provider
-$HERMES_BIN keys add --key-name evidence --key-file ${HERMES_PROV_NODE_DIR}/${HERMES_KEY2}.json --chain provider
-$HERMES_BIN keys add --key-name relayer  --key-file ${HERMES_CONS_NODE_DIR}/${HERMES_KEY}.json  --chain consumer
-$HERMES_BIN keys add --key-name evidence --key-file ${HERMES_CONS_NODE_DIR}/${HERMES_KEY2}.json --chain consumer
+$HERMES_BIN keys add --key-file  ${HERMES_PROV_NODE_DIR}/${HERMES_KEY}.json --chain provider
+$HERMES_BIN keys add --key-file  ${HERMES_CONS_NODE_DIR}/${HERMES_KEY}.json --chain consumer
 
-# CCV connection and channel
+sleep 5
+
 $HERMES_BIN create connection \
     --a-chain consumer \
     --a-client 07-tendermint-0 \
     --b-client 07-tendermint-0
 
-# Dummy client and connection for the test
-$HERMES_BIN create client \
-    --host-chain provider \
-    --reference-chain consumer \
-    --trusting-period 57600s
-
-$HERMES_BIN create client \
-    --host-chain consumer \
-    --reference-chain provider \
-    --trusting-period 57600s
-
-$HERMES_BIN create connection \
-    --a-chain consumer \
-    --a-client 07-tendermint-1 \
-    --b-client 07-tendermint-1
-
-# CCV channel
 $HERMES_BIN create channel \
     --a-chain consumer \
     --a-port consumer \
@@ -581,16 +657,57 @@ $HERMES_BIN create channel \
     --channel-version 1 \
     --a-connection connection-0
 
-$HERMES_BIN start &> $HOME_DIR/hermes-start-logs.txt &
+sleep 5
 
-$HERMES_BIN evidence --chain consumer --key-name evidence &> $HOME_DIR/hermes-evidence-logs.txt &
+## Cause double signing
+
+CONS_NODE_SYBIL_DIR=${CONS_NODES_ROOT_DIR}/consumer-${MONIKER}-sybil
+
+# create directory for double signing node
+mkdir $CONS_NODE_SYBIL_DIR
+cp -r $CONS_NODE_DIR/* $CONS_NODE_SYBIL_DIR
+
+# clear state in sybil node directory
+echo '{"height": "0","round": 0,"step": 0,"signature":"","signbytes":""}' \
+    > $CONS_NODE_SYBIL_DIR/data/priv_validator_state.json
+
+# add new node key to sybil
+# key was generated using gaiad init
+# if the node key is not unique, double signing cannot be achieved
+# and errors such as this can be seen in the terminal
+# 5:54PM ERR found conflicting vote from ourselves; did you unsafe_reset a validator? height=1961 module=consensus round=0 type=2
+# 5:54PM ERR failed to process message err="conflicting votes from validator C888306A908A217B9A943D1DAD8790044D0947A4"
+echo '{"priv_key":{"type":"tendermint/PrivKeyEd25519","value":"tj55by/yYwruSz4NxsOG9y9k2WrPvKLXKQdz/9jL9Uptmi647OYpcisjwf92TyA+wCUYVDOgW7D53Q+638l9/w=="}}' \
+    > $CONS_NODE_SYBIL_DIR/config/node_key.json
+
+# does not use persistent peers; will do a lookup in genesis.json to find peers
+# start double signing node - it should not talk to the node with the same key
+
+# Start gaia
+interchain-security-cd start \
+        --home ${CONS_NODE_SYBIL_DIR} \
+        --rpc.laddr tcp://${NODE_IP}:$((RPC_LADDR_PORT+1)) \
+        --grpc.address ${NODE_IP}:$((GRPC_LADDR_PORT+1)) \
+        --address tcp://${NODE_IP}:$((NODE_ADDRESS_PORT+1)) \
+        --p2p.laddr tcp://${NODE_IP}:$((P2P_LADDR_PORT+1)) \
+        --grpc-web.enable=false &> ${CONS_NODE_SYBIL_DIR}/logs &
+
+sleep 5
+
+## start Hermes in evidence mode
+$HERMES_BIN evidence --chain consumer --check-past-blocks 0 &> $HOME_DIR/hermes-evidence-logs.txt &
+
+sleep 1
+
+# Wait for Hermes to submit double signing evidence
+$HERMES_BIN update client --host-chain consumer --client 07-tendermint-0
 
 for _ in $(seq 1 10)
 do
     sleep 5
 
     MSG="successfully submitted double voting evidence to chain"
-    
+
     if grep -c "$MSG" $HOME_DIR/hermes-evidence-logs.txt; then
         echo "[SUCCESS] Successfully submitted double voting evidence to provider chain"
         exit 0
@@ -599,9 +716,6 @@ done
 
 echo "[ERROR] Failed to submit double voting evidence to provider chain"
 echo ""
-echo "---------------------------------------------------------------"
-echo "Hermes start logs:"
-cat $HOME_DIR/hermes-start-logs.txt
 echo "---------------------------------------------------------------"
 echo "Hermes evidence logs:"
 cat $HOME_DIR/hermes-evidence-logs.txt
