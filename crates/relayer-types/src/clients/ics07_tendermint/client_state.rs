@@ -305,9 +305,9 @@ impl From<ClientState> for RawTmClientState {
         Self {
             chain_id: value.chain_id.to_string(),
             trust_level: Some(value.trust_threshold.into()),
-            trusting_period: Some(value.trusting_period.into()),
-            unbonding_period: Some(value.unbonding_period.into()),
-            max_clock_drift: Some(value.max_clock_drift.into()),
+            trusting_period: Some(value.trusting_period.try_into().unwrap()),
+            unbonding_period: Some(value.unbonding_period.try_into().unwrap()),
+            max_clock_drift: Some(value.max_clock_drift.try_into().unwrap()),
             frozen_height: Some(value.frozen_height.map(|height| height.into()).unwrap_or(
                 RawHeight {
                     revision_number: 0,
