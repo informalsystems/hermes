@@ -113,7 +113,11 @@ pub fn bootstrap_single_node(
 
     let minimum_gas = format!("0{}", native_token);
     chain_driver.update_chain_config("app.toml", |config| {
-        config::set_grpc_port(config, chain_driver.grpc_port)?;
+        if builder.ipv6_grpc {
+            config::set_grpc_port_ipv6(config, chain_driver.grpc_port)?;
+        } else {
+            config::set_grpc_port(config, chain_driver.grpc_port)?;
+        }
         config::enable_grpc(config)?;
         config::disable_grpc_web(config)?;
         config::disable_api(config)?;

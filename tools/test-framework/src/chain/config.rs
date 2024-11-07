@@ -45,6 +45,17 @@ pub fn set_grpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_grpc_port_ipv6(config: &mut Value, port: u16) -> Result<(), Error> {
+    config
+        .get_mut("grpc")
+        .ok_or_else(|| eyre!("expect grpc section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("address".to_string(), format!("[::]:{port}").into());
+
+    Ok(())
+}
+
 pub fn disable_grpc_web(config: &mut Value) -> Result<(), Error> {
     if let Some(field) = config.get_mut("grpc-web") {
         field

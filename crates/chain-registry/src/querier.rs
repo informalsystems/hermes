@@ -160,7 +160,7 @@ impl QueryContext for GrpcHealthCheckQuerier {
 
         info!("Querying gRPC server at {tendermint_url}");
 
-        create_grpc_client(uri, QueryClient::new)
+        create_grpc_client(&uri, QueryClient::new)
             .await
             .map_err(|_| RegistryError::unable_to_connect_with_grpc())?;
 

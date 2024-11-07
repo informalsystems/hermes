@@ -15,7 +15,7 @@ pub async fn query_balance(
     account_address: &str,
     denom: &str,
 ) -> Result<Balance, Error> {
-    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
+    let mut client = create_grpc_client(grpc_address, QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
@@ -46,13 +46,14 @@ pub async fn query_all_balances(
     grpc_address: &Uri,
     account_address: &str,
 ) -> Result<Vec<Balance>, Error> {
-    let mut client = create_grpc_client(grpc_address.clone(), QueryClient::new).await?;
+    let mut client = create_grpc_client(grpc_address, QueryClient::new).await?;
 
     client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(QueryAllBalancesRequest {
         address: account_address.to_string(),
         pagination: None,
+        resolve_denom: false, // TODO: Correctly handle resolve_denom argument
     });
 
     let response = client

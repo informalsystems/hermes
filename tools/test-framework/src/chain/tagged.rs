@@ -132,7 +132,7 @@ impl<'a, Chain: Send> TaggedChainDriverExt<Chain> for MonoTagged<Chain, &'a Chai
             &self.value().compat_mode,
         ))?;
 
-        client.set_compat_mode(compat_mode.into());
+        client.set_compat_mode(compat_mode);
 
         Ok(MonoTagged::new(client))
     }

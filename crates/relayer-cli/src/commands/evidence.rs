@@ -18,7 +18,7 @@ use ibc_relayer::chain::endpoint::ChainEndpoint;
 use ibc_relayer::chain::handle::{BaseChainHandle, ChainHandle};
 use ibc_relayer::chain::requests::{IncludeProof, PageRequest, QueryHeight};
 use ibc_relayer::chain::tracking::TrackedMsgs;
-use ibc_relayer::foreign_client::ForeignClient;
+use ibc_relayer::foreign_client::{fetch_ccv_consumer_id, ForeignClient};
 use ibc_relayer::spawn::spawn_chain_runtime_with_modified_config;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_double_voting::MsgSubmitIcsConsumerDoubleVoting;
 use ibc_relayer_types::applications::ics28_ccv::msgs::ccv_misbehaviour::MsgSubmitIcsConsumerMisbehaviour;
@@ -318,10 +318,15 @@ fn submit_duplicate_vote_evidence(
 
     let signer = counterparty_chain_handle.get_signer()?;
 
-    if !is_counterparty_provider(chain, counterparty_chain_handle, counterparty_client_id) {
-        debug!("counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` is not a CCV client, skipping...");
-        return Ok(ControlFlow::Continue(()));
-    }
+    let consumer_id = match fetch_ccv_consumer_id(counterparty_chain_handle, counterparty_client_id)
+    {
+        Ok(consumer_id) => consumer_id,
+        Err(e) => {
+            info!("Failed to query Consumer ID: {e}. \
+            Counterparty client `{counterparty_client_id}` on chain `{counterparty_chain_id}` might not be a CCV client, skipping...");
+            return Ok(ControlFlow::Continue(()));
+        }
+    };
 
     let infraction_height = evidence.vote_a.height;
 
@@ -359,6 +364,7 @@ fn submit_duplicate_vote_evidence(
         submitter: signer.clone(),
         duplicate_vote_evidence: evidence.clone(),
         infraction_block_header,
+        consumer_id,
     }
     .to_any();
 
@@ -507,41 +513,13 @@ fn submit_light_client_attack_evidence(
         counterparty.id(),
     );
 
-    let counterparty_is_provider =
-        is_counterparty_provider(chain, counterparty, &counterparty_client_id);
-
     let counterparty_client_is_frozen = counterparty_client.is_frozen();
-
-    if !counterparty_is_provider && counterparty_client_is_frozen {
-        warn!(
-            "cannot submit light client attack evidence to client `{}` on counterparty chain `{}`",
-            counterparty_client_id,
-            counterparty.id()
-        );
-        warn!("reason: client is frozen and chain is not a CCV provider chain");
-
-        return Ok(());
-    }
 
     let signer = counterparty.get_signer()?;
     let common_height = Height::from_tm(evidence.common_height, chain.id());
 
     let counterparty_has_common_consensus_state =
         has_consensus_state(counterparty, &counterparty_client_id, common_height);
-
-    if counterparty_is_provider
-        && counterparty_client_is_frozen
-        && !counterparty_has_common_consensus_state
-    {
-        warn!(
-            "cannot submit light client attack evidence to client `{}` on provider chain `{}`",
-            counterparty_client_id,
-            counterparty.id()
-        );
-        warn!("reason: client is frozen and does not have a consensus state at height {common_height}");
-
-        return Ok(());
-    }
 
     let mut msgs = if counterparty_has_common_consensus_state {
         info!(
@@ -550,8 +528,8 @@ fn submit_light_client_attack_evidence(
             counterparty.id()
         );
         info!(
-            "reason: counterparty chain already has consensus state at common height {common_height}"
-        );
+                "reason: counterparty chain already has consensus state at common height {common_height}"
+            );
 
         Vec::new()
     } else {
@@ -571,21 +549,31 @@ fn submit_light_client_attack_evidence(
         }
     };
 
-    if counterparty_is_provider {
+    if let Ok(consumer_id) = fetch_ccv_consumer_id(counterparty, &counterparty_client_id) {
+        if counterparty_client_is_frozen && !counterparty_has_common_consensus_state {
+            warn!(
+                "cannot submit light client attack evidence to client `{}` on provider chain `{}`",
+                counterparty_client_id,
+                counterparty.id()
+            );
+            warn!("reason: client is frozen and does not have a consensus state at height {common_height}");
+
+            return Ok(());
+        }
         info!(
             "will submit consumer light client attack evidence to client `{}` on provider chain `{}`",
             counterparty_client_id,
             counterparty.id(),
         );
-
-        let msg = MsgSubmitIcsConsumerMisbehaviour {
-            submitter: signer.clone(),
-            misbehaviour: misbehaviour.clone(),
-        }
-        .to_any();
-
-        msgs.push(msg);
-    };
+        msgs.push(
+            MsgSubmitIcsConsumerMisbehaviour {
+                submitter: signer.clone(),
+                misbehaviour: misbehaviour.clone(),
+                consumer_id,
+            }
+            .to_any(),
+        );
+    }
 
     // We do not need to submit the misbehaviour if the client is already frozen.
     if !counterparty_client_is_frozen {
@@ -662,29 +650,6 @@ fn has_consensus_state(
     res.is_ok()
 }
 
-/// If the misbehaving chain is a CCV consumer chain,
-/// then try fetch the consumer chains of the counterparty chains.
-/// If that fails, then the counterparty chain is not a provider chain.
-/// Otherwise, check if the misbehaving chain is a consumer of the counterparty chain,
-/// which is then definitely a provider.
-fn is_counterparty_provider(
-    chain: &CosmosSdkChain,
-    counterparty_chain_handle: &BaseChainHandle,
-    counterparty_client_id: &ClientId,
-) -> bool {
-    if chain.config().ccv_consumer_chain {
-        let consumer_chains = counterparty_chain_handle
-            .query_consumer_chains()
-            .unwrap_or_default(); // If the query fails, use an empty list of consumers
-
-        consumer_chains.iter().any(|(chain_id, client_id)| {
-            chain_id == chain.id() && client_id == counterparty_client_id
-        })
-    } else {
-        false
-    }
-}
-
 /// Fetch all the counterparty clients of the given chain.
 /// A counterparty client is a client that has a connection with that chain.
 ///
@@ -715,6 +680,11 @@ fn fetch_all_counterparty_clients(
             "found connection `{}` with client `{client_id}` and counterparty client `{counterparty_client_id}`",
             connection.connection_id
         );
+
+        if client_id.as_str() == "09-localhost" {
+            debug!("skipping localhost client `{client_id}`...");
+            continue;
+        }
 
         debug!(
             "fetching client state for client `{client_id}` on connection `{}`",

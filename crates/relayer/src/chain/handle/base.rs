@@ -8,20 +8,23 @@ use ibc_proto::ibc::{
     core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest},
 };
 use ibc_relayer_types::{
-    applications::ics31_icq::response::CrossChainQueryResponse,
+    applications::{
+        ics28_ccv::msgs::{ConsumerChain, ConsumerId},
+        ics31_icq::response::CrossChainQueryResponse,
+    },
     core::{
         ics02_client::{events::UpdateClient, header::AnyHeader},
-        ics03_connection::connection::{ConnectionEnd, IdentifiedConnectionEnd},
-        ics03_connection::version::Version,
-        ics04_channel::channel::{ChannelEnd, IdentifiedChannelEnd},
+        ics03_connection::{
+            connection::{ConnectionEnd, IdentifiedConnectionEnd},
+            version::Version,
+        },
         ics04_channel::{
+            channel::{ChannelEnd, IdentifiedChannelEnd},
             packet::{PacketMsgType, Sequence},
             upgrade::{ErrorReceipt, Upgrade},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::ChainId,
-        ics24_host::identifier::ChannelId,
-        ics24_host::identifier::{ClientId, ConnectionId, PortId},
+        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
     },
     proofs::Proofs,
     signer::Signer,
@@ -522,7 +525,7 @@ impl ChainHandle for BaseChainHandle {
         self.send(|reply_to| ChainRequest::QueryIncentivizedPacket { request, reply_to })
     }
 
-    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+    fn query_consumer_chains(&self) -> Result<Vec<ConsumerChain>, Error> {
         self.send(|reply_to| ChainRequest::QueryConsumerChains { reply_to })
     }
 
@@ -550,6 +553,13 @@ impl ChainHandle for BaseChainHandle {
             request,
             height,
             include_proof,
+            reply_to,
+        })
+    }
+
+    fn query_ccv_consumer_id(&self, client_id: &ClientId) -> Result<ConsumerId, Error> {
+        self.send(|reply_to| ChainRequest::QueryConsumerId {
+            client_id: client_id.clone(),
             reply_to,
         })
     }

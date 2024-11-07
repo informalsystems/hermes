@@ -43,20 +43,20 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia18
+          - package: gaia20
             command: gaiad
             account_prefix: cosmos
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - name: Install sconfig
         uses: jaxxstorm/action-install-gh-release@v1.12.0
@@ -102,13 +102,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - name: Install sconfig
         uses: jaxxstorm/action-install-gh-release@v1.12.0
@@ -154,13 +154,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - name: Install sconfig
         uses: jaxxstorm/action-install-gh-release@v1.12.0
@@ -193,7 +193,6 @@ jobs:
         run: |
           nix shell .#${{ matrix.chain.package }} -c bash light_client_attack_freeze_test.sh
 
-
   ics-double-sign:
     runs-on: ubuntu-20.04
     timeout-minutes: 20
@@ -207,13 +206,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
-        with: 
+        with:
           extra-conf: |
             substituters = https://cache.nixos.org
             trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
       - name: Install Cachix
         uses: cachix/cachix-action@v15
-        with: 
+        with:
           name: cosmos-nix
       - name: Install sconfig
         uses: jaxxstorm/action-install-gh-release@v1.12.0
@@ -245,4 +244,3 @@ jobs:
         working-directory: ci/misbehaviour-ics
         run: |
           nix shell .#${{ matrix.chain.package }} -c bash double_sign_test.sh
-
