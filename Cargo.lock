@@ -4301,6 +4301,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-types",
  "ibc-test-framework",
+ "tokio",
 ]
 
 [[package]]

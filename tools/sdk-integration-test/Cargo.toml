@@ -13,6 +13,8 @@ description  = "Integration tests using Hermes SDK test framework for Hermes"
 publish      = false
 
 [dependencies]
+tokio              = { workspace = true }
+
 ibc-relayer-types  = { workspace = true }
 ibc-relayer        = { workspace = true }
 ibc-test-framework = { workspace = true }
