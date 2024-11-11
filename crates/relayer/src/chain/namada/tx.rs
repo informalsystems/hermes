@@ -47,8 +47,7 @@ impl NamadaChain {
             code_path: Some(PathBuf::from(tx::TX_IBC_WASM)),
             data_path: None,
             serialized_tx: None,
-            owner: relayer_addr.clone(),
-            disposable_signing_key: false,
+            owner: Some(relayer_addr.clone()),
         };
         let mut txs = Vec::new();
         for msg in msgs {
@@ -56,7 +55,7 @@ impl NamadaChain {
                 .block_on(args.build(&self.ctx))
                 .map_err(NamadaError::namada)?;
             self.set_tx_data(&mut tx, msg)?;
-            txs.push((tx, signing_data));
+            txs.push((tx, signing_data.expect("signing_data should exist")));
         }
         let (mut tx, signing_data) = tx::build_batch(txs).map_err(NamadaError::namada)?;
         // This is fine, as only the relayers is signing the transactions
