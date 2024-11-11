@@ -30,7 +30,7 @@ ibc-test-framework   = { version = "0.29.3", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.29.3", path = "tools/integration-test" }
 
 # IBC dependencies
-ibc-proto                = "0.51.0"
+ibc-proto                = "0.51.1"
 ics23                    = "0.12.0"
 
 # Tendermint dependencies
