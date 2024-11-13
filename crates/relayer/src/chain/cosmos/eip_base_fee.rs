@@ -21,7 +21,7 @@ pub async fn query_eip_base_fee(
 
     let chain_name = chain_id.name();
 
-    let is_osmosis = chain_name.starts_with("osmosis") || chain_name.starts_with("osmo-test");
+    let is_osmosis = chain_name.starts_with("osmosis") || chain_name.starts_with("osmo");
 
     let url = if is_osmosis {
         format!(
