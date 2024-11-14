@@ -68,8 +68,20 @@ impl ChainId {
 
     /// Extract the chain name from this chain identifier. The chain name
     /// consists of the first part of the identifier, before the dash.
+    /// If the value following the dash is not an integer, or if there are no
+    /// dashes, the entire chain ID will be returned.
     pub fn name(&self) -> String {
-        self.id.split('-').take(1).collect::<Vec<_>>().join("")
+        self.id
+            .rsplit_once('-')
+            .and_then(|(chain_name, rev_number_str)| {
+                // Parses the revision number string into a `u64` and checks its validity.
+                if rev_number_str.parse::<u64>().is_ok() {
+                    Some(chain_name.to_owned())
+                } else {
+                    None
+                }
+            })
+            .unwrap_or_else(|| self.id.clone())
     }
 
     /// Extract the version from the given chain identifier.
@@ -440,5 +452,28 @@ impl PortChannelId {
 impl Display for PortChannelId {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "{}/{}", self.port_id, self.channel_id)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_chain_id_name() {
+        let chain_id = ChainId::from_str("ibc-5").unwrap();
+        assert_eq!(chain_id.name(), "ibc".to_owned());
+    }
+
+    #[test]
+    fn test_chain_id_name_with_test() {
+        let chain_id = ChainId::from_str("ibc-test-5").unwrap();
+        assert_eq!(chain_id.name(), "ibc-test".to_owned());
+    }
+
+    #[test]
+    fn test_chain_id_name_no_dash() {
+        let chain_id = ChainId::from_str("ibc5").unwrap();
+        assert_eq!(chain_id.name(), "ibc5".to_owned());
     }
 }
