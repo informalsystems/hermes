@@ -43,11 +43,11 @@ where
     type Error = Error;
 
     fn try_from(value: RawMsgSend) -> Result<Self, Self::Error> {
-        let amount: Vec<Coin<D>> = value
+        let amount = value
             .amount
             .into_iter()
-            .map(Coin::try_from)
-            .collect::<Result<Vec<Coin<D>>, _>>()?;
+            .map(Coin::<D>::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
         Ok(MsgSend {
             from_address: value.from_address,
             to_address: value.to_address,

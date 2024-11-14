@@ -101,15 +101,16 @@
     "cometbft-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-G5gchJMn/BFzwYx8/ikPDL5fS/TuFIBF4DKJbkalp/M=",
+        "lastModified": 1723450629,
+        "narHash": "sha256-2QO4KeEUX4HHT1AKhEdPplJHjBhalfM11Dn3/urIVig=",
         "owner": "cometbft",
         "repo": "cometbft",
-        "rev": "66a5a9da9f7a3306f382eb9142ccb9c9f7997d3f",
+        "rev": "e1b4453baf0af6487ad187c7f17dc50517126673",
         "type": "github"
       },
       "original": {
         "owner": "cometbft",
-        "ref": "v0.38.0",
+        "ref": "v0.38.11",
         "repo": "cometbft",
         "type": "github"
       }
@@ -158,6 +159,7 @@
         "gaia17-src": "gaia17-src",
         "gaia18-src": "gaia18-src",
         "gaia19-src": "gaia19-src",
+        "gaia20-src": "gaia20-src",
         "gaia5-src": "gaia5-src",
         "gaia6-ordered-src": "gaia6-ordered-src",
         "gaia6-src": "gaia6-src",
@@ -226,11 +228,11 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1728982270,
-        "narHash": "sha256-iAzKmzrUm6BD6Vwb6rtbkTy1e/nFTsgo+Y5WNrrY2vc=",
+        "lastModified": 1729681912,
+        "narHash": "sha256-Ym4WfC/Iogqft2KOoHEv2FlWlgsxOAA5CZCbGXPf65o=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "8b7f6e8d2c2e6455fcc9d86ef098e7f182827637",
+        "rev": "04a2efd0e01206b5df601b205d7662db79a765f0",
         "type": "github"
       },
       "original": {
@@ -498,11 +500,11 @@
         "systems": "systems_6"
       },
       "locked": {
-        "lastModified": 1726560853,
-        "narHash": "sha256-X6rJYSESBVr3hBoH0WbKE5KvhPU5bloyZ2L4K60/fPQ=",
+        "lastModified": 1731533236,
+        "narHash": "sha256-l0KFg5HjrsfsO/JpG+r7fRrqm12kzFHyUHqHCVpMMbI=",
         "owner": "numtide",
         "repo": "flake-utils",
-        "rev": "c1dfcf08411b08f6b8615f7d8971a2bfa81d5e8a",
+        "rev": "11707dc2f618dd54ca8739b309ec4fc024de578b",
         "type": "github"
       },
       "original": {
@@ -670,6 +672,23 @@
       "original": {
         "owner": "cosmos",
         "ref": "v19.1.0",
+        "repo": "gaia",
+        "type": "github"
+      }
+    },
+    "gaia20-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1726853009,
+        "narHash": "sha256-N7x3k56AtPbIbbJjqKmlEJIytKElALJwj14lZ2pewZg=",
+        "owner": "cosmos",
+        "repo": "gaia",
+        "rev": "2dba9d471ef73b0a99e844bf55a44ddae700ea06",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "v20.0.0",
         "repo": "gaia",
         "type": "github"
       }
@@ -1132,15 +1151,16 @@
     "interchain-security-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-adBzn51PKoRsCL9gIzC5Tcqmu7u3GjxTcDj2jpZ/da8=",
+        "lastModified": 1726849313,
+        "narHash": "sha256-1WEvV3LoXfGvZC9fXOb8mBLKVGCVBiXZcwUewSPit+8=",
         "owner": "cosmos",
         "repo": "interchain-security",
-        "rev": "03aada4af3243dbf739a12adfacc7b37232df694",
+        "rev": "1e60637f9d8f3505208282416abfbb87fabc4795",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "feat/ics-misbehaviour-handling",
+        "ref": "v6.1.0",
         "repo": "interchain-security",
         "type": "github"
       }
@@ -1445,11 +1465,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1728538411,
-        "narHash": "sha256-f0SBJz1eZ2yOuKUr5CA9BHULGXVSn6miBuUWdTyhUhU=",
+        "lastModified": 1731531548,
+        "narHash": "sha256-sz8/v17enkYmfpgeeuyzniGJU0QQBfmAjlemAUYhfy8=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b69de56fac8c2b6f8fd27f2eca01dcda8e0a4221",
+        "rev": "24f0d4acd634792badd6470134c387a3b039dace",
         "type": "github"
       },
       "original": {

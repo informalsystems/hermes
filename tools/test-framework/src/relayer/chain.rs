@@ -23,6 +23,7 @@
 use crossbeam_channel as channel;
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_relayer::chain::cosmos::version::Specs;
+use ibc_relayer_types::applications::ics28_ccv::msgs::{ConsumerChain, ConsumerId};
 use ibc_relayer_types::core::ics04_channel::upgrade::{ErrorReceipt, Upgrade};
 use tracing::Span;
 
@@ -434,7 +435,7 @@ where
         self.value().query_incentivized_packet(request)
     }
 
-    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+    fn query_consumer_chains(&self) -> Result<Vec<ConsumerChain>, Error> {
         self.value().query_consumer_chains()
     }
 
@@ -455,5 +456,9 @@ where
     ) -> Result<(ErrorReceipt, Option<MerkleProof>), Error> {
         self.value()
             .query_upgrade_error(request, height, include_proof)
+    }
+
+    fn query_ccv_consumer_id(&self, client_id: &ClientId) -> Result<ConsumerId, Error> {
+        self.value().query_ccv_consumer_id(client_id)
     }
 }

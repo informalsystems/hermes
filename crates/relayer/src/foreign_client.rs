@@ -9,6 +9,7 @@ use std::thread;
 use std::time::Instant;
 
 use ibc_proto::google::protobuf::Any;
+use ibc_relayer_types::applications::ics28_ccv::msgs::ConsumerId;
 use itertools::Itertools;
 use tracing::{debug, error, info, instrument, trace, warn};
 
@@ -365,7 +366,7 @@ pub enum ConsensusStateTrusted {
     NotTrusted {
         elapsed: Duration,
         network_timestamp: Timestamp,
-        consensus_state_timestmap: Timestamp,
+        consensus_state_timestamp: Timestamp,
     },
     Trusted {
         elapsed: Duration,
@@ -767,12 +768,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             ConsensusStateTrusted::NotTrusted {
                 elapsed,
                 network_timestamp,
-                consensus_state_timestmap,
+                consensus_state_timestamp,
             } => {
                 error!(
                     latest_height = %client_state.latest_height(),
-                    network_timestmap = %network_timestamp,
-                    consensus_state_timestamp = %consensus_state_timestmap,
+                    network_timestamp = %network_timestamp,
+                    consensus_state_timestamp = %consensus_state_timestamp,
                     elapsed = ?elapsed,
                     "client state is not valid: latest height is outside of trusting period!",
                 );
@@ -829,7 +830,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             Ok(ConsensusStateTrusted::NotTrusted {
                 elapsed,
                 network_timestamp: current_src_network_time,
-                consensus_state_timestmap: consensus_state_timestamp,
+                consensus_state_timestamp,
             })
         } else {
             Ok(ConsensusStateTrusted::Trusted { elapsed })
@@ -1236,14 +1237,14 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
             // then check if the consensus state at `trusted_height` is within trusting period
             if let ConsensusStateTrusted::NotTrusted {
                 elapsed,
-                consensus_state_timestmap,
+                consensus_state_timestamp,
                 network_timestamp,
             } = self.check_consensus_state_trusting_period(&client_state, &trusted_height)?
             {
                 error!(
                     %trusted_height,
                     %network_timestamp,
-                    %consensus_state_timestmap,
+                    %consensus_state_timestamp,
                     ?elapsed,
                     "cannot build client update message because the provided trusted height is outside of trusting period!",
                 );
@@ -1786,13 +1787,24 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         // If the misbehaving chain is a CCV consumer chain, we need to add
         // the corresponding CCV message for the provider.
         if is_ccv_consumer_chain {
-            msgs.push(
-                MsgSubmitIcsConsumerMisbehaviour {
-                    submitter: signer.clone(),
-                    misbehaviour: tm_misbehaviour,
+            match fetch_ccv_consumer_id(&self.dst_chain(), &self.id) {
+                Ok(consumer_id) => {
+                    msgs.push(
+                        MsgSubmitIcsConsumerMisbehaviour {
+                            submitter: signer.clone(),
+                            misbehaviour: tm_misbehaviour,
+                            consumer_id,
+                        }
+                        .to_any(),
+                    );
                 }
-                .to_any(),
-            );
+                Err(e) => {
+                    error!(
+                        "cannot build CCV misbehaviour evidence: failed to fetch CCV consumer id for client {}: {}",
+                        self.id, e
+                    );
+                }
+            }
         }
 
         msgs.push(
@@ -1930,4 +1942,22 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
             event.clone(),
         )),
     }
+}
+
+pub fn fetch_ccv_consumer_id(
+    provider: &impl ChainHandle,
+    client_id: &ClientId,
+) -> Result<ConsumerId, ForeignClientError> {
+    let consumer_id = provider.query_ccv_consumer_id(client_id).map_err(|e| {
+        ForeignClientError::misbehaviour(
+            format!(
+                "failed to query CCV consumer id corresponding to client {} from provider {}",
+                client_id,
+                provider.id()
+            ),
+            e,
+        )
+    })?;
+
+    Ok(consumer_id)
 }

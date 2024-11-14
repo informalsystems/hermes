@@ -100,6 +100,7 @@ pub fn bootstrap_single_node(
         config::set_rpc_port(config, chain_driver.rpc_port)?;
         config::set_p2p_port(config, chain_driver.p2p_port)?;
         config::set_pprof_port(config, chain_driver.pprof_port)?;
+        config::set_block_sync(config, true)?;
         config::set_timeout_commit(config, Duration::from_secs(1))?;
         config::set_timeout_propose(config, Duration::from_secs(1))?;
         config::set_mode(config, "validator")?;
@@ -112,7 +113,11 @@ pub fn bootstrap_single_node(
 
     let minimum_gas = format!("0{}", native_token);
     chain_driver.update_chain_config("app.toml", |config| {
-        config::set_grpc_port(config, chain_driver.grpc_port)?;
+        if builder.ipv6_grpc {
+            config::set_grpc_port_ipv6(config, chain_driver.grpc_port)?;
+        } else {
+            config::set_grpc_port(config, chain_driver.grpc_port)?;
+        }
         config::enable_grpc(config)?;
         config::disable_grpc_web(config)?;
         config::disable_api(config)?;

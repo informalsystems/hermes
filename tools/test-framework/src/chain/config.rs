@@ -45,6 +45,17 @@ pub fn set_grpc_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+pub fn set_grpc_port_ipv6(config: &mut Value, port: u16) -> Result<(), Error> {
+    config
+        .get_mut("grpc")
+        .ok_or_else(|| eyre!("expect grpc section"))?
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("address".to_string(), format!("[::]:{port}").into());
+
+    Ok(())
+}
+
 pub fn disable_grpc_web(config: &mut Value) -> Result<(), Error> {
     if let Some(field) = config.get_mut("grpc-web") {
         field
@@ -88,6 +99,16 @@ pub fn set_pprof_port(config: &mut Value, port: u16) -> Result<(), Error> {
             "pprof_laddr".to_string(),
             format!("tcp://0.0.0.0:{port}").into(),
         );
+
+    Ok(())
+}
+
+/// Set the `pprof_laddr` field in the full node config.
+pub fn set_block_sync(config: &mut Value, value: bool) -> Result<(), Error> {
+    config
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("block_sync".to_string(), value.into());
 
     Ok(())
 }

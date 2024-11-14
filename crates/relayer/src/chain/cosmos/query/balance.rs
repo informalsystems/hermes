@@ -53,6 +53,7 @@ pub async fn query_all_balances(
     let request = tonic::Request::new(QueryAllBalancesRequest {
         address: account_address.to_string(),
         pagination: None,
+        resolve_denom: false, // TODO: Correctly handle resolve_denom argument
     });
 
     let response = client
