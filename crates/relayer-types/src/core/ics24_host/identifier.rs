@@ -70,18 +70,18 @@ impl ChainId {
     /// consists of the first part of the identifier, before the dash.
     /// If the value following the dash is not an integer, or if there are no
     /// dashes, the entire chain ID will be returned.
-    pub fn name(&self) -> String {
+    pub fn name(&self) -> &str {
         self.id
             .rsplit_once('-')
             .and_then(|(chain_name, rev_number_str)| {
                 // Parses the revision number string into a `u64` and checks its validity.
                 if rev_number_str.parse::<u64>().is_ok() {
-                    Some(chain_name.to_owned())
+                    Some(chain_name)
                 } else {
                     None
                 }
             })
-            .unwrap_or_else(|| self.id.clone())
+            .unwrap_or_else(|| &self.id)
     }
 
     /// Extract the version from the given chain identifier.
@@ -475,5 +475,61 @@ mod tests {
     fn test_chain_id_name_no_dash() {
         let chain_id = ChainId::from_str("ibc5").unwrap();
         assert_eq!(chain_id.name(), "ibc5".to_owned());
+    }
+
+    #[test]
+    fn standard_chain_names() {
+        let test_cases = [
+            ("ibc-0", "ibc"),
+            ("osmosis-1", "osmosis"),
+            ("cosmoshub-4", "cosmoshub"),
+            ("juno-mainnet-1", "juno-mainnet"),
+            ("akash-testnet-2", "akash-testnet"),
+            ("stargaze-123", "stargaze"),
+            ("crypto-org-chain-0", "crypto-org-chain"),
+            ("mars-hub-1", "mars-hub"),
+            ("evmos-9000-1", "evmos-9000"),
+        ];
+
+        for (input, expected) in test_cases {
+            let chain_id = ChainId::from_str(input).unwrap();
+            assert_eq!(chain_id.name(), expected);
+        }
+    }
+
+    #[test]
+    fn missing_or_invalid_revision_numbers() {
+        let test_cases = [
+            ("osmosis", "osmosis"),
+            ("ibc-test", "ibc-test"),
+            ("cosmos-hub", "cosmos-hub"),
+            ("juno-", "juno-"),
+            ("akash-testnet-x", "akash-testnet-x"),
+            ("stargaze-abc", "stargaze-abc"),
+            ("chain-123-xyz", "chain-123-xyz"),
+        ];
+
+        for (input, expected) in test_cases {
+            let chain_id = ChainId::from_str(input).unwrap();
+            assert_eq!(chain_id.name(), expected);
+        }
+    }
+
+    #[test]
+    fn edge_cases() {
+        let test_cases = [
+            ("", ""),
+            ("-", "-"),
+            ("chain-", "chain-"),
+            (
+                "chain-9999999999999999999999",
+                "chain-9999999999999999999999",
+            ), // number too large for u64
+        ];
+
+        for (input, expected) in test_cases {
+            let chain_id = ChainId::from_str(input).unwrap();
+            assert_eq!(chain_id.name(), expected);
+        }
     }
 }
