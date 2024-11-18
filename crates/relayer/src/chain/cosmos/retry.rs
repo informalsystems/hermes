@@ -152,7 +152,8 @@ async fn do_send_tx_with_account_sequence_retry(
                 Code::Err(code) if response.log.contains("packet messages are redundant") => {
                     info!(
                         ?response,
-                        diagnostic = ?sdk_error_from_tx_sync_error_code(code.into(), estimated_gas),
+                        diagnostic = response.log,
+                        ?code,
                         "broadcast tx was not completed"
                     );
 
