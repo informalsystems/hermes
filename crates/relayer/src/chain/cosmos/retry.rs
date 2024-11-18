@@ -154,7 +154,7 @@ async fn do_send_tx_with_account_sequence_retry(
                         ?response,
                         diagnostic = response.log,
                         ?code,
-                        "broadcast tx was not completed"
+                        "broadcast tx was not completed, all packets in tx have been relayed already, no fees were consumed"
                     );
 
                     Ok(response)
