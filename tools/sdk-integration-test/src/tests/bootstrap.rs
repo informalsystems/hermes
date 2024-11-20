@@ -1,8 +1,9 @@
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use core::time::Duration;
+use hermes_cosmos_chain_components::types::config::gas::dynamic_gas_config::DynamicGasConfig;
 use hermes_cosmos_integration_tests::contexts::binary_channel::test_driver::CosmosBinaryChannelTestDriver;
+use serde_json::Value as JsonValue;
 use std::env;
-use std::fs;
 use std::future::Future;
 use std::pin::Pin;
 use std::sync::{Arc, RwLock};
@@ -26,14 +27,16 @@ use ibc_relayer_types::core::ics02_client::trust_threshold::TrustThreshold;
 use ibc_relayer_types::core::ics24_host::identifier::PortId;
 use ibc_test_framework::bootstrap::binary::chain::save_relayer_config;
 use ibc_test_framework::prelude::{RelayerDriver, TestConfig};
-use ibc_test_framework::util::random::random_u32;
 
 pub type BoxFuture<'a, T> = Pin<Box<dyn Future<Output = T> + Send + 'a>>;
 
 #[allow(clippy::type_complexity)]
 pub fn bootstrap_and_run_test<F, Fut>(
     test_method: F,
+    genesis_modifier: impl Fn(&mut JsonValue) -> Result<(), Error> + Send + Sync + 'static,
     config_modifier: impl FnOnce(&mut Config),
+    dynamic_gas_config1: Option<DynamicGasConfig>,
+    dynamic_gas_config2: Option<DynamicGasConfig>,
 ) -> Result<(), Error>
 where
     F: for<'a> Fn(
@@ -49,17 +52,32 @@ where
     let builder = Arc::new(CosmosBuilder::new_with_default(runtime.clone()));
 
     // TODO: load parameters from environment variables
-    let bootstrap = Arc::new(CosmosBootstrap {
+    let bootstrap1 = Arc::new(CosmosBootstrap {
         runtime: runtime.clone(),
-        builder,
+        cosmos_builder: builder.clone(),
         should_randomize_identifiers: true,
         chain_store_dir: "./test-data".into(),
         chain_command_path: "gaiad".into(),
         account_prefix: "cosmos".into(),
-        staking_denom: "stake".into(),
-        transfer_denom: "coin".into(),
+        staking_denom_prefix: "stake".into(),
+        transfer_denom_prefix: "coin".into(),
+        genesis_config_modifier: Box::new(genesis_modifier),
+        comet_config_modifier: Box::new(|_| Ok(())),
+        dynamic_gas: dynamic_gas_config1,
+    });
+
+    let bootstrap2 = Arc::new(CosmosBootstrap {
+        runtime: runtime.clone(),
+        cosmos_builder: builder,
+        should_randomize_identifiers: true,
+        chain_store_dir: "./test-data".into(),
+        chain_command_path: "gaiad".into(),
+        account_prefix: "cosmos".into(),
+        staking_denom_prefix: "stake".into(),
+        transfer_denom_prefix: "coin".into(),
         genesis_config_modifier: Box::new(|_| Ok(())),
         comet_config_modifier: Box::new(|_| Ok(())),
+        dynamic_gas: dynamic_gas_config2,
     });
 
     let create_client_settings = Settings {
@@ -69,8 +87,8 @@ where
     };
 
     let setup = CosmosBinaryChannelSetup {
-        bootstrap_a: bootstrap.clone(),
-        bootstrap_b: bootstrap.clone(),
+        bootstrap_a: bootstrap1.clone(),
+        bootstrap_b: bootstrap2,
         create_client_settings,
         init_connection_options: Default::default(),
         init_channel_options: Default::default(),
@@ -94,9 +112,6 @@ where
 
             let chain_command_paths = parse_chain_command_paths(chain_command_path);
 
-            let base_chain_store_dir =
-                env::var("CHAIN_STORE_DIR").unwrap_or_else(|_| "data".to_string());
-
             let account_prefix =
                 env::var("ACCOUNT_PREFIXES").unwrap_or_else(|_| "cosmos".to_string());
 
@@ -113,12 +128,6 @@ where
 
             let native_tokens = parse_chain_command_paths(native_token);
 
-            let chain_store_dir = format!("{}/test-{}", base_chain_store_dir, random_u32());
-
-            fs::create_dir_all(&chain_store_dir)?;
-
-            let chain_store_dir = fs::canonicalize(chain_store_dir)?;
-
             let hang_on_fail = env::var("HANG_ON_FAIL")
                 .ok()
                 .map(|val| val == "1")
@@ -126,7 +135,7 @@ where
 
             TestConfig {
                 chain_command_paths,
-                chain_store_dir,
+                chain_store_dir: Default::default(),
                 account_prefixes,
                 hang_on_fail,
                 bootstrap_with_random_ids: false,
@@ -136,12 +145,12 @@ where
             }
         };
 
-        test_config.chain_command_paths = vec![bootstrap
+        test_config.chain_command_paths = vec![bootstrap1
             .chain_command_path
             .clone()
             .to_string_lossy()
             .into()];
-        test_config.chain_store_dir = bootstrap.chain_store_dir.clone();
+        test_config.chain_store_dir = bootstrap1.chain_store_dir.clone();
 
         let config_path = test_config.chain_store_dir.join("relayer-config.toml");
 

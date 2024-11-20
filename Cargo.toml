@@ -31,7 +31,7 @@ ibc-test-framework   = { version = "0.29.3", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.29.3", path = "tools/integration-test" }
 
 # IBC dependencies
-ibc-proto                = "0.51.0"
+ibc-proto                = "0.51.1"
 ics23                    = "0.12.0"
 
 # Tendermint dependencies
@@ -127,8 +127,6 @@ overflow-checks = true
 ibc-relayer-types  = { path = "crates/relayer-types" }
 ibc-relayer        = { path = "crates/relayer" }
 ibc-telemetry      = { path = "crates/telemetry" }
-
-ibc                = { git = "https://github.com/ljoss17/ibc-rs.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
 
 cgp                     = { git = "https://github.com/contextgeneric/cgp.git" }
 cgp-core                = { git = "https://github.com/contextgeneric/cgp.git" }

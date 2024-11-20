@@ -25,7 +25,10 @@ use super::bootstrap::bootstrap_and_run_test;
 fn run_test() -> Result<(), Error> {
     bootstrap_and_run_test::<_, BoxFuture<'_, Result<(), Error>>>(
         |setup, relay_driver| Box::pin(test_ibc_transfer(setup, relay_driver)),
+        |_| Ok(()),
         |_| {},
+        None,
+        None,
     )
 }
 
@@ -78,6 +81,7 @@ async fn test_ibc_transfer(
         wallet_a,
         &wallet_b.address,
         &a_to_b_amount,
+        &None,
     )
     .await?;
 
@@ -140,6 +144,7 @@ async fn test_ibc_transfer(
         wallet_b,
         &wallet_c.address,
         &b_to_a_amount,
+        &None,
     )
     .await?;
 

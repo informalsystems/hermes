@@ -1,3 +1,5 @@
+use hermes_cosmos_chain_components::types::config::gas::dynamic_gas_config::DynamicGasConfig;
+use hermes_cosmos_chain_components::types::config::gas::eip_type::EipQueryType;
 use hermes_cosmos_integration_tests::contexts::binary_channel::test_driver::CosmosBinaryChannelTestDriver;
 use hermes_error::types::Error;
 use hermes_relayer_components::multi::types::index::Index;
@@ -6,7 +8,6 @@ use hermes_test_components::chain::traits::assert::eventual_amount::CanAssertEve
 use hermes_test_components::chain::traits::queries::balance::CanQueryBalance;
 use hermes_test_components::chain::traits::transfer::amount::CanConvertIbcTransferredAmount;
 use hermes_test_components::chain::traits::transfer::ibc_transfer::CanIbcTransferToken;
-use hermes_test_components::chain::traits::transfer::ibc_transfer::CanIbcTransferTokenWithMemo;
 use hermes_test_components::chain::traits::types::amount::HasAmountMethods;
 use hermes_test_components::chain::traits::types::denom::DenomOf;
 use hermes_test_components::chain_driver::traits::fields::amount::CanGenerateRandomAmount;
@@ -28,11 +29,32 @@ use super::bootstrap::bootstrap_and_run_test;
 const MEMO_CHAR: &str = "a";
 const MEMO_SIZE: usize = 10000;
 
-// Disabled until this is fixed: https://github.com/informalsystems/hermes-sdk/blob/main/crates/cosmos/cosmos-test-components/src/bootstrap/impls/initializers/update_genesis_config.rs#L76
-//#[test]
+const DYNAMIC_GAS_MULTIPLIER: f64 = 1.2;
+const DYNAMIC_GAS_MAX: f64 = 1.6;
+
+#[test]
 fn run_test() -> Result<(), Error> {
     bootstrap_and_run_test::<_, BoxFuture<'_, Result<(), Error>>>(
         |setup, relay_driver| Box::pin(test_dynamic_gas_fee(setup, relay_driver)),
+        |genesis| {
+            let params = genesis
+                .get_mut("app_state")
+                .and_then(|app_state| app_state.get_mut("feemarket"))
+                .and_then(|feemarket| feemarket.get_mut("params"))
+                .and_then(|params| params.as_object_mut())
+                .ok_or_else(|| eyre!("failed to retrieve feemarket `params` in genesis file"))?;
+
+            params
+                .insert(
+                    "min_base_gas_price".to_owned(),
+                    serde_json::Value::String("0.01".to_string()),
+                )
+                .ok_or_else(|| {
+                    eyre!("failed to update feemarket `min_base_gas_price` in genesis file")
+                })?;
+
+            Ok(())
+        },
         |config| {
             config.mode.clients.misbehaviour = false;
             config.mode.clients.refresh = false;
@@ -42,7 +64,8 @@ fn run_test() -> Result<(), Error> {
                 ChainConfig::CosmosSdk(chain_config_a) => {
                     chain_config_a.gas_price =
                         GasPrice::new(0.1, chain_config_a.gas_price.denom.clone());
-                    chain_config_a.dynamic_gas_price = DynamicGasPrice::unsafe_new(false, 1.1, 1.6);
+                    chain_config_a.dynamic_gas_price =
+                        DynamicGasPrice::unsafe_new(false, DYNAMIC_GAS_MULTIPLIER, DYNAMIC_GAS_MAX);
                 }
             }
 
@@ -50,10 +73,18 @@ fn run_test() -> Result<(), Error> {
                 ChainConfig::CosmosSdk(chain_config_b) => {
                     chain_config_b.gas_price =
                         GasPrice::new(0.1, chain_config_b.gas_price.denom.clone());
-                    chain_config_b.dynamic_gas_price = DynamicGasPrice::unsafe_new(true, 1.1, 1.6);
+                    chain_config_b.dynamic_gas_price =
+                        DynamicGasPrice::unsafe_new(true, DYNAMIC_GAS_MULTIPLIER, DYNAMIC_GAS_MAX);
                 }
             }
         },
+        None,
+        Some(DynamicGasConfig {
+            multiplier: DYNAMIC_GAS_MULTIPLIER,
+            max: DYNAMIC_GAS_MAX,
+            eip_query_type: EipQueryType::FeeMarket,
+            denom: "stake".to_string(),
+        }),
     )
 }
 
@@ -83,14 +114,17 @@ async fn test_dynamic_gas_fee(
     let wallet_a = &chain_driver_a.user_wallet_a;
     let wallet_b = &chain_driver_b.user_wallet_a;
 
+    let wallet_relayer_a = &chain_driver_a.relayer_wallet;
+    let wallet_relayer_b = &chain_driver_b.relayer_wallet;
+
     let memo: String = MEMO_CHAR.repeat(MEMO_SIZE);
 
     let balance_a = chain_a.query_balance(&wallet_a.address, denom_a).await?;
 
     let a_to_b_amount = chain_driver_a.random_amount(1000, &balance_a).await;
 
-    let gas_balance_b = chain_a
-        .query_balance(&wallet_a.address, &gas_denom_b)
+    let gas_balance_a = chain_a
+        .query_balance(&wallet_relayer_a.address, &gas_denom_b)
         .await?;
 
     let expected_balance_b =
@@ -98,10 +132,9 @@ async fn test_dynamic_gas_fee(
             hermes_cosmos_relayer::contexts::chain::CosmosChain,
         >>::ibc_transfer_amount_from(&a_to_b_amount, channel_id_b, port_id_b)?;
 
-    // TODO: Missing transfer with memo
-    <hermes_cosmos_relayer::contexts::chain::CosmosChain as CanIbcTransferTokenWithMemo<
+    <hermes_cosmos_relayer::contexts::chain::CosmosChain as CanIbcTransferToken<
         hermes_cosmos_relayer::contexts::chain::CosmosChain,
-    >>::ibc_transfer_token_with_memo(
+    >>::ibc_transfer_token(
         chain_a,
         channel_id_a,
         port_id_a,
@@ -123,28 +156,29 @@ async fn test_dynamic_gas_fee(
 
     tokio::time::sleep(core::time::Duration::from_secs(5)).await;
 
-    let gas_balance_b2 = chain_a
-        .query_balance(&wallet_a.address, &gas_denom_b)
+    let gas_balance_a2 = chain_a
+        .query_balance(&wallet_relayer_a.address, &gas_denom_a)
         .await?;
 
-    let paid_fees_relayer_b = hermes_cosmos_relayer::contexts::chain::CosmosChain::subtract_amount(
-        &gas_balance_b,
-        &gas_balance_b2,
+    let paid_fees_relayer_a = hermes_cosmos_relayer::contexts::chain::CosmosChain::subtract_amount(
+        &gas_balance_a,
+        &gas_balance_a2,
     )?;
 
     // Stop supervisor
     drop(handle);
 
-    let balance_b = chain_a.query_balance(&wallet_b.address, denom_b).await?;
-    let b_to_a_amount = chain_driver_a.random_amount(1000, &balance_b).await;
+    let balance_b = chain_b.query_balance(&wallet_b.address, denom_b).await?;
+
+    let b_to_a_amount = chain_driver_b.random_amount(1000, &balance_b).await;
 
     let expected_balance_a =
         <hermes_cosmos_relayer::contexts::chain::CosmosChain as CanConvertIbcTransferredAmount<
             hermes_cosmos_relayer::contexts::chain::CosmosChain,
         >>::ibc_transfer_amount_from(&b_to_a_amount, channel_id_a, port_id_a)?;
 
-    let gas_balance_a = chain_a
-        .query_balance(&wallet_a.address, &gas_denom_a)
+    let gas_balance_b = chain_b
+        .query_balance(&wallet_relayer_b.address, &gas_denom_b)
         .await?;
 
     <hermes_cosmos_relayer::contexts::chain::CosmosChain as CanIbcTransferToken<
@@ -156,6 +190,7 @@ async fn test_dynamic_gas_fee(
         wallet_b,
         &wallet_a.address,
         &b_to_a_amount,
+        &None,
     )
     .await?;
 
@@ -167,19 +202,19 @@ async fn test_dynamic_gas_fee(
 
     tokio::time::sleep(core::time::Duration::from_secs(5)).await;
 
-    let gas_balance_a2 = chain_a
-        .query_balance(&wallet_a.address, &gas_denom_b)
+    let gas_balance_b2 = chain_b
+        .query_balance(&wallet_relayer_b.address, &gas_denom_b)
         .await?;
 
-    let paid_fees_relayer_a = hermes_cosmos_relayer::contexts::chain::CosmosChain::subtract_amount(
-        &gas_balance_a,
-        &gas_balance_a2,
+    let paid_fees_relayer_b = hermes_cosmos_relayer::contexts::chain::CosmosChain::subtract_amount(
+        &gas_balance_b,
+        &gas_balance_b2,
     )?;
 
-    info!("paid gas fees for Tx with memo `{paid_fees_relayer_b}`, without memo `{paid_fees_relayer_a}`");
+    info!("paid gas fees for Tx with memo `{paid_fees_relayer_a}`, without memo `{paid_fees_relayer_b}`");
 
     assert!(
-        paid_fees_relayer_b < paid_fees_relayer_a,
+        paid_fees_relayer_a < paid_fees_relayer_b,
         "with dynamic gas enabled, gas paid for the first TX should be lower"
     );
 

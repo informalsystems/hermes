@@ -23,6 +23,7 @@ use crate::tests::bootstrap::BoxFuture;
 fn run_test() -> Result<(), Error> {
     bootstrap_and_run_test::<_, BoxFuture<'_, Result<(), Error>>>(
         |setup, relay_driver| Box::pin(test_clear_packet_no_scan(setup, relay_driver)),
+        |_| Ok(()),
         |config| {
             // Disabling the client workers and clear_on_start should make the relayer not
             // relay any packet it missed before starting.
@@ -34,6 +35,8 @@ fn run_test() -> Result<(), Error> {
             config.mode.packets.clear_on_start = false;
             config.mode.packets.clear_interval = 10;
         },
+        None,
+        None,
     )
 }
 
@@ -72,6 +75,7 @@ async fn test_clear_packet_no_scan(
         wallet_a,
         &wallet_b.address,
         &a_to_b_amount,
+        &None,
     )
     .await?;
 
@@ -122,6 +126,7 @@ async fn test_clear_packet_no_scan(
         wallet_a,
         &wallet_b.address,
         &a_to_b_amount,
+        &None,
     )
     .await?;
 
