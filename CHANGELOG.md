@@ -1,5 +1,53 @@
 # CHANGELOG
 
+## v1.10.4
+
+*November 19th, 2024*
+
+This release introduces compatibility with the new Consumer ID for Permissionless ICS, improves detection of Tendermint/CometBFT versions for non-standard chains, and enhances IPv6 support for gRPC connections. Log messages have been refined for better clarity, including adjusting redundant packet broadcasts to INFO.
+
+### BUG FIXES
+
+- [Relayer Library](relayer)
+  - Fix error messages in logs to accurately display the RPC endpoint
+    that failed.
+    ([\#4250](https://github.com/informalsystems/hermes/issues/4250))
+  - Fix an issue where Hermes would fail to connect to gRPC servers
+    with an IPv6 address.
+    ([\#4237](https://github.com/informalsystems/hermes/issues/4237))
+  - Fix the extraction of the chain name from the chain ID to ensure
+    accurate identification.
+    ([\#4247](https://github.com/informalsystems/hermes/issues/4247))
+
+### FEATURES
+
+- [Integration Test Framework](tools/test-framework)
+  - Disable TLS configuration when using IPv6 for the gRPC endpoint.
+    ([\#4224](https://github.com/informalsystems/hermes/issues/4224))
+
+### IMPROVEMENTS
+
+- General
+  - Improve detection of Tendermint/CometBFT compatibility
+    mode when a chain runs a non-standard version
+    ([\#4178](https://github.com/informalsystems/hermes/issues/4178))
+- [Relayer Library](relayer)
+  - Use CCV consumer ID to submit misbehaviour messages
+    ([\#4153](https://github.com/informalsystems/hermes/issues/4153))
+  - Improve log message when broadcasting redundant packet and set it
+    to `INFO` instead of `ERROR`.
+    ([\#4252](https://github.com/informalsystems/hermes/issues/4252))
+- [Integration Test Framework](tools/test-framework)
+  - Update the versions of the following `simd` running the integration tests in the CI:
+  * From `v6.3.0` to `v6.3.1`
+  * From `v7.4.0` to `v7.8.0`
+  * From `v8.3.1` to `v8.5.1`
+  * From `v9.0.0-beta.1` to `v9.0.0-rc.0`
+
+    ([\#4202](https://github.com/informalsystems/hermes/issues/4202))
+  - Update the version of Gaia running the integration tests in the CI from `v18.1.0`
+    to `v20.0.0` ([\#4204](https://github.com/informalsystems/hermes/issues/4204))
+
 ## v1.10.3
 
 *September 2nd, 2024*
