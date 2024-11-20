@@ -557,7 +557,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let dst_latest_info = self
             .dst_chain()
             .query_application_status()
-            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
 
         let dst_latest_height = dst_latest_info.height;
 
@@ -1672,7 +1672,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         let dst_status = self
             .dst_chain()
             .query_application_status()
-            .map_err(|e| LinkError::query(self.src_chain().id(), e))?;
+            .map_err(|e| LinkError::query(self.dst_chain().id(), e))?;
 
         let dst_current_height = dst_status.height;
 
