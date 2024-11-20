@@ -136,7 +136,7 @@ needs in order to relay on behalf of consumer chains.
 ## Connecting to a full node protected by HTTP Basic Authentication
 
 To connect to a full node protected by [HTTP Basic Authentication][http-basic-auth],
-specify the username and password in the `rpc_addr`, `grpc_addr` and `event_source` settings
+specify the username and password in the `rpc_addr` and `event_source` settings
 under the chain configuration in `config.toml`.
 
 Here is an example with username `hello` and password `world`, assuming the RPC, WebSocket and gRPC servers
@@ -149,7 +149,6 @@ id = 'my-chain-0'
 # ...
 
 rpc_addr = 'https://hello:world@mydomain.com:26657'
-grpc_addr = 'https://hello:world@mydomain.com:9090'
 event_source = { mode = 'push', url = 'wss://hello:world@mydomain.com:26657/websocket', batch_delay = '500ms' }
 
 # ...
