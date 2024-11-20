@@ -51,15 +51,27 @@ where
 
     let builder = Arc::new(CosmosBuilder::new_with_default(runtime.clone()));
 
+    let chain_command_path =
+        env::var("CHAIN_COMMAND_PATHS").unwrap_or_else(|_| "gaiad".to_string());
+    let chain_command_paths: Vec<String> = parse_chain_command_paths(chain_command_path);
+
+    let account_prefix = env::var("ACCOUNT_PREFIXES").unwrap_or_else(|_| "cosmos".to_string());
+    let account_prefixes = parse_chain_command_paths(account_prefix);
+
+    let native_token = env::var("NATIVE_TOKENS").unwrap_or_else(|_| "stake".to_string());
+    let native_tokens = parse_chain_command_paths(native_token);
+
     // TODO: load parameters from environment variables
     let bootstrap1 = Arc::new(CosmosBootstrap {
         runtime: runtime.clone(),
         cosmos_builder: builder.clone(),
         should_randomize_identifiers: true,
         chain_store_dir: "./test-data".into(),
-        chain_command_path: "gaiad".into(),
-        account_prefix: "cosmos".into(),
-        staking_denom_prefix: "stake".into(),
+        chain_command_path: chain_command_paths[0 % chain_command_paths.len()]
+            .as_str()
+            .into(),
+        account_prefix: account_prefixes[0 % account_prefixes.len()].as_str().into(),
+        staking_denom_prefix: native_tokens[0 % native_tokens.len()].as_str().into(),
         transfer_denom_prefix: "coin".into(),
         genesis_config_modifier: Box::new(genesis_modifier),
         comet_config_modifier: Box::new(|_| Ok(())),
@@ -71,9 +83,11 @@ where
         cosmos_builder: builder,
         should_randomize_identifiers: true,
         chain_store_dir: "./test-data".into(),
-        chain_command_path: "gaiad".into(),
-        account_prefix: "cosmos".into(),
-        staking_denom_prefix: "stake".into(),
+        chain_command_path: chain_command_paths[1 % chain_command_paths.len()]
+            .as_str()
+            .into(),
+        account_prefix: account_prefixes[1 % account_prefixes.len()].as_str().into(),
+        staking_denom_prefix: native_tokens[1 % native_tokens.len()].as_str().into(),
         transfer_denom_prefix: "coin".into(),
         genesis_config_modifier: Box::new(|_| Ok(())),
         comet_config_modifier: Box::new(|_| Ok(())),
@@ -107,26 +121,12 @@ where
         // Extract method `init_test()` but remove calls related to initialising tracing
         // as this would throw errors
         let mut test_config = {
-            let chain_command_path =
-                env::var("CHAIN_COMMAND_PATHS").unwrap_or_else(|_| "gaiad".to_string());
-
-            let chain_command_paths = parse_chain_command_paths(chain_command_path);
-
-            let account_prefix =
-                env::var("ACCOUNT_PREFIXES").unwrap_or_else(|_| "cosmos".to_string());
-
-            let native_token = env::var("NATIVE_TOKENS").unwrap_or_else(|_| "stake".to_string());
-
             let compat_modes = env::var("COMPAT_MODES").ok().map(parse_chain_command_paths);
 
             let ipv6_grpc = env::var("IPV6_GRPC")
                 .ok()
                 .map(|val| val == "true")
                 .unwrap_or(false);
-
-            let account_prefixes = parse_chain_command_paths(account_prefix);
-
-            let native_tokens = parse_chain_command_paths(native_token);
 
             let hang_on_fail = env::var("HANG_ON_FAIL")
                 .ok()

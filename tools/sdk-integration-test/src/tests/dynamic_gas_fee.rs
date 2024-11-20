@@ -37,22 +37,22 @@ fn run_test() -> Result<(), Error> {
     bootstrap_and_run_test::<_, BoxFuture<'_, Result<(), Error>>>(
         |setup, relay_driver| Box::pin(test_dynamic_gas_fee(setup, relay_driver)),
         |genesis| {
-            let params = genesis
+            let maybe_params = genesis
                 .get_mut("app_state")
                 .and_then(|app_state| app_state.get_mut("feemarket"))
                 .and_then(|feemarket| feemarket.get_mut("params"))
-                .and_then(|params| params.as_object_mut())
-                .ok_or_else(|| eyre!("failed to retrieve feemarket `params` in genesis file"))?;
+                .and_then(|params| params.as_object_mut());
 
-            params
-                .insert(
-                    "min_base_gas_price".to_owned(),
-                    serde_json::Value::String("0.01".to_string()),
-                )
-                .ok_or_else(|| {
-                    eyre!("failed to update feemarket `min_base_gas_price` in genesis file")
-                })?;
-
+            if let Some(params) = maybe_params {
+                params
+                    .insert(
+                        "min_base_gas_price".to_owned(),
+                        serde_json::Value::String("0.01".to_string()),
+                    )
+                    .ok_or_else(|| {
+                        eyre!("failed to update feemarket `min_base_gas_price` in genesis file")
+                    })?;
+            }
             Ok(())
         },
         |config| {
