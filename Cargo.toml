@@ -11,6 +11,7 @@ members = [
     "crates/chain-registry",
     "tools/integration-test",
     "tools/test-framework",
+    "tools/sdk-integration-test",
 ]
 
 exclude = [
@@ -30,7 +31,7 @@ ibc-test-framework   = { version = "0.29.3", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.29.3", path = "tools/integration-test" }
 
 # IBC dependencies
-ibc-proto                = "0.51.0"
+ibc-proto                = "0.51.1"
 ics23                    = "0.12.0"
 
 # Tendermint dependencies
@@ -123,6 +124,53 @@ uuid                     = "1.11.0"
 overflow-checks = true
 
 [patch.crates-io]
+ibc-relayer-types  = { path = "crates/relayer-types" }
+ibc-relayer        = { path = "crates/relayer" }
+ibc-telemetry      = { path = "crates/telemetry" }
+
+cgp                     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-core                = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-extra               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-async               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-async-macro         = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component           = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component-macro     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-component-macro-lib = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-type                = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field-macro         = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-field-macro-lib     = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-error               = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-run                 = { git = "https://github.com/contextgeneric/cgp.git" }
+cgp-inner               = { git = "https://github.com/contextgeneric/cgp.git" }
+
+hermes-chain-components             = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-chain-type-components        = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-relayer-components           = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-relayer-components-extra     = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-runtime-components           = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-async-runtime-components     = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-tokio-runtime-components     = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-runtime                      = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-error                        = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-encoding-components          = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-protobuf-encoding-components = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-logging-components           = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-tracing-logging-components   = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-logger                       = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-test-components              = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-ibc-test-suite               = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-any-counterparty             = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-cosmos-chain-components      = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-cosmos-relayer               = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-cosmos-wasm-relayer          = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-cosmos-test-components       = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-cosmos-encoding-components   = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-cosmos-integration-tests     = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-wasm-test-components         = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-wasm-client-components       = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+hermes-wasm-encoding-components     = { git = "https://github.com/informalsystems/hermes-sdk.git", branch = "luca_joss/ibc-proto-rs-v0.51.0-and-tendermint-rs-v0.40.0" }
+
 # tendermint                       = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-rpc                   = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }
 # tendermint-proto                 = { git = "https://github.com/informalsystems/tendermint-rs.git", branch = "main" }

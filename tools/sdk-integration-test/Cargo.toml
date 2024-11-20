@@ -1,0 +1,54 @@
+[package]
+name = "sdk-integration-test"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.76.0"
+license      = "Apache-2.0"
+readme       = "README.md"
+keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
+homepage     = "https://hermes.informal.systems/"
+repository   = "https://github.com/informalsystems/hermes"
+authors      = ["Informal Systems <hello@informal.systems>"]
+description  = "Integration tests using Hermes SDK test framework for Hermes"
+publish      = false
+
+[dependencies]
+serde_json         = { workspace = true }
+tokio              = { workspace = true }
+
+ibc-relayer-types  = { workspace = true }
+ibc-relayer        = { workspace = true }
+ibc-test-framework = { workspace = true }
+
+cgp                             = { version = "0.1.0" }
+cgp-core                        = { version = "0.1.0" }
+cgp-error-eyre                  = { version = "0.1.0" }
+cgp-component-macro             = { version = "0.1.0" }
+
+hermes-runtime-components           = { version = "0.1.0" }
+hermes-async-runtime-components     = { version = "0.1.0" }
+hermes-tokio-runtime-components     = { version = "0.1.0" }
+hermes-chain-components             = { version = "0.1.0" }
+hermes-chain-type-components        = { version = "0.1.0" }
+hermes-runtime                      = { version = "0.1.0" }
+hermes-error                        = { version = "0.1.0" }
+hermes-encoding-components          = { version = "0.1.0" }
+hermes-logging-components           = { version = "0.1.0" }
+hermes-tracing-logging-components   = { version = "0.1.0" }
+hermes-logger                       = { version = "0.1.0" }
+hermes-relayer-components           = { version = "0.1.0" }
+hermes-cosmos-chain-components      = { version = "0.1.0" }
+hermes-cosmos-encoding-components   = { version = "0.1.0" }
+hermes-cosmos-relayer               = { version = "0.1.0" }
+hermes-cosmos-wasm-relayer          = { version = "0.1.0" }
+hermes-cosmos-test-components       = { version = "0.1.0" }
+hermes-cosmos-integration-tests     = { version = "0.1.0" }
+hermes-any-counterparty             = { version = "0.1.0" }
+hermes-wasm-client-components       = { version = "0.1.0" }
+hermes-wasm-encoding-components     = { version = "0.1.0" }
+hermes-test-components              = { version = "0.1.0" }
+hermes-protobuf-encoding-components = { version = "0.1.0" }
+
+[features]
+default          = []
+dynamic-gas      = []

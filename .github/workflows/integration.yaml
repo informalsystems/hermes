@@ -345,3 +345,53 @@ jobs:
           nix shell ${{ matrix.chain.package }} -c \
             cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=2 \
             tests::transfer::test_ibc_transfer
+
+  sdk-integration-tests:
+    runs-on: ubuntu-20.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        chain:
+          - package: gaia18
+            command: gaiad
+            account_prefix: cosmos
+            native_token: stake
+            features: dynamic-gas
+          - package: juno
+            command: junod
+            account_prefix: juno
+            native_token: stake
+            features: ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@main
+        with: 
+          extra-conf: |
+            substituters = https://cache.nixos.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY=
+      - name: Install Cachix
+        uses: cachix/cachix-action@v15
+        with: 
+          name: cosmos-nix
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+      - uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: -p sdk-integration-test --features=${{ matrix.chain.features }} --no-fail-fast --no-run
+      - name: Install cargo-nextest
+        run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
+      - env:
+          RUST_LOG: info
+          RUST_BACKTRACE: 1
+          NO_COLOR_LOG: 1
+          NEXTEST_RETRIES: 2
+          CHAIN_COMMAND_PATHS: ${{ matrix.chain.command }}
+          ACCOUNT_PREFIXES: ${{ matrix.chain.account_prefix }}
+          NATIVE_TOKENS: ${{ matrix.chain.native_token }}
+        run: |
+          nix shell .#${{ matrix.chain.package }} -c \
+            cargo nextest run -p sdk-integration-test --no-fail-fast --failure-output final --test-threads=1 --features=${{ matrix.chain.features }}
