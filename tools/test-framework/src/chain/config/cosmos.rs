@@ -103,6 +103,16 @@ pub fn set_pprof_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
+/// Set the `pprof_laddr` field in the full node config.
+pub fn set_block_sync(config: &mut Value, value: bool) -> Result<(), Error> {
+    config
+        .as_table_mut()
+        .ok_or_else(|| eyre!("expect object"))?
+        .insert("block_sync".to_string(), value.into());
+
+    Ok(())
+}
+
 pub fn set_mempool_version(config: &mut Value, version: &str) -> Result<(), Error> {
     config
         .get_mut("mempool")

@@ -29,14 +29,19 @@ ibc-telemetry        = { version = "0.29.3", path = "crates/telemetry" }
 ibc-test-framework   = { version = "0.29.3", path = "tools/test-framework" }
 ibc-integration-test = { version = "0.29.3", path = "tools/integration-test" }
 
+# IBC dependencies
+ibc-proto                = "0.51.0"
+ics23                    = "0.12.0"
+
 # Tendermint dependencies
-tendermint                       = { version = "0.38.1", default-features = false }
-tendermint-light-client          = { version = "0.38.1", default-features = false }
-tendermint-light-client-detector = { version = "0.38.1", default-features = false }
-tendermint-light-client-verifier = { version = "0.38.1", default-features = false }
-tendermint-proto                 = { version = "0.38.1" }
-tendermint-rpc                   = { version = "0.38.1" }
-tendermint-testgen               = { version = "0.38.1" }
+tendermint                       = { version = "0.40.0", default-features = false }
+tendermint-light-client          = { version = "0.40.0", default-features = false }
+tendermint-light-client-detector = { version = "0.40.0", default-features = false }
+tendermint-light-client-verifier = { version = "0.40.0", default-features = false }
+tendermint-proto                 = { version = "0.40.0" }
+tendermint-rpc                   = { version = "0.40.0" }
+tendermint-testgen               = { version = "0.40.0" }
+
 
 # Namada dependencies
 namada_sdk        = { git = "https://github.com/anoma/namada", tag = "v0.45.1" }
@@ -75,13 +80,11 @@ hex                      = "0.4.3"
 http                     = "1.0.0"
 humantime                = "2.1.0"
 humantime-serde          = "1.1.1"
-ibc-proto                = "0.47.1"
-ics23                    = "0.12.0"
 itertools                = "0.13.0"
 moka                     = "0.12.8"
 num-bigint               = "0.4"
 num-rational             = "0.4.1"
-once_cell                = "1.19.0"
+once_cell                = "1.20.2"
 oneline-eyre             = "0.1"
 opentelemetry            = "0.19.0"
 opentelemetry-prometheus = "0.12.0"
@@ -96,7 +99,7 @@ ripemd                   = "0.1.3"
 rpassword                = "5.0.1"
 secp256k1                = "0.28.2"
 semver                   = "1.0.21"
-serde                    = "1.0.210"
+serde                    = "1.0.214"
 serde_derive             = "1.0.104"
 serde_json               = "1.0.132"
 serde_yaml               = "0.9.34"
@@ -107,7 +110,7 @@ signature                = "2.1.0"
 strum                    = "0.25"
 subtle-encoding          = "0.5.1"
 test-log                 = "0.2.14"
-thiserror                = "1.0.65"
+thiserror                = "1.0.68"
 time                     = "0.3"
 tiny-bip39               = "1.0.0"
 tiny-keccak              = { version = "2.0.2", default-features = false }

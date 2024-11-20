@@ -10,10 +10,12 @@ use ibc_proto::ibc::{
     core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest},
 };
 use ibc_relayer_types::{
-    applications::ics31_icq::response::CrossChainQueryResponse,
+    applications::{
+        ics28_ccv::msgs::{ConsumerChain, ConsumerId},
+        ics31_icq::response::CrossChainQueryResponse,
+    },
     core::{
-        ics02_client::events::UpdateClient,
-        ics02_client::header::AnyHeader,
+        ics02_client::{events::UpdateClient, header::AnyHeader},
         ics03_connection::{
             connection::{ConnectionEnd, IdentifiedConnectionEnd},
             version::Version,
@@ -24,7 +26,7 @@ use ibc_relayer_types::{
             upgrade::{ErrorReceipt, Upgrade},
         },
         ics23_commitment::{commitment::CommitmentPrefix, merkle::MerkleProof},
-        ics24_host::identifier::{ChainId, ChannelId, ClientId, ConnectionId, PortId},
+        ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId},
     },
     proofs::Proofs,
     signer::Signer,
@@ -362,6 +364,10 @@ where
 
                         ChainRequest::QueryUpgradeError { request, height, include_proof, reply_to } => {
                             self.query_upgrade_error(request, height, include_proof, reply_to)?
+                        },
+
+                        ChainRequest::QueryConsumerId { client_id, reply_to } => {
+                            self.query_ccv_consumer_id(client_id, reply_to)?
                         },
                     }
                 },
@@ -865,10 +871,7 @@ where
         Ok(())
     }
 
-    fn query_consumer_chains(
-        &self,
-        reply_to: ReplyTo<Vec<(ChainId, ClientId)>>,
-    ) -> Result<(), Error> {
+    fn query_consumer_chains(&self, reply_to: ReplyTo<Vec<ConsumerChain>>) -> Result<(), Error> {
         let result = self.chain.query_consumer_chains();
         reply_to.send(result).map_err(Error::send)?;
 
@@ -898,6 +901,17 @@ where
         let result = self
             .chain
             .query_upgrade_error(request, height, include_proof);
+        reply_to.send(result).map_err(Error::send)?;
+
+        Ok(())
+    }
+
+    fn query_ccv_consumer_id(
+        &self,
+        client_id: ClientId,
+        reply_to: ReplyTo<ConsumerId>,
+    ) -> Result<(), Error> {
+        let result = self.chain.query_ccv_consumer_id(client_id);
         reply_to.send(result).map_err(Error::send)?;
 
         Ok(())

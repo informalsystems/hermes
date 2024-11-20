@@ -101,15 +101,16 @@
     "cometbft-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-G5gchJMn/BFzwYx8/ikPDL5fS/TuFIBF4DKJbkalp/M=",
+        "lastModified": 1723450629,
+        "narHash": "sha256-2QO4KeEUX4HHT1AKhEdPplJHjBhalfM11Dn3/urIVig=",
         "owner": "cometbft",
         "repo": "cometbft",
-        "rev": "66a5a9da9f7a3306f382eb9142ccb9c9f7997d3f",
+        "rev": "e1b4453baf0af6487ad187c7f17dc50517126673",
         "type": "github"
       },
       "original": {
         "owner": "cometbft",
-        "ref": "v0.38.0",
+        "ref": "v0.38.11",
         "repo": "cometbft",
         "type": "github"
       }
@@ -158,6 +159,7 @@
         "gaia17-src": "gaia17-src",
         "gaia18-src": "gaia18-src",
         "gaia19-src": "gaia19-src",
+        "gaia20-src": "gaia20-src",
         "gaia5-src": "gaia5-src",
         "gaia6-ordered-src": "gaia6-ordered-src",
         "gaia6-src": "gaia6-src",
@@ -218,6 +220,7 @@
         "wasmvm_1_5_0-src": "wasmvm_1_5_0-src",
         "wasmvm_1_5_2-src": "wasmvm_1_5_2-src",
         "wasmvm_1_5_4-src": "wasmvm_1_5_4-src",
+        "wasmvm_1_5_5-src": "wasmvm_1_5_5-src",
         "wasmvm_1_beta7-src": "wasmvm_1_beta7-src",
         "wasmvm_2_0_0-src": "wasmvm_2_0_0-src",
         "wasmvm_2_0_3-src": "wasmvm_2_0_3-src",
@@ -225,11 +228,11 @@
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
       },
       "locked": {
-        "lastModified": 1727709426,
-        "narHash": "sha256-Q+uchaRWUNGOksfHY8x6HAz7nADkRtLHUl11A0mBc7Y=",
+        "lastModified": 1729681912,
+        "narHash": "sha256-Ym4WfC/Iogqft2KOoHEv2FlWlgsxOAA5CZCbGXPf65o=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "706d3206feb0c816765768dd164790874c221bd3",
+        "rev": "04a2efd0e01206b5df601b205d7662db79a765f0",
         "type": "github"
       },
       "original": {
@@ -669,6 +672,23 @@
       "original": {
         "owner": "cosmos",
         "ref": "v19.1.0",
+        "repo": "gaia",
+        "type": "github"
+      }
+    },
+    "gaia20-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1726853009,
+        "narHash": "sha256-N7x3k56AtPbIbbJjqKmlEJIytKElALJwj14lZ2pewZg=",
+        "owner": "cosmos",
+        "repo": "gaia",
+        "rev": "2dba9d471ef73b0a99e844bf55a44ddae700ea06",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "v20.0.0",
         "repo": "gaia",
         "type": "github"
       }
@@ -1131,15 +1151,16 @@
     "interchain-security-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-adBzn51PKoRsCL9gIzC5Tcqmu7u3GjxTcDj2jpZ/da8=",
+        "lastModified": 1726849313,
+        "narHash": "sha256-1WEvV3LoXfGvZC9fXOb8mBLKVGCVBiXZcwUewSPit+8=",
         "owner": "cosmos",
         "repo": "interchain-security",
-        "rev": "03aada4af3243dbf739a12adfacc7b37232df694",
+        "rev": "1e60637f9d8f3505208282416abfbb87fabc4795",
         "type": "github"
       },
       "original": {
         "owner": "cosmos",
-        "ref": "feat/ics-misbehaviour-handling",
+        "ref": "v6.1.0",
         "repo": "interchain-security",
         "type": "github"
       }
@@ -1179,16 +1200,16 @@
     "juno-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1724278445,
-        "narHash": "sha256-XvJqp36HSYqm6OMLQqJPX5sCT52GxSLFDMO+fJovh+0=",
+        "lastModified": 1727102451,
+        "narHash": "sha256-UaTCcK+I6Wl4yCpbNckx+lRi55kTSucJxzw5irJOVh4=",
         "owner": "CosmosContracts",
         "repo": "juno",
-        "rev": "2f119adacca3a1668ff150c225a3f423501e748c",
+        "rev": "de3c4d145c7a96c31e3fca6fe8850ce4ab559e33",
         "type": "github"
       },
       "original": {
         "owner": "CosmosContracts",
-        "ref": "v24.0.0",
+        "ref": "v25.0.0",
         "repo": "juno",
         "type": "github"
       }
@@ -1444,11 +1465,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1727648392,
-        "narHash": "sha256-VTlVv1nSxImFxY6RPQpNZxvEOQ0u5s1wBFDgixySNDo=",
+        "lastModified": 1730831018,
+        "narHash": "sha256-2S0HwIFRxYp+afuoFORcZA9TjryAf512GmE0MTfEOPU=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "4e0c36e4dd53f35d5a6385bdae88895ec5832f70",
+        "rev": "8c4dc69b9732f6bbe826b5fbb32184987520ff26",
         "type": "github"
       },
       "original": {
@@ -2006,6 +2027,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v1.5.4",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_1_5_5-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727088523,
+        "narHash": "sha256-ysS2pMMm+s1JsHVv9RhiMHt5g4UGcE5jqOI5YKdC4vU=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "0c5b9ce8446189f07d2bf65fbb902817cf57a563",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v1.5.5",
         "repo": "wasmvm",
         "type": "github"
       }

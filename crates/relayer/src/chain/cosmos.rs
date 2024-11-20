@@ -4,6 +4,7 @@ use bytes::Bytes;
 use config::CosmosSdkConfig;
 use core::{future::Future, str::FromStr, time::Duration};
 use futures::future::join_all;
+use ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerIdFromClientIdRequest;
 use itertools::Itertools;
 use num_bigint::BigInt;
 use prost::Message;
@@ -22,6 +23,7 @@ use ibc_proto::ibc::apps::fee::v1::{
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
 use ibc_proto::interchain_security::ccv::v1::ConsumerParams as CcvConsumerParams;
 use ibc_proto::Protobuf;
+use ibc_relayer_types::applications::ics28_ccv::msgs::{ConsumerChain, ConsumerId};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
@@ -367,6 +369,7 @@ impl CosmosSdkChain {
     }
 
     /// Performs a gRPC query to fetch CCV Consumer chain staking parameters.
+    /// Assumes we are the consumer chain.
     pub fn query_ccv_consumer_chain_params(&self) -> Result<CcvConsumerParams, Error> {
         crate::time!(
             "query_ccv_consumer_chain_params",
@@ -2541,7 +2544,10 @@ impl ChainEndpoint for CosmosSdkChain {
         Ok(incentivized_response)
     }
 
-    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+    fn query_consumer_chains(&self) -> Result<Vec<ConsumerChain>, Error> {
+        use ibc_proto::interchain_security::ccv::provider::v1::ConsumerPhase;
+        use ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerChainsRequest;
+
         crate::time!(
             "query_consumer_chains",
             {
@@ -2555,9 +2561,10 @@ impl ChainEndpoint for CosmosSdkChain {
             ibc_proto::interchain_security::ccv::provider::v1::query_client::QueryClient::new,
         ))?;
 
-        let request = tonic::Request::new(
-            ibc_proto::interchain_security::ccv::provider::v1::QueryConsumerChainsRequest {},
-        );
+        let request = tonic::Request::new(QueryConsumerChainsRequest {
+            phase: ConsumerPhase::Launched as i32,
+            pagination: Some(PageRequest::all().into()),
+        });
 
         let response = self
             .block_on(client.query_consumer_chains(request))
@@ -2567,8 +2574,8 @@ impl ChainEndpoint for CosmosSdkChain {
         let result = response
             .chains
             .into_iter()
-            .map(|c| (c.chain_id.parse().unwrap(), c.client_id.parse().unwrap()))
-            .collect();
+            .map(|c| ConsumerChain::try_from(c).map_err(Error::ics24_host_validation_error))
+            .collect::<Result<Vec<_>, _>>()?;
 
         Ok(result)
     }
@@ -2629,6 +2636,40 @@ impl ChainEndpoint for CosmosSdkChain {
             }
             IncludeProof::No => Ok((error_receipt, None)),
         }
+    }
+
+    /// Performs a gRPC query to fetch the CCV ConsumerID corresponding
+    /// to the given ClientID.
+    ///
+    /// Assumes we are the provider chain.
+    fn query_ccv_consumer_id(&self, client_id: ClientId) -> Result<ConsumerId, Error> {
+        use ibc_proto::interchain_security::ccv::provider::v1::query_client::QueryClient;
+
+        crate::telemetry!(query, &self.config.id, "query_ccv_consumer_id");
+        crate::time!(
+            "query_ccv_consumer_id",
+            {
+                "src_chain": &self.config.id,
+            }
+        );
+
+        let grpc_addr = Uri::from_str(&self.config.grpc_addr.to_string())
+            .map_err(|e| Error::invalid_uri(self.config.grpc_addr.to_string(), e))?;
+
+        let mut client = self
+            .block_on(create_grpc_client(&grpc_addr, QueryClient::new))?
+            .max_decoding_message_size(self.config.max_grpc_decoding_size.get_bytes() as usize);
+
+        let request = tonic::Request::new(QueryConsumerIdFromClientIdRequest {
+            client_id: client_id.to_string(),
+        });
+
+        let response = self
+            .block_on(client.query_consumer_id_from_client_id(request))
+            .map_err(|e| Error::grpc_status(e, "query_ccv_consumer_id".to_owned()))?;
+
+        let consumer_id = response.into_inner().consumer_id;
+        Ok(ConsumerId::new(consumer_id))
     }
 }
 
@@ -2813,7 +2854,7 @@ pub async fn fetch_compat_mode(
         }
     }?;
 
-    Ok(compat_mode.into())
+    Ok(compat_mode)
 }
 
 #[cfg(test)]

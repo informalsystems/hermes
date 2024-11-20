@@ -44,3 +44,5 @@ toml               = { workspace = true }
 tonic              = { workspace = true, features = ["tls", "tls-roots"] }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
+
+chrono = "0.4.38"

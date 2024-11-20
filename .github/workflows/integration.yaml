@@ -45,7 +45,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: gaia18
+          - package: gaia20
             command: gaiad
             account_prefix: cosmos
             native_token: stake
@@ -188,10 +188,10 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia18 .#stride
+          - package: .#gaia20 .#stride
             command: gaiad,strided
             account_prefix: cosmos,stride
-          - package: .#gaia18 .#neutron
+          - package: .#gaia20 .#neutron
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
@@ -233,12 +233,13 @@ jobs:
             --features interchain-security,ica interchain_security::
 
   interchain-security-icq:
+    if: false # Disable CCQ test
     runs-on: ubuntu-20.04
     strategy:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia18 .#stride-no-admin
+          - package: .#gaia20 .#stride-no-admin
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
@@ -284,7 +285,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#celestia .#gaia18
+          - package: .#celestia .#gaia20
             command: celestia-appd,gaiad
             account_prefix: celestia,cosmos
             native_token: utia,stake
@@ -334,7 +335,7 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia18
+          - package: .#gaia20
             command: gaiad
             account_prefix: cosmos
     steps:

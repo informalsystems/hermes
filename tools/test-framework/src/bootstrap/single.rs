@@ -101,6 +101,7 @@ pub fn bootstrap_single_node(
         config::cosmos::set_rpc_port(config, chain_driver.rpc_port)?;
         config::cosmos::set_p2p_port(config, chain_driver.p2p_port)?;
         config::cosmos::set_pprof_port(config, chain_driver.pprof_port)?;
+        config::cosmos::set_block_sync(config, true)?;
         config::cosmos::set_timeout_commit(config, Duration::from_secs(1))?;
         config::cosmos::set_timeout_propose(config, Duration::from_secs(1))?;
         config::cosmos::set_mode(config, "validator")?;

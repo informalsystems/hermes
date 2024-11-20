@@ -1,17 +1,16 @@
 use std::str::FromStr;
+use std::thread;
 
 use crate::bootstrap::consumer::bootstrap_consumer_node;
 use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::chain::chain_type::ChainType;
-use crate::chain::cli::upgrade::vote_proposal;
 use crate::chain::ext::bootstrap::ChainBootstrapMethodsExt;
 use crate::error::Error;
 use crate::framework::base::{run_basic_test, BasicTest, HasOverrides, TestConfigOverride};
 use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::prelude::FullNode;
 use crate::types::config::TestConfig;
-use crate::util::proposal_status::ProposalStatus;
 
 /**
 Runs a test case that implements [`InterchainSecurityChainTest`].
@@ -71,47 +70,29 @@ where
         let chain_type = ChainType::from_str(&builder.command_paths[1])?;
         let chain_id = chain_type.chain_id("consumer", false);
 
-        node_a.chain_driver.submit_consumer_chain_proposal(
-            chain_id.as_str(),
+        let consumer_id = node_a
+            .chain_driver
+            .create_permisionless_consumer(chain_id.as_str(), &provider_fee)?;
+
+        thread::sleep(std::time::Duration::from_secs(3));
+
+        node_a.chain_driver.update_consumer(
+            &consumer_id,
             &provider_fee,
-            "2023-05-31T12:09:47.048227Z",
+            node_a.wallets.validator.address.as_str(),
         )?;
 
-        node_a.chain_driver.assert_proposal_status(
-            node_a.chain_driver.chain_id.as_str(),
-            &node_a.chain_driver.command_path,
-            &node_a.chain_driver.home_path,
-            &node_a.chain_driver.rpc_listen_address(),
-            ProposalStatus::VotingPeriod,
-            "1",
-        )?;
-
-        vote_proposal(
-            node_a.chain_driver.chain_id.as_str(),
-            &node_a.chain_driver.command_path,
-            &node_a.chain_driver.home_path,
-            &node_a.chain_driver.rpc_listen_address(),
-            &provider_fee,
-            "1",
-        )?;
-
-        node_a.chain_driver.assert_proposal_status(
-            node_a.chain_driver.chain_id.as_str(),
-            &node_a.chain_driver.command_path,
-            &node_a.chain_driver.home_path,
-            &node_a.chain_driver.rpc_listen_address(),
-            ProposalStatus::Passed,
-            "1",
-        )?;
+        thread::sleep(std::time::Duration::from_secs(3));
 
         let node_b = bootstrap_consumer_node(
             builder,
-            "consumer",
+            &consumer_id,
             &node_a,
             |config| self.test.get_overrides().modify_node_config(config),
             |genesis| self.test.get_overrides().modify_genesis_file(genesis),
             1,
             &node_a.chain_driver,
+            &provider_fee,
         )?;
 
         let _node_process_a = node_a.process.clone();

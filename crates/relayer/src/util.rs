@@ -21,28 +21,27 @@ pub async fn create_grpc_client<T>(
     grpc_addr: &tonic::transport::Uri,
     client_constructor: impl FnOnce(tonic::transport::Channel) -> T,
 ) -> Result<T, crate::error::Error> {
-    let tls_config = tonic::transport::ClientTlsConfig::new().with_native_roots();
     let builder = tonic::transport::Channel::builder(grpc_addr.clone());
 
     // Don't configures TLS for the endpoint if using IPv6
-    let builder = if is_ipv6(grpc_addr) {
-        builder
-    } else {
+    let builder = if grpc_addr.scheme() == Some(&http::uri::Scheme::HTTPS) {
+        let domain = grpc_addr
+            .host()
+            .map(|d| d.replace(['[', ']'], ""))
+            .ok_or_else(|| crate::error::Error::invalid_http_host(grpc_addr.to_string()))?;
+        let tls_config = tonic::transport::ClientTlsConfig::new()
+            .with_native_roots()
+            .domain_name(domain);
         builder
             .tls_config(tls_config)
             .map_err(crate::error::Error::grpc_transport)?
+    } else {
+        builder
     };
+
     let channel = builder
         .connect()
         .await
         .map_err(crate::error::Error::grpc_transport)?;
     Ok(client_constructor(channel))
-}
-
-fn is_ipv6(uri: &tonic::transport::Uri) -> bool {
-    if let Some(host) = uri.host() {
-        host.starts_with('[') && host.ends_with(']')
-    } else {
-        false
-    }
 }

@@ -52,11 +52,13 @@ impl CrossChainQueryResponse {
     pub fn try_to_any(&self, signer: Signer) -> Result<Any, Error> {
         let mut encoded = vec![];
 
+        let proof_ops = into_proof_ops(self.proof.clone());
+
         let msg_submit_cross_chain_query_result = MsgSubmitQueryResponse {
             chain_id: self.chain_id.to_string(),
             query_id: self.query_id.to_string(),
             result: self.result.clone(),
-            proof_ops: Some(into_proof_ops(self.proof.clone())),
+            proof_ops: Some(proof_ops),
             height: self.height,
             from_address: signer.as_ref().to_string(),
         };
