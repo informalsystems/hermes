@@ -201,7 +201,7 @@ pub fn bootstrap_namada_node(
     // Wait for a while and check if the child process exited immediately.
     // If so, return error since we expect the full node to be running in the background.
 
-    sleep(Duration::from_millis(1000));
+    sleep(Duration::from_millis(2000));
 
     let status = child
         .try_wait()

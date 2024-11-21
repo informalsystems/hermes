@@ -10,9 +10,9 @@ use namada_sdk::ibc::storage::{consensus_height, consensus_state_prefix};
 use namada_sdk::queries::RPC;
 use namada_sdk::storage::{Key, PrefixValue};
 use namada_sdk::tx::Tx;
+use namada_tendermint_rpc::{Client, HttpClient, Url};
 use std::fs::File;
 use std::io::Read;
-use tendermint_rpc::{Client, HttpClient, Url};
 use toml::Value;
 
 use crate::prelude::*;
@@ -97,6 +97,8 @@ pub async fn query_receive_tx_memo(
     )
     .await?;
 
+    let height = namada_tendermint::block::Height::try_from(height.revision_height())
+        .expect("Height should be converted");
     let response = client
         .block(height)
         .await

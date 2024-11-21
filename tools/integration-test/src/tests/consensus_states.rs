@@ -54,7 +54,14 @@ impl BinaryChainTest for ConsensusStateHeights {
 
         let states = match chains.handle_b().config().expect("Config should exist") {
             ChainConfig::Namada(config) => chains.node_b.value().chain_driver.runtime.block_on(
-                namada::query_consensus_states(config.rpc_addr, chains.client_id_b().value()),
+                namada::query_consensus_states(
+                    config
+                        .rpc_addr
+                        .to_string()
+                        .parse()
+                        .expect("RPC address should be converted"),
+                    chains.client_id_b().value(),
+                ),
             )?,
             _ => {
                 let grpc_address = chains

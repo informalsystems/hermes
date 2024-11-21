@@ -47,6 +47,9 @@ humantime-serde                  = { workspace = true }
 itertools                        = { workspace = true }
 moka                             = { workspace = true, features = ["sync"] }
 namada_sdk                       = { workspace = true }
+namada-tendermint                = { workspace = true }
+namada-tendermint-proto          = { workspace = true }
+namada-tendermint-rpc            = { workspace = true, features = ["http-client", "websocket-client"] }
 num-bigint                       = { workspace = true, features = ["serde"] }
 num-rational                     = { workspace = true, features = ["num-bigint", "serde"] }
 once_cell                        = { workspace = true }

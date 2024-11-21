@@ -1,7 +1,7 @@
 use alloc::sync::Arc;
 use core::str::FromStr;
+use prost::Message;
 use std::thread;
-use tendermint_rpc::HttpClient;
 use tracing::debug;
 
 use core::time::Duration;
@@ -10,7 +10,7 @@ use ibc_proto::ibc::applications::fee::v1::{
     QueryIncentivizedPacketRequest, QueryIncentivizedPacketResponse,
 };
 use ibc_proto::ibc::core::channel::v1::{QueryUpgradeErrorRequest, QueryUpgradeRequest};
-use ibc_proto::Protobuf;
+use ibc_relayer_types::applications::ics28_ccv::msgs::{ConsumerChain, ConsumerId};
 use ibc_relayer_types::applications::ics31_icq::response::CrossChainQueryResponse;
 use ibc_relayer_types::clients::ics07_tendermint::client_state::{
     AllowUpdate, ClientState as TmClientState,
@@ -54,11 +54,12 @@ use namada_sdk::token::{Amount, DenominatedAmount, Denomination};
 use namada_sdk::wallet::Store;
 use namada_sdk::wallet::Wallet;
 use namada_sdk::{rpc, Namada, NamadaImpl};
-use tendermint::block::Height as TmHeight;
-use tendermint::{node, Time};
-use tendermint_light_client::types::LightBlock as TMLightBlock;
-use tendermint_rpc::client::CompatMode;
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use namada_tendermint::block::Height as TmHeight;
+use namada_tendermint::{node, Time};
+use namada_tendermint_rpc::client::CompatMode;
+use namada_tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use namada_tendermint_rpc::{HttpClient, Url};
+use tendermint_proto::Protobuf as TmProtobuf;
 use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::account::Balance;
@@ -114,11 +115,18 @@ impl NamadaChain {
         );
 
         use crate::config::EventSourceMode as Mode;
+        let http_client = tendermint_rpc::HttpClient::new(self.config.rpc_addr.clone())
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+        let compat_mode = self
+            .compat_mode
+            .to_string()
+            .parse()
+            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
         let (event_source, monitor_tx) = match &self.config.event_source {
             Mode::Push { url, batch_delay } => EventSource::websocket(
                 self.config.id.clone(),
                 url.clone(),
-                self.compat_mode,
+                compat_mode,
                 *batch_delay,
                 self.rt.clone(),
             ),
@@ -127,7 +135,7 @@ impl NamadaChain {
                 max_retries,
             } => EventSource::rpc(
                 self.config.id.clone(),
-                self.ctx.client().clone(),
+                http_client,
                 *interval,
                 *max_retries,
                 self.rt.clone(),
@@ -154,17 +162,20 @@ impl NamadaChain {
         Ok(Duration::from_secs(unbonding_period))
     }
 
-    fn get_latest_block_time(&self) -> Result<Time, Error> {
+    fn get_latest_block_time(&self) -> Result<tendermint::Time, Error> {
         let status = self
             .rt
             .block_on(Client::status(self.ctx.client()))
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-        Ok(status.sync_info.latest_block_time)
+            .map_err(|e| NamadaError::rpc(self.config.rpc_addr.clone(), e))?;
+        let time =
+            tendermint::Time::parse_from_rfc3339(&status.sync_info.latest_block_time.to_rfc3339())
+                .expect("Time should be parsable");
+        Ok(time)
     }
 }
 
 impl ChainEndpoint for NamadaChain {
-    type LightBlock = TMLightBlock;
+    type LightBlock = tendermint_light_client::types::LightBlock;
     type Header = TmHeader;
     type ConsensusState = TmConsensusState;
     type ClientState = TmClientState;
@@ -186,17 +197,32 @@ impl ChainEndpoint for NamadaChain {
             return Err(Error::config(ConfigError::wrong_type()));
         };
 
-        let mut rpc_client = HttpClient::new(config.rpc_addr.clone())
-            .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))?;
+        let rpc_addr = Url::from_str(&config.rpc_addr.to_string())
+            .map_err(|e| NamadaError::rpc(config.rpc_addr.clone(), e))?;
+        let mut rpc_client =
+            HttpClient::new(rpc_addr).map_err(|e| NamadaError::rpc(config.rpc_addr.clone(), e))?;
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
         let compat_mode = CompatMode::from_version(node_info.version)
             .ok()
-            .or_else(|| config.compat_mode.clone().map(CompatMode::from))
+            .or_else(|| {
+                config.compat_mode.map(|mode| {
+                    mode.to_string()
+                        .parse()
+                        .expect("compatMode should be parsable")
+                })
+            })
             .unwrap_or(CompatMode::V0_37);
         rpc_client.set_compat_mode(compat_mode);
 
         let node_info = rt.block_on(fetch_node_info(&rpc_client, &config))?;
-        let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
+        let node_id = tendermint_light_client_verifier::types::PeerId::new(
+            node_info
+                .id
+                .as_bytes()
+                .try_into()
+                .expect("node ID should be able to converted"),
+        );
+        let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_id)?;
 
         let keybase =
             KeyRing::new_namada(config.key_store_type, &config.id, &config.key_store_folder)
@@ -258,7 +284,7 @@ impl ChainEndpoint for NamadaChain {
         self.rt
             .block_on(Client::health(self.ctx.client()))
             .map_err(|e| {
-                Error::health_check_json_rpc(
+                NamadaError::health_check_json_rpc(
                     self.config.id.clone(),
                     self.config.rpc_addr.to_string(),
                     "/health".to_string(),
@@ -309,7 +335,7 @@ impl ChainEndpoint for NamadaChain {
         let status = self
             .rt
             .block_on(Client::status(self.ctx.client()))
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+            .map_err(|e| NamadaError::rpc(self.config.rpc_addr.clone(), e))?;
 
         let cometbft_version = status.node_info.version.to_string();
         let cometbft_version = cometbft_version
@@ -350,7 +376,7 @@ impl ChainEndpoint for NamadaChain {
             tx_sync_results.push(response_to_tx_sync_result(
                 &self.config.id,
                 msg_chunk.len(),
-                response,
+                into_tm_response(response),
             ));
             if self.config.sequential_batch_tx {
                 self.wait_for_block_commits(&mut tx_sync_results)?;
@@ -377,7 +403,7 @@ impl ChainEndpoint for NamadaChain {
     fn send_messages_and_wait_check_tx(
         &mut self,
         tracked_msgs: TrackedMsgs,
-    ) -> Result<Vec<Response>, Error> {
+    ) -> Result<Vec<tendermint_rpc::endpoint::broadcast::tx_sync::Response>, Error> {
         crate::time!("send_messages_and_wait_check_tx");
 
         let proto_msgs = tracked_msgs.messages();
@@ -389,7 +415,8 @@ impl ChainEndpoint for NamadaChain {
         let msg_chunks = proto_msgs.chunks(max_msg_num);
         let mut responses = vec![];
         for msg_chunk in msg_chunks {
-            let response = self.batch_txs(msg_chunk)?;
+            let resp = self.batch_txs(msg_chunk)?;
+            let response = into_tm_response(resp);
             if response.code.is_err() {
                 return Err(Error::send_tx(response.log));
             }
@@ -545,7 +572,7 @@ impl ChainEndpoint for NamadaChain {
         let status = self
             .rt
             .block_on(Client::status(self.ctx.client()))
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+            .map_err(|e| NamadaError::rpc(self.config.rpc_addr.clone(), e))?;
 
         if status.sync_info.catching_up {
             return Err(Error::chain_not_caught_up(
@@ -1136,7 +1163,15 @@ impl ChainEndpoint for NamadaChain {
                     None => Ok(vec![]),
                 }
             }
-            QueryTxRequest::Transaction(tx) => self.query_tx_events(&tx.0),
+            QueryTxRequest::Transaction(tx) => {
+                let tm_hash = namada_tendermint::Hash::from_bytes(
+                    namada_tendermint::hash::Algorithm::Sha256,
+                    tx.0.as_bytes(),
+                )
+                .expect("hash should be converted");
+
+                self.query_tx_events(&tm_hash)
+            }
         }
     }
 
@@ -1160,9 +1195,8 @@ impl ChainEndpoint for NamadaChain {
     ) -> Result<Self::ConsensusState, Error> {
         let height = match request.height {
             QueryHeight::Latest => TmHeight::from(0u32),
-            QueryHeight::Specific(ibc_height) => {
-                TmHeight::try_from(ibc_height.revision_height()).map_err(Error::invalid_height)?
-            }
+            QueryHeight::Specific(ibc_height) => TmHeight::try_from(ibc_height.revision_height())
+                .map_err(NamadaError::invalid_height)?,
         };
 
         let rpc_call = match height.value() {
@@ -1172,8 +1206,15 @@ impl ChainEndpoint for NamadaChain {
         let response = self
             .rt
             .block_on(rpc_call)
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
-        Ok(Self::ConsensusState::from(response.block.header))
+            .map_err(|e| NamadaError::rpc(self.config.rpc_addr.clone(), e))?;
+        let raw_header = namada_tendermint_proto::v0_37::types::Header::from(response.block.header);
+        let encoded_header = raw_header.encode_to_vec();
+        let raw_header: tendermint_proto::v0_37::types::Header =
+            prost::Message::decode(&encoded_header[..])
+                .map_err(|e| Error::protobuf_decode("TmBlockHeader".to_string(), e))?;
+        let header: tendermint::block::Header =
+            raw_header.try_into().expect("header should be converted");
+        Ok(Self::ConsensusState::from(header))
     }
 
     fn build_client_state(
@@ -1276,7 +1317,7 @@ impl ChainEndpoint for NamadaChain {
         unimplemented!()
     }
 
-    fn query_consumer_chains(&self) -> Result<Vec<(ChainId, ClientId)>, Error> {
+    fn query_consumer_chains(&self) -> Result<Vec<ConsumerChain>, Error> {
         // not supported
         unimplemented!()
     }
@@ -1324,13 +1365,18 @@ impl ChainEndpoint for NamadaChain {
 
         Ok((error_receipt, proof))
     }
+
+    fn query_ccv_consumer_id(&self, _client_id: ClientId) -> Result<ConsumerId, Error> {
+        // not supported
+        unimplemented!()
+    }
 }
 
 /// Fetch the node info
 async fn fetch_node_info(
     rpc_client: &HttpClient,
     config: &CosmosSdkConfig,
-) -> Result<node::Info, Error> {
+) -> Result<node::Info, NamadaError> {
     crate::time!("fetch_node_info",
     {
         "src_chain": config.id.to_string(),
@@ -1339,5 +1385,24 @@ async fn fetch_node_info(
     Client::status(rpc_client)
         .await
         .map(|s| s.node_info)
-        .map_err(|e| Error::rpc(config.rpc_addr.clone(), e))
+        .map_err(|e| NamadaError::rpc(config.rpc_addr.clone(), e))
+}
+
+fn into_tm_response(response: Response) -> tendermint_rpc::endpoint::broadcast::tx_sync::Response {
+    let code = match response.code {
+        namada_tendermint::abci::Code::Ok => tendermint::abci::Code::Ok,
+        namada_tendermint::abci::Code::Err(c) => tendermint::abci::Code::Err(c),
+    };
+    let hash = tendermint::Hash::from_bytes(
+        tendermint::hash::Algorithm::Sha256,
+        response.hash.as_bytes(),
+    )
+    .expect("hash should be converted");
+    tendermint_rpc::endpoint::broadcast::tx_sync::Response {
+        codespace: response.codespace,
+        code,
+        data: response.data,
+        log: response.log,
+        hash,
+    }
 }

@@ -174,7 +174,11 @@ fn assert_tx_memo_equals<ChainA: ChainHandle, ChainB: ChainHandle>(
                 .value()
                 .runtime
                 .block_on(query_receive_tx_memo(
-                    config.rpc_addr,
+                    config
+                        .rpc_addr
+                        .to_string()
+                        .parse()
+                        .expect("RPC address should be converted"),
                     channel.port_a.value(),
                     channel.channel_id_a.value(),
                     channel.port_b.value(),

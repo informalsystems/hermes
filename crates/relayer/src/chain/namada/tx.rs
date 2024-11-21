@@ -13,7 +13,7 @@ use namada_sdk::chain::ChainId;
 use namada_sdk::io::NamadaIo;
 use namada_sdk::tx::{prepare_tx, ProcessTxResponse};
 use namada_sdk::{rpc, signing, tx, Namada};
-use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use namada_tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, debug_span, trace, warn};
 
 use crate::chain::cosmos::gas::{adjust_estimated_gas, AdjustGas};
@@ -334,9 +334,14 @@ impl NamadaChain {
 
     fn update_tx_sync_result(&self, tx_sync_result: &mut TxSyncResult) -> Result<(), Error> {
         if let TxStatus::Pending { .. } = tx_sync_result.status {
+            let tm_hash = namada_tendermint::Hash::from_bytes(
+                namada_tendermint::hash::Algorithm::Sha256,
+                tx_sync_result.response.hash.as_bytes(),
+            )
+            .expect("tendermint hash should be converted");
             // If the transaction failed, query_txs returns the IbcEvent::ChainError,
             // so that we don't attempt to resolve the transaction later on.
-            let events = self.query_tx_events(&tx_sync_result.response.hash)?;
+            let events = self.query_tx_events(&tm_hash)?;
             // If we get events back, progress was made, so we replace the events
             // with the new ones. in both cases we will check in the next iteration
             // whether or not the transaction was fully committed.

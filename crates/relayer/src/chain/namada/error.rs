@@ -1,4 +1,8 @@
-use flex_error::{define_error, TraceError};
+use flex_error::{define_error, DisplayOnly, TraceError};
+use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use namada_tendermint::Error as TendermintError;
+use namada_tendermint_proto::Error as TendermintProtoError;
+use namada_tendermint_rpc::Error as TendermintRpcError;
 
 define_error! {
     Error {
@@ -13,6 +17,31 @@ define_error! {
         Namada
             [ TraceError<namada_sdk::error::Error> ]
             |_| { "Namada error" },
+
+        Rpc
+            { url: tendermint_rpc::Url }
+            [ TendermintRpcError ]
+            |e| { format!("RPC error to endpoint {}", e.url) },
+
+        HealthCheckJsonRpc
+            {
+                chain_id: ChainId,
+                address: String,
+                endpoint: String,
+            }
+            [ DisplayOnly<TendermintRpcError> ]
+            |e| {
+                format!("health check failed for endpoint {0} on the JSON-RPC interface of chain {1}:{2}",
+                    e.endpoint, e.chain_id, e.address)
+            },
+
+        InvalidHeight
+            [ TendermintError ]
+            |_| { "invalid height" },
+
+        Decode
+            [ TendermintProtoError ]
+            |_| { "error decoding protobuf" },
 
         Query
             [ TraceError<namada_sdk::queries::Error> ]

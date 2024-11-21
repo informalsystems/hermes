@@ -15,8 +15,10 @@ use namada_sdk::rpc;
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::tx::data::ResultCode;
 use namada_sdk::tx::event::{Batch as BatchAttr, Code as CodeAttr};
-use tendermint::block::Height as TmHeight;
-use tendermint::Hash as TmHash;
+use namada_tendermint::block::Height as TmHeight;
+use namada_tendermint::merkle::proof::ProofOps;
+use namada_tendermint::Hash as TmHash;
+use namada_tendermint_proto::v0_37::abci::Event as TmEvent;
 
 use crate::chain::endpoint::ChainEndpoint;
 use crate::chain::requests::{
@@ -52,7 +54,8 @@ impl NamadaChain {
 
         let proof = if is_proven {
             let proof_ops = proof.ok_or_else(Error::empty_response_proof)?;
-            let proof = convert_tm_to_ics_merkle_proof(&proof_ops).map_err(Error::ics23)?;
+            let tm_proof_ops = into_tm_proof(proof_ops);
+            let proof = convert_tm_to_ics_merkle_proof(&tm_proof_ops).map_err(Error::ics23)?;
             Some(proof)
         } else {
             None
@@ -99,10 +102,8 @@ impl NamadaChain {
                     .map_err(|_| Error::invalid_height_no_source())?;
                 let height = ICSHeight::new(self.config.id.version(), h.0)
                     .map_err(|_| Error::invalid_height_no_source())?;
-                let pb_abci_event = tendermint_proto::v0_37::abci::Event::from(event);
-                let abci_event = pb_abci_event.try_into().map_err(|_| {
-                    Error::query("Conversion from proto AbciEvent to AbciEvent failed".to_string())
-                })?;
+                let pb_abci_event = TmEvent::from(event);
+                let abci_event = into_abci_event(pb_abci_event);
                 match ibc_event_try_from_abci_event(&abci_event) {
                     Ok(event) => Ok(Some(IbcEventWithHeight { event, height })),
                     // non IBC event
@@ -142,7 +143,9 @@ impl NamadaChain {
                         // Get IBC events when the transaction was accepted
                         if batched_tx_result.is_accepted() {
                             batched_tx_result.events.iter().filter_map(|event| {
-                                ibc_event_try_from_abci_event(&event.clone().into()).ok()
+                                let pb_abci_event = TmEvent::from(event.clone());
+                                let abci_event = into_abci_event(pb_abci_event);
+                                ibc_event_try_from_abci_event(&abci_event).ok()
                             }).map(|ibc_event| IbcEventWithHeight::new(ibc_event, height)).collect()
                         } else {
                             vec![IbcEventWithHeight::new(
@@ -275,14 +278,16 @@ impl NamadaChain {
         let response = self
             .rt
             .block_on(Client::block_results(self.ctx.client(), tm_height))
-            .map_err(|e| Error::rpc(self.config.rpc_addr.clone(), e))?;
+            .map_err(|e| NamadaError::rpc(self.config.rpc_addr.clone(), e))?;
 
         let events = response
             .end_block_events
             .ok_or_else(|| Error::query("No transaction result was found".to_string()))?;
         let mut ibc_events = vec![];
-        for event in &events {
-            if let Ok(ibc_event) = ibc_event_try_from_abci_event(event) {
+        for event in events {
+            let pb_abci_event = TmEvent::from(event);
+            let abci_event = into_abci_event(pb_abci_event);
+            if let Ok(ibc_event) = ibc_event_try_from_abci_event(&abci_event) {
                 ibc_events.push(IbcEventWithHeight::new(ibc_event, height))
             }
         }
@@ -312,5 +317,30 @@ impl NamadaChain {
             .ok_or(NamadaError::denom_not_found(raw_addr))?;
 
         String::try_from_slice(&pair.value).map_err(|e| Error::namada(NamadaError::borsh_decode(e)))
+    }
+}
+
+fn into_tm_proof(proof_ops: ProofOps) -> tendermint::merkle::proof::ProofOps {
+    let ops = proof_ops
+        .ops
+        .into_iter()
+        .map(|op| tendermint::merkle::proof::ProofOp {
+            field_type: op.field_type,
+            key: op.key,
+            data: op.data,
+        })
+        .collect();
+    tendermint::merkle::proof::ProofOps { ops }
+}
+
+fn into_abci_event(event: TmEvent) -> tendermint::abci::Event {
+    let attributes = event
+        .attributes
+        .into_iter()
+        .map(|attribute| (attribute.key, attribute.value).into())
+        .collect();
+    tendermint::abci::Event {
+        kind: event.r#type,
+        attributes,
     }
 }
