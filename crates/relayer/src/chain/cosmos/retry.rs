@@ -1,7 +1,7 @@
 use core::time::Duration;
 use std::thread;
 
-use tracing::{debug, error, instrument, warn};
+use tracing::{debug, error, info, instrument, warn};
 
 use ibc_proto::google::protobuf::Any;
 use tendermint::abci::Code;
@@ -144,6 +144,17 @@ async fn do_send_tx_with_account_sequence_retry(
                         account.sequence.new = %account.sequence,
                         "tx was successfully broadcasted, \
                         increasing account sequence number"
+                    );
+
+                    Ok(response)
+                }
+
+                Code::Err(code) if response.log.contains("packet messages are redundant") => {
+                    info!(
+                        ?response,
+                        diagnostic = response.log,
+                        ?code,
+                        "broadcast tx was not completed, all packets in tx have been relayed already, no fees were consumed"
                     );
 
                     Ok(response)
