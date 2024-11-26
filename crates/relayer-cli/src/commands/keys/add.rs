@@ -236,11 +236,11 @@ pub fn add_key(
             let mut wallet = CliWalletUtils::new(path.to_path_buf());
             wallet
                 .load()
-                .map_err(|_| eyre!("error loading Namada wallet"))?;
+                .map_err(|e| eyre!("error loading Namada wallet: {e}"))?;
 
             let secret_key = wallet
                 .find_secret_key(key_name, None)
-                .map_err(|_| eyre!("error loading the key from Namada wallet"))?;
+                .map_err(|e| eyre!("error loading the key from Namada wallet: {e}"))?;
             let address = wallet
                 .find_address(key_name)
                 .ok_or_else(|| eyre!("error loading the address from Namada wallet"))?;

@@ -125,7 +125,6 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         })
         .ok_or_else(|| eyre!("failed to find send packet event"))?;
 
-    //Ok(packet)
     Ok(())
 }
 

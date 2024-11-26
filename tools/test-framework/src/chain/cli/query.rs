@@ -113,7 +113,6 @@ pub fn query_namada_balance(
 ) -> Result<Amount, Error> {
     let output = simple_exec(
         chain_id,
-        //command_path,
         "namadac",
         &[
             "--base-dir",

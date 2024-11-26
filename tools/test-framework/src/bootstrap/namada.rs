@@ -174,7 +174,6 @@ pub fn bootstrap_namada_node(
 
     let args: Vec<&str> = base_args.to_vec();
 
-    //let mut child = Command::new(&chain_driver.command_path)
     let mut child = Command::new("namadan")
         .args(&args)
         .stdin(Stdio::null())

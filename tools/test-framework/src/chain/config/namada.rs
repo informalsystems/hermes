@@ -28,7 +28,7 @@ pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
         .get_mut("cometbft")
         .ok_or_else(|| eyre!("expect cometbft section"))?
         .get_mut("p2p")
-        .ok_or_else(|| eyre!("expect cometbft rpc"))?
+        .ok_or_else(|| eyre!("expect cometbft p2p"))?
         .as_table_mut()
         .ok_or_else(|| eyre!("expect object"))?
         .insert(
@@ -39,7 +39,7 @@ pub fn set_p2p_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
-/// Set the `p2p` field in the full node config.
+/// Set the `proxy_app` field in the full node config.
 pub fn set_proxy_app_port(config: &mut Value, port: u16) -> Result<(), Error> {
     config
         .get_mut("ledger")
@@ -56,7 +56,7 @@ pub fn set_proxy_app_port(config: &mut Value, port: u16) -> Result<(), Error> {
     Ok(())
 }
 
-/// Set the `p2p` field in the full node config.
+/// Set the `block_cache_bytes` field in the full node config.
 pub fn set_block_cache_bytes(config: &mut Value, block_cache_bytes: i64) -> Result<(), Error> {
     config
         .get_mut("ledger")
