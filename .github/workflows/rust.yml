@@ -118,9 +118,9 @@ jobs:
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-msrv
-        run: cargo binstall --no-confirm --force cargo-msrv@0.16.0-beta.20
+        run: cargo binstall --no-confirm --force cargo-msrv@0.17.1
       - name: Check MSRV
-        run: cargo msrv verify --output-format minimal --manifest-path crates/relayer-cli/Cargo.toml -- 'cargo check --all-features'
+        run: cargo msrv verify --output-format minimal --manifest-path crates/relayer-cli/Cargo.toml
 
   # test-coverage:
   #   runs-on: ubuntu-latest
