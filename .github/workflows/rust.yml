@@ -120,7 +120,7 @@ jobs:
       - name: Install cargo-msrv
         run: cargo binstall --no-confirm --force cargo-msrv@0.17.1
       - name: Check MSRV
-        run: cargo msrv verify --output-format minimal --manifest-path crates/relayer-cli/Cargo.toml
+        run: cargo msrv verify --manifest-path crates/relayer-cli/Cargo.toml
 
   # test-coverage:
   #   runs-on: ubuntu-latest
