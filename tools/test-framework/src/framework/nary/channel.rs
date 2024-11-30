@@ -161,8 +161,8 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
-    for RunNaryChannelTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
+    for RunNaryChannelTest<'_, Test, SIZE>
 where
     Test: NaryChannelTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -198,7 +198,7 @@ where
     }
 }
 
-impl<'a, Test> NaryChannelTest<2> for RunBinaryAsNaryChannelTest<'a, Test>
+impl<Test> NaryChannelTest<2> for RunBinaryAsNaryChannelTest<'_, Test>
 where
     Test: BinaryChannelTest,
 {
@@ -214,7 +214,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> NaryChannelTest<SIZE> for RunWithSupervisor<'a, Test>
+impl<Test, Overrides, const SIZE: usize> NaryChannelTest<SIZE> for RunWithSupervisor<'_, Test>
 where
     Test: NaryChannelTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -239,7 +239,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChannelTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChannelTest<'_, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -250,7 +250,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunBinaryAsNaryChannelTest<'a, Test>
+impl<Test, Overrides> HasOverrides for RunBinaryAsNaryChannelTest<'_, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

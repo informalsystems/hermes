@@ -95,8 +95,8 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> NaryChainTest<SIZE>
-    for RunNaryConnectionTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> NaryChainTest<SIZE>
+    for RunNaryConnectionTest<'_, Test, SIZE>
 where
     Test: NaryConnectionTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,

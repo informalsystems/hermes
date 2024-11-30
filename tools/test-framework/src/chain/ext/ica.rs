@@ -27,7 +27,7 @@ pub trait InterchainAccountMethodsExt<Chain> {
     ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error>;
 }
 
-impl<'a, Chain: Send> InterchainAccountMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> InterchainAccountMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
     fn register_interchain_account_cli<Counterparty>(
         &self,
         from: &MonoTagged<Chain, &WalletAddress>,
