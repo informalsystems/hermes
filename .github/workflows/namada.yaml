@@ -129,7 +129,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: anoma/namada
-          ref: v0.45.1
+          ref: v0.46.1
           path: namada
       - name: Retrieve Namada repository path
         id: namada-repo-path

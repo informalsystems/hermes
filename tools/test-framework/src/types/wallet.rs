@@ -144,7 +144,7 @@ impl<Chain> TaggedWallet<Chain> for MonoTagged<Chain, Wallet> {
     }
 }
 
-impl<'a, Chain> TaggedWallet<Chain> for MonoTagged<Chain, &'a Wallet> {
+impl<Chain> TaggedWallet<Chain> for MonoTagged<Chain, &Wallet> {
     fn id(&self) -> MonoTagged<Chain, &WalletId> {
         self.map_ref(|w| &w.id)
     }
@@ -176,7 +176,7 @@ impl<Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, TestWallets> {
     }
 }
 
-impl<'a, Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, &'a TestWallets> {
+impl<Chain> TaggedTestWalletsExt<Chain> for MonoTagged<Chain, &TestWallets> {
     fn validator(&self) -> MonoTagged<Chain, &Wallet> {
         self.map_ref(|w| &w.validator)
     }
