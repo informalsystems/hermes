@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: anoma/namada
-          ref: v0.46.0
+          ref: v0.46.1
           path: namada
       - name: Retrieve Namada repository path
         id: namada-repo-path
@@ -87,7 +87,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/186743588" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/188247367" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
@@ -162,7 +162,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/186743588" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/188247367" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
