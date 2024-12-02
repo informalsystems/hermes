@@ -34,9 +34,13 @@ jobs:
       fail-fast: false
       matrix:
         chain:
-          - package: .#gaia18
+          - package: .#gaia20
             command: gaiad,namada
             account_prefix: cosmos,''
+            native_token: stake,nam
+          - package: .#osmosis
+            command: osmosisd,namada
+            account_prefix: osmo,''
             native_token: stake,nam
     steps:
       - uses: actions/checkout@v4
