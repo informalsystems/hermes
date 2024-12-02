@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   pull_request:
     paths:
-      - .github/workflows/integration.yaml
+      - .github/workflows/namada.yaml
       - Cargo.toml
       - Cargo.lock
       - flake.nix
@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  gaia-namada:
+  cosmos-namada:
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
