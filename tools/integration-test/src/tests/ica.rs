@@ -17,7 +17,7 @@ use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
 
 use ibc_test_framework::chain::{
-    config::add_allow_message_interchainaccounts,
+    config::cosmos::add_allow_message_interchainaccounts,
     ext::ica::{register_ordered_interchain_account, register_unordered_interchain_account},
 };
 use ibc_test_framework::prelude::*;
@@ -71,7 +71,7 @@ impl TestOverrides for IcaFilterTestAllow {
 
         for chain in &mut config.chains {
             match chain {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.packet_filter = self.packet_filter.clone();
                 }
             }
@@ -95,7 +95,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
         let fee_denom_host: MonoTagged<Host, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(1)));
+            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
         // Register an interchain account on behalf of
         // controller wallet `user1` where the counterparty chain is the interchain accounts host.
         let (wallet, channel_id, port_id) =
@@ -115,7 +115,7 @@ impl BinaryConnectionTest for IcaFilterTestAllow {
             .chain_driver()
             .query_interchain_account(&wallet.address(), &connection.connection_id_a.as_ref())?;
 
-        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         chains.node_b.chain_driver().assert_eventual_wallet_amount(
             &ica_address.as_ref(),
@@ -188,7 +188,7 @@ impl TestOverrides for IcaFilterTestDeny {
 
         for chain in &mut config.chains {
             match chain {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.packet_filter.channel_policy =
                         ChannelPolicy::Deny(ChannelFilters::new(vec![(
                             FilterPattern::Wildcard("ica*".parse().unwrap()),
@@ -252,8 +252,8 @@ impl BinaryConnectionTest for ICACloseChannelTest {
         connection: ConnectedConnection<Controller, Host>,
     ) -> Result<(), Error> {
         let fee_denom_host: MonoTagged<Host, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(1)));
-        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake"));
+            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
+        let stake_denom: MonoTagged<Host, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
         let (wallet, ica_address, controller_channel_id, controller_port_id) = relayer
             .with_supervisor(|| {
                 // Register an interchain account on behalf of

@@ -9,6 +9,8 @@ use tracing::trace;
 
 use ibc_proto::cosmos::base::tendermint::v1beta1::{Module, VersionInfo};
 
+use crate::chain::version::ConsensusVersion;
+
 /// Specifies the SDK, IBC-go, and Tendermint modules path, as expected
 /// to appear in the application version information of a
 /// Cosmos-SDK network.
@@ -26,12 +28,6 @@ const SDK_MODULE_NAME: &str = "github.com/cosmos/cosmos-sdk";
 const IBC_GO_MODULE_PREFIX: &str = "github.com/cosmos/ibc-go/v";
 const TENDERMINT_MODULE_NAME: &str = "github.com/tendermint/tendermint";
 const COMET_MODULE_NAME: &str = "github.com/cometbft/cometbft";
-
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub enum ConsensusVersion {
-    Tendermint(semver::Version),
-    Comet(semver::Version),
-}
 
 /// Captures the version(s) specification of different modules of a network.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -56,8 +52,7 @@ impl Display for Specs {
             .unwrap_or_else(|| "UNKNOWN".to_string());
 
         let consensus = match self.consensus {
-            Some(ConsensusVersion::Tendermint(ref v)) => format!("Tendermint {v}"),
-            Some(ConsensusVersion::Comet(ref v)) => format!("CometBFT {v}"),
+            Some(ref v) => v.to_string(),
             None => "Tendermint: UNKNOWN, CometBFT: UNKNOWN".to_string(),
         };
 

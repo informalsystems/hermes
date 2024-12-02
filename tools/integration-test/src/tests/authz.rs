@@ -35,7 +35,7 @@ impl BinaryChannelTest for AuthzTest {
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(0)));
+            MonoTagged::new(Denom::base(config.native_token(0), config.native_token(0)));
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
         let a_to_b_amount = 12345u64;
@@ -75,6 +75,7 @@ impl BinaryChannelTest for AuthzTest {
             .query_balance(&chains.node_a.wallets().user2().address(), &denom_a)?;
 
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
             &denom_a,
@@ -120,7 +121,7 @@ impl BinaryChannelTest for NoAuthzTest {
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(0)));
+            MonoTagged::new(Denom::base(config.native_token(0), config.native_token(0)));
         let wallet_b = chains.node_b.wallets().user1().cloned();
 
         let a_to_b_amount = 12345u64;
@@ -140,6 +141,7 @@ impl BinaryChannelTest for NoAuthzTest {
             .to_string();
 
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
             &denom_a,

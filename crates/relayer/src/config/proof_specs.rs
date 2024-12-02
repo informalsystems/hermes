@@ -19,7 +19,7 @@ pub fn serialize<S: Serializer>(
 
 struct ProofSpecsVisitor;
 
-impl<'de> de::Visitor<'de> for ProofSpecsVisitor {
+impl de::Visitor<'_> for ProofSpecsVisitor {
     type Value = Option<ProofSpecs>;
 
     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

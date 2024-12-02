@@ -66,7 +66,7 @@ impl EnvWriter for BTreeMap<String, String> {
     }
 }
 
-impl<'a, Writer: EnvWriter> EnvWriter for PrefixEnvWriter<'a, Writer> {
+impl<Writer: EnvWriter> EnvWriter for PrefixEnvWriter<'_, Writer> {
     fn write_env(&mut self, key: &str, value: &str) {
         self.writer
             .write_env(&format!("{}_{}", self.prefix, key), value);

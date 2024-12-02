@@ -27,7 +27,7 @@ pub trait StoreWasmClientCodeMethodsExt {
     ) -> Result<String, Error>;
 }
 
-impl<'a, Chain: Send> StoreWasmClientCodeMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> StoreWasmClientCodeMethodsExt for MonoTagged<Chain, &ChainDriver> {
     fn store_wasm_client_code(
         &self,
         wasm_path: &Path,

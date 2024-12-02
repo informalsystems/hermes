@@ -5,6 +5,7 @@ use eyre::eyre;
 use std::sync::{Arc, RwLock};
 use std::thread;
 use std::time::Duration;
+use toml;
 use tracing::info;
 
 use crate::chain::builder::ChainBuilder;
@@ -25,9 +26,9 @@ pub fn bootstrap_consumer_node(
     provider_chain_driver: &ChainDriver,
     provider_fee: &String,
 ) -> Result<FullNode, Error> {
-    let stake_denom = Denom::base("stake");
+    let stake_denom = Denom::base("stake", "stake");
 
-    let denom = Denom::base("samoleans");
+    let denom = Denom::base("samoleans", "samoleans");
 
     let initial_amount = random_u128_range(1_000_000_000_000_000_000, 2_000_000_000_000_000_000);
 
@@ -85,34 +86,34 @@ pub fn bootstrap_consumer_node(
         }
     ]);
     chain_driver.update_genesis_file("genesis.json", |genesis| {
-        config::set_soft_opt_out_threshold(genesis, "0.05")?;
-        config::consensus_params_max_gas(genesis, "3000000")?;
-        config::globalfee_minimum_gas_prices(genesis, globalfee_minimum_gas)?;
-        config::set_retry_delay_period(genesis, "100s")?;
+        config::cosmos::set_soft_opt_out_threshold(genesis, "0.05")?;
+        config::cosmos::consensus_params_max_gas(genesis, "3000000")?;
+        config::cosmos::globalfee_minimum_gas_prices(genesis, globalfee_minimum_gas)?;
+        config::cosmos::set_retry_delay_period(genesis, "100s")?;
         Ok(())
     })?;
 
     let log_level = std::env::var("CHAIN_LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
 
-    chain_driver.update_chain_config("config.toml", |config| {
-        config::set_log_level(config, &log_level)?;
-        config::set_rpc_port(config, chain_driver.rpc_port)?;
-        config::set_p2p_port(config, chain_driver.p2p_port)?;
-        config::set_pprof_port(config, chain_driver.pprof_port)?;
-        config::set_timeout_commit(config, Duration::from_secs(1))?;
-        config::set_timeout_propose(config, Duration::from_secs(1))?;
-        config::set_mode(config, "validator")?;
+    chain_driver.update_chain_config("config/config.toml", |config| {
+        config::cosmos::set_log_level(config, &log_level)?;
+        config::cosmos::set_rpc_port(config, chain_driver.rpc_port)?;
+        config::cosmos::set_p2p_port(config, chain_driver.p2p_port)?;
+        config::cosmos::set_pprof_port(config, chain_driver.pprof_port)?;
+        config::cosmos::set_timeout_commit(config, Duration::from_secs(1))?;
+        config::cosmos::set_timeout_propose(config, Duration::from_secs(1))?;
+        config::cosmos::set_mode(config, "validator")?;
 
         config_modifier(config)?;
 
         Ok(())
     })?;
 
-    chain_driver.update_chain_config("app.toml", |config| {
-        config::set_grpc_port(config, chain_driver.grpc_port)?;
-        config::disable_grpc_web(config)?;
-        config::disable_api(config)?;
-        config::set_minimum_gas_price(config, "0stake")?;
+    chain_driver.update_chain_config("config/app.toml", |config| {
+        config::cosmos::set_grpc_port(config, chain_driver.grpc_port)?;
+        config::cosmos::disable_grpc_web(config)?;
+        config::cosmos::disable_api(config)?;
+        config::cosmos::set_minimum_gas_price(config, "0stake")?;
 
         Ok(())
     })?;
