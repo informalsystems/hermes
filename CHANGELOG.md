@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## v1.11.0
+
+*December 3rd, 2024*
+
+This release introduces support for the first Non-SDK chain with Namada compatibility. To relay for Namada, ensure the chain type in the configuration is set to `Namada`. Additionally, pull-mode event collection now correctly retrieves events from `finalized_block_events`.
+
+### FEATURES
+
+- Add support for relaying between Namada and CosmosSDK-based chains.
+  ([\#3705](https://github.com/informalsystems/hermes/issues/3705))
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Collect events from `finalized_block_events` when using `pull` mode
+    ([\#4263](https://github.com/informalsystems/hermes/issues/4263))
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Juno running the integration tests in the CI from `v24.0.0`
+    to `v25.0.0` ([\#4203](https://github.com/informalsystems/hermes/issues/4203))
+
 ## v1.10.4
 
 *November 19th, 2024*
