@@ -27,7 +27,7 @@ pub trait InterchainAccountMethodsExt<Chain> {
     ) -> Result<MonoTagged<Counterparty, WalletAddress>, Error>;
 }
 
-impl<'a, Chain: Send> InterchainAccountMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> InterchainAccountMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
     fn register_interchain_account_cli<Counterparty>(
         &self,
         from: &MonoTagged<Chain, &WalletAddress>,
@@ -88,23 +88,24 @@ pub fn register_unordered_interchain_account<Chain: ChainHandle, Counterparty: C
         "host_connection_id": connection.connection_id_b.0
     });
 
-    let msg_any = if requires_legacy_upgrade_proposal(handle.clone()) {
-        let msg = LegacyMsgRegisterInterchainAccount {
-            owner,
-            connection_id: connection.connection_id_a.0.clone(),
-            version: Version::new(version_obj.to_string()),
-        };
+    let msg_any =
+        if requires_legacy_upgrade_proposal(handle.clone()).map_err(Error::upgrade_chain)? {
+            let msg = LegacyMsgRegisterInterchainAccount {
+                owner,
+                connection_id: connection.connection_id_a.0.clone(),
+                version: Version::new(version_obj.to_string()),
+            };
 
-        msg.to_any()
-    } else {
-        let msg = MsgRegisterInterchainAccount {
-            owner,
-            connection_id: connection.connection_id_a.0.clone(),
-            version: Version::new(version_obj.to_string()),
-            ordering: Ordering::Unordered,
+            msg.to_any()
+        } else {
+            let msg = MsgRegisterInterchainAccount {
+                owner,
+                connection_id: connection.connection_id_a.0.clone(),
+                version: Version::new(version_obj.to_string()),
+                ordering: Ordering::Unordered,
+            };
+            msg.to_any()
         };
-        msg.to_any()
-    };
 
     let tm = TrackedMsgs::new_static(vec![msg_any], "RegisterInterchainAccount");
 
@@ -154,23 +155,24 @@ pub fn register_ordered_interchain_account<Chain: ChainHandle, Counterparty: Cha
         "host_connection_id": connection.connection_id_b.0
     });
 
-    let msg_any = if requires_legacy_upgrade_proposal(handle.clone()) {
-        let msg = LegacyMsgRegisterInterchainAccount {
-            owner,
-            connection_id: connection.connection_id_a.0.clone(),
-            version: Version::new(version_obj.to_string()),
-        };
+    let msg_any =
+        if requires_legacy_upgrade_proposal(handle.clone()).map_err(Error::upgrade_chain)? {
+            let msg = LegacyMsgRegisterInterchainAccount {
+                owner,
+                connection_id: connection.connection_id_a.0.clone(),
+                version: Version::new(version_obj.to_string()),
+            };
 
-        msg.to_any()
-    } else {
-        let msg = MsgRegisterInterchainAccount {
-            owner,
-            connection_id: connection.connection_id_a.0.clone(),
-            version: Version::new(version_obj.to_string()),
-            ordering: Ordering::Ordered,
+            msg.to_any()
+        } else {
+            let msg = MsgRegisterInterchainAccount {
+                owner,
+                connection_id: connection.connection_id_a.0.clone(),
+                version: Version::new(version_obj.to_string()),
+                ordering: Ordering::Ordered,
+            };
+            msg.to_any()
         };
-        msg.to_any()
-    };
 
     let tm = TrackedMsgs::new_static(vec![msg_any], "RegisterInterchainAccount");
 

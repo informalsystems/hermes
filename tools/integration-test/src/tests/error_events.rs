@@ -1,5 +1,6 @@
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer_types::events::IbcEvent;
+use ibc_test_framework::chain::chain_type::ChainType;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
 
@@ -36,24 +37,36 @@ impl BinaryChannelTest for ErrorEventsTest {
 
         let balance_a_amount: u128 = balance_a.value().amount.0.as_u128();
 
-        let transfer_message = build_transfer_message(
-            &channel.port_a.as_ref(),
-            &channel.channel_id_a.as_ref(),
-            &wallet_a.as_ref(),
-            &wallet_b.address(),
-            &denom_a.with_amount((balance_a_amount / 3) + 1).as_ref(),
-            Duration::from_secs(30),
-            None,
-        )?;
+        let mut transfer_messages = Vec::new();
+        for i in 0..4 {
+            let transfer_message = build_transfer_message(
+                &channel.port_a.as_ref(),
+                &channel.channel_id_a.as_ref(),
+                &wallet_a.as_ref(),
+                &wallet_b.address(),
+                &denom_a.with_amount((balance_a_amount / 3) + 1).as_ref(),
+                Duration::from_secs(30),
+                // Namada batch transaction can't have the exact same message
+                Some(i.to_string()),
+            )?;
+            transfer_messages.push(transfer_message);
+        }
 
-        let messages = TrackedMsgs::new_static(vec![transfer_message; 4], "test_error_events");
+        let messages = TrackedMsgs::new_static(transfer_messages, "test_error_events");
 
         let events = chains.handle_a().send_messages_and_wait_commit(messages)?;
 
-        // We expect 4 error events to be returned, corresponding to the
-        // 4 messages sent.
-
-        assert_eq!(events.len(), 4);
+        if matches!(
+            chains.node_a.chain_driver().value().chain_type,
+            ChainType::Namada
+        ) {
+            // Requested the messages with a batched transaction
+            assert_eq!(events.len(), 1);
+        } else {
+            // We expect 4 error events to be returned, corresponding to the
+            // 4 messages sent.
+            assert_eq!(events.len(), 4);
+        }
 
         for event_with_height in events {
             match event_with_height.event {
