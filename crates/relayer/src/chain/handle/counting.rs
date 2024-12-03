@@ -31,11 +31,11 @@ use ibc_relayer_types::Height;
 
 use crate::account::Balance;
 use crate::chain::client::ClientSettings;
-use crate::chain::cosmos::version::Specs;
 use crate::chain::endpoint::{ChainStatus, HealthCheck};
 use crate::chain::handle::{ChainHandle, ChainRequest, Subscription};
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
+use crate::chain::version::Specs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::ChainConfig;
 use crate::connection::ConnectionMsgType;

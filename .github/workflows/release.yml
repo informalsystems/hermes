@@ -31,6 +31,11 @@ jobs:
     runs-on: ${{ matrix.config.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           # (required)

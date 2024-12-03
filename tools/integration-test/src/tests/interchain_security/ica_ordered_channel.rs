@@ -17,7 +17,7 @@ use ibc_relayer_types::bigint::U256;
 use ibc_relayer_types::signer::Signer;
 use ibc_relayer_types::timestamp::Timestamp;
 use ibc_relayer_types::tx_msg::Msg;
-use ibc_test_framework::chain::config::add_allow_message_interchainaccounts;
+use ibc_test_framework::chain::config::cosmos::add_allow_message_interchainaccounts;
 use ibc_test_framework::chain::ext::ica::register_ordered_interchain_account;
 use ibc_test_framework::framework::binary::channel::run_binary_interchain_security_channel_test;
 use ibc_test_framework::prelude::*;
@@ -72,7 +72,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(0)));
+            MonoTagged::new(Denom::base(config.native_token(0), config.native_token(0)));
         let connection_b_to_a = channel.connection.clone().flip();
         let (wallet, channel_id, port_id) = register_ordered_interchain_account(
             &chains.node_b,
@@ -104,7 +104,7 @@ impl BinaryChannelTest for IcaOrderedChannelTest {
             &channel.connection.connection_id_b.as_ref(),
         )?;
 
-        let stake_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake"));
+        let stake_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base("stake", "stake"));
 
         chains.node_a.chain_driver().assert_eventual_wallet_amount(
             &ica_address.as_ref(),

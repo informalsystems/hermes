@@ -1,3 +1,5 @@
+use eyre::eyre;
+
 use core::time::Duration;
 use http::uri::Uri;
 use ibc_relayer::chain::cosmos::query::fee::{
@@ -63,13 +65,13 @@ pub async fn ibc_token_transfer_with_fee<SrcChain, DstChain>(
 
     let messages = vec![pay_message, transfer_message];
 
-    let events = simple_send_tx(
-        rpc_client.value(),
-        tx_config.value(),
-        &sender.value().key,
-        messages,
-    )
-    .await?;
+    let key = &sender
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
+    let events = simple_send_tx(rpc_client.value(), tx_config.value(), key, messages).await?;
 
     Ok(events)
 }
@@ -101,14 +103,15 @@ pub async fn pay_packet_fee<Chain, Counterparty>(
     )
     .map_err(handle_generic_error)?;
 
-    let events = simple_send_tx(
-        rpc_client.value(),
-        tx_config.value(),
-        &payer.value().key,
-        vec![message],
-    )
-    .await
-    .map_err(Error::relayer)?;
+    let key = &payer
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
+    let events = simple_send_tx(rpc_client.value(), tx_config.value(), key, vec![message])
+        .await
+        .map_err(Error::relayer)?;
 
     Ok(events)
 }
@@ -140,13 +143,13 @@ pub async fn register_counterparty_payee<Chain, Counterparty>(
 
     let messages = vec![message];
 
-    simple_send_tx(
-        rpc_client.value(),
-        tx_config.value(),
-        &wallet.value().key,
-        messages,
-    )
-    .await?;
+    let key = &wallet
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
+    simple_send_tx(rpc_client.value(), tx_config.value(), key, messages).await?;
 
     Ok(())
 }
@@ -174,13 +177,13 @@ pub async fn register_payee<Chain, Counterparty>(
 
     let messages = vec![message];
 
-    simple_send_tx(
-        rpc_client.value(),
-        tx_config.value(),
-        &wallet.value().key,
-        messages,
-    )
-    .await?;
+    let key = &wallet
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
+    simple_send_tx(rpc_client.value(), tx_config.value(), key, messages).await?;
 
     Ok(())
 }

@@ -122,8 +122,11 @@ impl BinaryChannelTest for DisabledClearPacketTest {
 
             sleep(Duration::from_secs(1));
 
-            let amount_b =
-                amount2.transfer(&channel.port_b.as_ref(), &channel.channel_id_b.as_ref())?;
+            let amount_b = amount2.transfer(
+                &chains.node_b.chain_driver().value().chain_type,
+                &channel.port_b.as_ref(),
+                &channel.channel_id_b.as_ref(),
+            )?;
 
             // Wallet on chain A should have both amount deducted.
             chains.node_a.chain_driver().assert_eventual_wallet_amount(
@@ -162,7 +165,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_b: MonoTagged<ChainB, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(1)));
+            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
         let denom_a = chains.node_a.denom();
         let denom_b1 = chains.node_b.denom();
 
@@ -190,6 +193,7 @@ impl BinaryChannelTest for ClearPacketRecoveryTest {
         )?;
 
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -233,7 +237,10 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
+        let fee_denom_a = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -254,6 +261,7 @@ impl BinaryChannelTest for ClearPacketNoScanTest {
         )?;
 
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -334,7 +342,9 @@ impl TestOverrides for ClearPacketOverrideTest {
         for chain_config in config.chains.iter_mut() {
             match chain_config {
                 // Use a small clear interval in the chain configurations to override the global high interval
-                ChainConfig::CosmosSdk(chain_config) => chain_config.clear_interval = Some(10),
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
+                    chain_config.clear_interval = Some(10)
+                }
             }
         }
     }
@@ -353,7 +363,10 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
         channel: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
+        let fee_denom_a = MonoTagged::new(Denom::base(
+            &config.native_tokens[0],
+            &config.native_tokens[0],
+        ));
 
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
@@ -374,6 +387,7 @@ impl BinaryChannelTest for ClearPacketOverrideTest {
         )?;
 
         let denom_b2 = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -657,8 +671,11 @@ impl BinaryChannelTest for LimitedClearPacketTest {
 
         // Spawn the supervisor only after the first IBC transfer
         relayer.with_supervisor(|| {
-            let amount_b = cleared_amount
-                .transfer(&channel.port_b.as_ref(), &channel.channel_id_b.as_ref())?;
+            let amount_b = cleared_amount.transfer(
+                &chains.node_b.chain_driver().value().chain_type,
+                &channel.port_b.as_ref(),
+                &channel.channel_id_b.as_ref(),
+            )?;
 
             info!("Assert that {sent_amount} was escrowed from sending chain");
 
