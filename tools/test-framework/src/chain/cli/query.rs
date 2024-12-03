@@ -8,6 +8,7 @@ use tracing::debug;
 
 use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
+use crate::prelude::*;
 
 pub fn query_balance(
     chain_id: &str,
@@ -98,6 +99,58 @@ pub fn query_balance(
                     Ok(Amount::from_str("0").map_err(handle_generic_error)?)
                 }
             }
+        }
+    }
+}
+
+pub fn query_namada_balance(
+    chain_id: &str,
+    _command_path: &str,
+    home_path: &str,
+    denom: &Denom,
+    wallet_id: &str,
+    rpc_listen_address: &str,
+) -> Result<Amount, Error> {
+    let output = simple_exec(
+        chain_id,
+        "namadac",
+        &[
+            "--base-dir",
+            home_path,
+            "balance",
+            "--owner",
+            wallet_id,
+            "--token",
+            &denom.hash_only(),
+            "--node",
+            rpc_listen_address,
+        ],
+    )?;
+
+    let words: Vec<&str> = output.stdout.split_whitespace().collect();
+    let raw_addr = &format!("{}:", denom.hash_only());
+
+    if let Some(derived_index) = words.iter().position(|&w| w.contains(raw_addr)) {
+        if let Some(&amount_str) = words.get(derived_index + 1) {
+            return Amount::from_str(amount_str).map_err(handle_generic_error);
+        }
+        Err(Error::generic(eyre!(
+            "chain id is not 1 words after `{raw_addr}`: raw output `{}` split output `{words:#?}`",
+            output.stdout
+        )))
+    } else {
+        let denom_display_name = &format!("{}:", denom.namada_display_name());
+        if let Some(derived_index) = words.iter().position(|&w| w.contains(denom_display_name)) {
+            if let Some(&amount_str) = words.get(derived_index + 1) {
+                return Amount::from_str(amount_str).map_err(handle_generic_error);
+            }
+            Err(Error::generic(eyre!(
+                "chain id is not 1 words after `{denom_display_name}`: raw output `{}` split output `{words:#?}`",
+                output.stdout
+            )))
+        } else {
+            debug!("Denom `{denom_display_name}` not found when querying for balance, will return 0{denom}");
+            Ok(Amount::from_str("0").map_err(handle_generic_error)?)
         }
     }
 }

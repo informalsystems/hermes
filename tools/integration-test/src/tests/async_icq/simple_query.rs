@@ -2,7 +2,7 @@ use std::env;
 
 use ibc_relayer::channel::version::Version;
 use ibc_relayer::config::ChainConfig;
-use ibc_test_framework::chain::config::{
+use ibc_test_framework::chain::config::cosmos::{
     add_allow_message_interchainquery, set_floor_gas_price, set_max_deposit_period,
     set_min_deposit_amount, set_voting_period,
 };
@@ -70,7 +70,7 @@ impl BinaryConnectionTest for AsyncIcqTest {
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_b: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(1)));
+            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
         let port_a = DualTagged::new(PortId::oracle());
         let port_b = DualTagged::new(PortId::icqhost());
         let (channel_id_b, channel_id_a) = init_channel_version(
@@ -217,7 +217,7 @@ impl BinaryConnectionTest for FailedAsyncIcqTest {
         connection: ConnectedConnection<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_b: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(1)));
+            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
         let port_a = DualTagged::new(PortId::oracle());
         let port_b = DualTagged::new(PortId::icqhost());
         let (channel_id_b, channel_id_a) = init_channel_version(
@@ -336,7 +336,7 @@ fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
     relayer: &RelayerDriver,
 ) -> Result<(), Error> {
     let rpc_addr = match relayer.config.chains.first().unwrap() {
-        ChainConfig::CosmosSdk(c) => c.rpc_addr.clone(),
+        ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => c.rpc_addr.clone(),
     };
 
     let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
@@ -371,7 +371,7 @@ fn assert_eventual_async_icq_error<ChainA: ChainHandle, ChainB: ChainHandle>(
     relayer: &RelayerDriver,
 ) -> Result<(), Error> {
     let rpc_addr = match relayer.config.chains.first().unwrap() {
-        ChainConfig::CosmosSdk(c) => c.rpc_addr.clone(),
+        ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => c.rpc_addr.clone(),
     };
 
     let mut rpc_client = HttpClient::new(rpc_addr).unwrap();

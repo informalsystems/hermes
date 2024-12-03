@@ -7,6 +7,7 @@ use ibc_test_framework::bootstrap::binary::channel::{
     bootstrap_channel_with_chains, bootstrap_channel_with_connection,
 };
 use ibc_test_framework::bootstrap::binary::connection::bootstrap_connection;
+use ibc_test_framework::chain::chain_type::ChainType;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::{
     assert_eventually_channel_established, init_channel, query_channel_end,
@@ -113,7 +114,7 @@ impl TestOverrides for ExpirationTestOverrides {
 
         for chain_config in config.chains.iter_mut() {
             match chain_config {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.trusting_period = Some(CLIENT_EXPIRY);
                 }
             }
@@ -212,8 +213,16 @@ impl BinaryChainTest for ChannelExpirationTest {
                     },
                     // From simapp version v7.1.0 if `ConnOpenInit` is sent while the client
                     // is expired, an error will be returned.
-                    // See https://github.com/cosmos/ibc-go/blob/v7.1.0/modules/core/03-connection/keeper/handshake.go#L40
-                    Err(e) => assert!(e.to_string().contains("status is Expired: client state is not active")),
+                    Err(e) => match chains.node_b.chain_driver().value().chain_type {
+                        ChainType::Namada => {
+                            // See https://github.com/cosmos/ibc-rs/blob/v0.53.0/ibc-core/ics02-client/types/src/error.rs#L22
+                            assert!(e.to_string().contains("client is not active. Status=`Expired`"))
+                        }
+                        _ => {
+                            // See https://github.com/cosmos/ibc-go/blob/v7.1.0/modules/core/03-connection/keeper/handshake.go#L40
+                            assert!(e.to_string().contains("status is Expired: client state is not active"))
+                        }
+                    }
                 }
             }
 
@@ -313,6 +322,7 @@ impl BinaryChainTest for PacketExpirationTest {
             let denom_a = chains.node_a.denom();
 
             let denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channels.port_b.as_ref(),
                 &channels.channel_id_b.as_ref(),
                 &denom_a,
