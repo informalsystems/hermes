@@ -81,7 +81,7 @@ contributors and maintainers in order to ensure that:
 We welcome bug reports, feature requests, and other contributions to our project.
 To open an issue, please follow these guidelines:
 
-1. **Search existing issues**: Before opening a new issue, please search existing issues to ensure that is not a duplicates.
+1. **Search existing issues**: Before opening a new issue, please search existing issues to ensure that is not a duplicate.
 
 2. **Provide a clear and descriptive title**: This helps others understand the nature of the issue at a glance.
 
@@ -97,7 +97,7 @@ To open an issue, please follow these guidelines:
     - (WHY) The purpose or objective of this issue with Objective-level "O" labels
       like `O: security`, `O: new-feature`, etc.
     - (WHICH) The part of the system this issue relates to using:
-      - External-level "E" labels if the issue fall outside the current scope of the system
+      - External-level "E" labels if the issue falls outside the current scope of the system
         and is related to external dependencies or projects like `E: non-cosmos`, `E: no-std` etc.
       - or "Internal-level "I" labels for anything related to the current scope of the product
         like `I: logic`, `I: documentation`, `I: rpc`, etc.
