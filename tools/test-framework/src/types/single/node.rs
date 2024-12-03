@@ -21,6 +21,7 @@ use tendermint_rpc::WebSocketClientUrl;
 
 use crate::chain::chain_type::ChainType as TestedChainType;
 use crate::chain::driver::ChainDriver;
+use crate::chain::exec::simple_exec;
 use crate::ibc::denom::Denom;
 use crate::prelude::TestConfig;
 use crate::types::env::{prefix_writer, EnvWriter, ExportEnv};
@@ -103,7 +104,7 @@ impl<Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, FullNode> {
     }
 }
 
-impl<'a, Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, &'a FullNode> {
+impl<Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, &FullNode> {
     fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
         self.map_ref(|c| &c.chain_driver.chain_id)
     }
@@ -149,6 +150,10 @@ impl FullNode {
             TestedChainType::Provenance => {
                 config::GasPrice::new(5000.0, test_config.native_token(chain_number).clone())
             }
+            TestedChainType::Namada => {
+                let denom = get_denom(&self.chain_driver.home_path)?;
+                config::GasPrice::new(0.000003, denom)
+            }
             _ => config::GasPrice::new(0.003, test_config.native_token(chain_number).clone()),
         };
 
@@ -158,51 +163,104 @@ impl FullNode {
             DynamicGasPrice::disabled()
         };
 
-        Ok(config::ChainConfig::CosmosSdk(CosmosSdkConfig {
-            id: self.chain_driver.chain_id.clone(),
-            rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
-            grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
-            event_source: config::EventSourceMode::Push {
-                url: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
-                batch_delay: config::default::batch_delay(),
-            },
-            rpc_timeout: config::default::rpc_timeout(),
-            trusted_node: false,
-            genesis_restart: None,
-            account_prefix: self.chain_driver.account_prefix.clone(),
-            key_name: self.wallets.relayer.id.0.clone(),
-            key_store_type: Store::Test,
-            key_store_folder: Some(hermes_keystore_dir.into()),
-            store_prefix: "ibc".to_string(),
-            default_gas: None,
-            max_gas: Some(3000000),
-            gas_adjustment: None,
-            gas_multiplier: Some(GasMultiplier::unsafe_new(1.5)),
-            dynamic_gas_price,
-            fee_granter: None,
-            max_msg_num: Default::default(),
-            max_tx_size: Default::default(),
-            max_grpc_decoding_size: config::default::max_grpc_decoding_size(),
-            query_packets_chunk_size: config::default::query_packets_chunk_size(),
-            max_block_time: Duration::from_secs(30),
-            clock_drift: Duration::from_secs(5),
-            trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
-            client_refresh_rate: config::default::client_refresh_rate(),
-            ccv_consumer_chain: false,
-            trust_threshold: Default::default(),
-            gas_price,
-            packet_filter: Default::default(),
-            address_type: chain_type.address_type(),
-            memo_prefix: Default::default(),
-            memo_overwrite: None,
-            proof_specs: Default::default(),
-            extension_options: Default::default(),
-            sequential_batch_tx: false,
-            compat_mode,
-            clear_interval: None,
-            excluded_sequences: ExcludedSequences::new(BTreeMap::new()),
-            allow_ccq: true,
-        }))
+        let chain_config = match chain_type {
+            TestedChainType::Cosmos { dynamic_fee: _ }
+            | TestedChainType::Provenance
+            | TestedChainType::Evmos
+            | TestedChainType::Osmosis
+            | TestedChainType::Injective => config::ChainConfig::CosmosSdk(CosmosSdkConfig {
+                id: self.chain_driver.chain_id.clone(),
+                rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
+                grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
+                event_source: config::EventSourceMode::Push {
+                    url: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
+                    batch_delay: config::default::batch_delay(),
+                },
+                rpc_timeout: config::default::rpc_timeout(),
+                trusted_node: false,
+                genesis_restart: None,
+                account_prefix: self.chain_driver.account_prefix.clone(),
+                key_name: self.wallets.relayer.id.0.clone(),
+                key_store_type: Store::Test,
+                key_store_folder: Some(hermes_keystore_dir.into()),
+                store_prefix: "ibc".to_string(),
+                default_gas: None,
+                max_gas: Some(3000000),
+                gas_adjustment: None,
+                gas_multiplier: Some(GasMultiplier::unsafe_new(1.5)),
+                dynamic_gas_price,
+                fee_granter: None,
+                max_msg_num: Default::default(),
+                max_tx_size: Default::default(),
+                max_grpc_decoding_size: config::default::max_grpc_decoding_size(),
+                query_packets_chunk_size: config::default::query_packets_chunk_size(),
+                max_block_time: Duration::from_secs(30),
+                clock_drift: Duration::from_secs(5),
+                trusting_period: Some(Duration::from_secs(14 * 24 * 3600)),
+                client_refresh_rate: config::default::client_refresh_rate(),
+                ccv_consumer_chain: false,
+                trust_threshold: Default::default(),
+                gas_price,
+                packet_filter: Default::default(),
+                address_type: chain_type.address_type(),
+                memo_prefix: Default::default(),
+                memo_overwrite: None,
+                proof_specs: Default::default(),
+                extension_options: Default::default(),
+                sequential_batch_tx: false,
+                compat_mode,
+                clear_interval: None,
+                excluded_sequences: ExcludedSequences::new(BTreeMap::new()),
+                allow_ccq: true,
+            }),
+            TestedChainType::Namada => config::ChainConfig::Namada(CosmosSdkConfig {
+                id: self.chain_driver.chain_id.clone(),
+                rpc_addr: Url::from_str(&self.chain_driver.rpc_address())?,
+                grpc_addr: Url::from_str(&self.chain_driver.grpc_address())?,
+                event_source: config::EventSourceMode::Push {
+                    url: WebSocketClientUrl::from_str(&self.chain_driver.websocket_address())?,
+                    batch_delay: config::default::batch_delay(),
+                },
+                rpc_timeout: config::default::rpc_timeout(),
+                trusted_node: false,
+                genesis_restart: None,
+                account_prefix: "".to_owned(),
+                key_name: self.wallets.relayer.id.0.clone(),
+                key_store_type: Store::Test,
+                key_store_folder: Some(hermes_keystore_dir.into()),
+                store_prefix: "ibc".to_string(),
+                default_gas: None,
+                max_gas: Some(4000000),
+                gas_adjustment: None,
+                gas_multiplier: Some(GasMultiplier::unsafe_new(1.2)),
+                dynamic_gas_price: DynamicGasPrice::default(),
+                fee_granter: None,
+                max_msg_num: Default::default(),
+                max_tx_size: Default::default(),
+                max_grpc_decoding_size: config::default::max_grpc_decoding_size(),
+                query_packets_chunk_size: config::default::query_packets_chunk_size(),
+                max_block_time: Duration::from_secs(30),
+                clock_drift: Duration::from_secs(5),
+                trusting_period: Some(Duration::from_secs(1999)),
+                client_refresh_rate: config::default::client_refresh_rate(),
+                ccv_consumer_chain: false,
+                trust_threshold: Default::default(),
+                gas_price,
+                packet_filter: Default::default(),
+                address_type: chain_type.address_type(),
+                memo_prefix: Default::default(),
+                memo_overwrite: None,
+                proof_specs: Default::default(),
+                extension_options: Default::default(),
+                sequential_batch_tx: false,
+                compat_mode,
+                clear_interval: None,
+                excluded_sequences: ExcludedSequences::new(BTreeMap::new()),
+                allow_ccq: false,
+            }),
+        };
+
+        Ok(chain_config)
     }
 
     /**
@@ -218,6 +276,27 @@ impl FullNode {
             .map_err(|_| eyre!("poisoned mutex"))?
             .kill()
     }
+}
+
+fn get_denom(home_path: &str) -> Result<String, Error> {
+    let output = simple_exec(
+        "namada",
+        "namadaw",
+        &["--base-dir", home_path, "find", "--alias", "nam"],
+    )?
+    .stdout;
+
+    let words: Vec<&str> = output.split_whitespace().collect();
+
+    if let Some(derived_index) = words.iter().position(|&w| w == "Established:") {
+        if let Some(&denom) = words.get(derived_index + 1) {
+            return Ok(denom.to_owned());
+        }
+        return Err(eyre!(
+            "chain id is not 3 words after `Established:`: {output}"
+        ));
+    }
+    Err(eyre!("could not find `Derived` in output: {output}"))
 }
 
 impl ExportEnv for FullNode {

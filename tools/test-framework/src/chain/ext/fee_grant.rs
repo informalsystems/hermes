@@ -11,7 +11,7 @@ pub trait FeeGrantMethodsExt<Chain> {
     ) -> Result<(), Error>;
 }
 
-impl<'a, Chain: Send> FeeGrantMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> FeeGrantMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
     fn feegrant_grant(
         &self,
         granter: &str,

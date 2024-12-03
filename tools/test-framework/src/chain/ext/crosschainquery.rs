@@ -22,7 +22,7 @@ pub trait CrossChainQueryMethodsExt<Chain> {
     fn assert_processed_cross_chain_query(&self) -> Result<(), Error>;
 }
 
-impl<'a, Chain: Send> CrossChainQueryMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> CrossChainQueryMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
     fn assert_pending_cross_chain_query(&self) -> Result<(), Error> {
         assert_eventually_succeed(
             "waiting for a cross chain query request",

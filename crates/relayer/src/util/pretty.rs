@@ -16,7 +16,7 @@ use crate::event::IbcEventWithHeight;
 
 pub struct PrettyAny<'a>(pub &'a Any);
 
-impl<'a> Display for PrettyAny<'a> {
+impl Display for PrettyAny<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "Any {{ type_url: {} }}", self.0.type_url)
     }
@@ -97,7 +97,7 @@ impl Display for PrettyDuration<'_> {
 /// For use in debug messages
 pub struct PrettyEvents<'a>(pub &'a [IbcEventWithHeight]);
 
-impl<'a> Display for PrettyEvents<'a> {
+impl Display for PrettyEvents<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         writeln!(f, "events:")?;
         for v in self.0 {
@@ -180,7 +180,7 @@ impl Display for PrettyIdentifiedConnection<'_> {
 
 pub struct PrettyOption<'a, T>(pub &'a Option<T>);
 
-impl<'a, T: Display> Display for PrettyOption<'a, T> {
+impl<T: Display> Display for PrettyOption<'_, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match &self.0 {
             Some(v) => write!(f, "{v}"),
@@ -191,7 +191,7 @@ impl<'a, T: Display> Display for PrettyOption<'a, T> {
 
 pub struct PrettySlice<'a, T>(pub &'a [T]);
 
-impl<'a, T: Display> Display for PrettySlice<'a, T> {
+impl<T: Display> Display for PrettySlice<'_, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "[ ")?;
         let mut vec_iterator = self.0.iter().peekable();

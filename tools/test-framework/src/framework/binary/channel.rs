@@ -24,7 +24,7 @@ use crate::framework::binary::connection::{
 };
 use crate::framework::binary::ics::run_binary_interchain_security_node_test;
 use crate::framework::binary::node::{
-    run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
+    run_binary_node_test, NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
 };
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
@@ -54,7 +54,8 @@ where
         + ConnectionDelayOverride
         + PortsOverride
         + ChannelOrderOverride
-        + ChannelVersionOverride,
+        + ChannelVersionOverride
+        + NamadaParametersOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -75,7 +76,8 @@ where
         + ConnectionDelayOverride
         + PortsOverride
         + ChannelOrderOverride
-        + ChannelVersionOverride,
+        + ChannelVersionOverride
+        + NamadaParametersOverride,
 {
     run_binary_node_test(&RunBinaryChainTest::new(&RunBinaryConnectionTest::new(
         &RunBinaryChannelTest::new(&RunWithSupervisor::new(test)),
@@ -205,7 +207,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> BinaryConnectionTest for RunBinaryChannelTest<'a, Test>
+impl<Test, Overrides> BinaryConnectionTest for RunBinaryChannelTest<'_, Test>
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -249,7 +251,7 @@ where
     }
 }
 
-impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTest<'a, Test> {
+impl<Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTest<'_, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -285,7 +287,7 @@ impl<'a, Test: BinaryChannelTest> BinaryChannelTest for RunTwoWayBinaryChannelTe
     }
 }
 
-impl<'a, Test, Overrides> BinaryChannelTest for RunWithSupervisor<'a, Test>
+impl<Test, Overrides> BinaryChannelTest for RunWithSupervisor<'_, Test>
 where
     Test: BinaryChannelTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -310,7 +312,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunBinaryChannelTest<'a, Test>
+impl<Test, Overrides> HasOverrides for RunBinaryChannelTest<'_, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -321,7 +323,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunTwoWayBinaryChannelTest<'a, Test>
+impl<Test, Overrides> HasOverrides for RunTwoWayBinaryChannelTest<'_, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

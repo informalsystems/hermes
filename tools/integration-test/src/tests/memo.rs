@@ -6,6 +6,7 @@
 
 use ibc_relayer::config::types::Memo;
 use ibc_relayer::config::ChainConfig;
+use ibc_test_framework::util::namada::query_receive_tx_memo;
 use serde_json as json;
 
 use ibc_test_framework::prelude::*;
@@ -35,7 +36,7 @@ impl TestOverrides for MemoTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for chain in config.chains.iter_mut() {
             match chain {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.memo_prefix = self.memo.clone();
                 }
             }
@@ -69,6 +70,7 @@ impl BinaryChannelTest for MemoTest {
         )?;
 
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -79,12 +81,7 @@ impl BinaryChannelTest for MemoTest {
             &denom_b.with_amount(a_to_b_amount).as_ref(),
         )?;
 
-        let tx_info = chains
-            .node_b
-            .chain_driver()
-            .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
-
-        assert_tx_memo_equals(&tx_info, self.memo.as_str())?;
+        assert_tx_memo_equals(&chains, &channel, self.memo.as_str())?;
 
         Ok(())
     }
@@ -98,7 +95,7 @@ impl TestOverrides for MemoOverwriteTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         for chain in config.chains.iter_mut() {
             match chain {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.memo_prefix = self.memo.clone();
                     chain_config.memo_overwrite = Some(Memo::new(OVERWRITE_MEMO).unwrap())
                 }
@@ -133,6 +130,7 @@ impl BinaryChannelTest for MemoOverwriteTest {
         )?;
 
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
@@ -143,18 +141,13 @@ impl BinaryChannelTest for MemoOverwriteTest {
             &denom_b.with_amount(a_to_b_amount).as_ref(),
         )?;
 
-        let tx_info = chains
-            .node_b
-            .chain_driver()
-            .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
-
-        assert_tx_memo_equals(&tx_info, OVERWRITE_MEMO)?;
+        assert_tx_memo_equals(&chains, &channel, OVERWRITE_MEMO)?;
 
         Ok(())
     }
 }
 
-fn assert_tx_memo_equals(tx_info: &json::Value, expected_memo: &str) -> Result<(), Error> {
+fn get_tx_memo(tx_info: &json::Value) -> Result<String, Error> {
     debug!("comparing memo field from json value {}", tx_info);
 
     let memo_field = &tx_info["txs"][0]["tx"]["body"]["memo"];
@@ -165,7 +158,44 @@ fn assert_tx_memo_equals(tx_info: &json::Value, expected_memo: &str) -> Result<(
         .as_str()
         .ok_or_else(|| eyre!("expect memo string field to be present in JSON"))?;
 
-    assert_eq!(memo_str, expected_memo);
+    Ok(memo_str.to_string())
+}
+
+fn assert_tx_memo_equals<ChainA: ChainHandle, ChainB: ChainHandle>(
+    chains: &ConnectedChains<ChainA, ChainB>,
+    channel: &ConnectedChannel<ChainA, ChainB>,
+    expected_memo: &str,
+) -> Result<(), Error> {
+    let memo = match chains.handle_b().config().expect("Config should exist") {
+        ChainConfig::Namada(config) => {
+            chains
+                .node_b
+                .chain_driver()
+                .value()
+                .runtime
+                .block_on(query_receive_tx_memo(
+                    config
+                        .rpc_addr
+                        .to_string()
+                        .parse()
+                        .expect("RPC address should be converted"),
+                    channel.port_a.value(),
+                    channel.channel_id_a.value(),
+                    channel.port_b.value(),
+                    channel.channel_id_b.value(),
+                    1.into(),
+                ))?
+        }
+        _ => {
+            let tx_info = chains
+                .node_b
+                .chain_driver()
+                .query_recipient_transactions(&chains.node_b.wallets().user1().address())?;
+
+            get_tx_memo(&tx_info)?
+        }
+    };
+    assert_eq!(memo, expected_memo);
 
     Ok(())
 }
