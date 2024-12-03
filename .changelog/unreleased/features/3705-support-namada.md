@@ -1,2 +1,2 @@
-- Add support for packet relay between Namada and Cosmos-base chains.
+- Add support for relaying between Namada and CosmosSDK-based chains.
   ([\#3705](https://github.com/informalsystems/hermes/issues/3705))
