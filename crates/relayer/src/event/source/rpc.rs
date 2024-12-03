@@ -381,6 +381,8 @@ async fn fetch_all_events(
         events.append(end_block_events);
     }
 
+    events.append(&mut response.finalize_block_events);
+
     Ok(events)
 }
 
