@@ -172,9 +172,7 @@ where
     }
 }
 
-impl<Test: BinaryConnectionTest> BinaryConnectionTest
-    for RunTwoWayBinaryConnectionTest<'_, Test>
-{
+impl<Test: BinaryConnectionTest> BinaryConnectionTest for RunTwoWayBinaryConnectionTest<'_, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
