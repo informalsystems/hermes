@@ -2,6 +2,3 @@ crate
 shs
 ser
 numer
-nam
-inout
-wast

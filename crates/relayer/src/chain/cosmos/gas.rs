@@ -117,16 +117,16 @@ pub fn mul_floor(a: u64, f: f64) -> BigInt {
     (f * a).floor().to_integer()
 }
 
-pub struct AdjustGas {
-    pub gas_multiplier: f64,
-    pub max_gas: u64,
-    pub gas_amount: u64,
+struct AdjustGas {
+    gas_multiplier: f64,
+    max_gas: u64,
+    gas_amount: u64,
 }
 
 /// Adjusts the fee based on the configured `gas_multiplier` to prevent out of gas errors.
 /// The actual gas cost, when a transaction is executed, may be slightly higher than the
 /// one returned by the simulation.
-pub fn adjust_estimated_gas(
+fn adjust_estimated_gas(
     AdjustGas {
         gas_multiplier,
         max_gas,

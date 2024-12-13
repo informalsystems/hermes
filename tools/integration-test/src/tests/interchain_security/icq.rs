@@ -11,7 +11,7 @@
 
 use ibc_relayer::config::ChainConfig;
 use ibc_test_framework::chain::cli::host_zone::register_host_zone;
-use ibc_test_framework::chain::config::cosmos::{
+use ibc_test_framework::chain::config::{
     set_crisis_denom, set_mint_mint_denom, set_staking_bond_denom, set_staking_max_entries,
     set_voting_period,
 };
@@ -92,7 +92,7 @@ impl TestOverrides for InterchainSecurityIcqTest {
 
         for chain in config.chains.iter_mut() {
             match chain {
-                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) => {
                     chain_config.allow_ccq = self.allow_ccq;
                 }
             }
@@ -130,7 +130,6 @@ impl BinaryChannelTest for InterchainSecurityIcqTest {
         )?;
 
         let denom_b = derive_ibc_denom(
-            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,

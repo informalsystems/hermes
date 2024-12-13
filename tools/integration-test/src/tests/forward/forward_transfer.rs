@@ -85,21 +85,18 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
         let denom_a = connected_chains.node_a.denom();
 
         let denom_b = derive_ibc_denom(
-            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
         let denom_a_to_b = derive_ibc_denom(
-            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
         let denom_a_to_c = derive_ibc_denom(
-            &node_c.chain_driver().value().chain_type,
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
             &denom_b.as_ref(),
@@ -191,21 +188,18 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
         let denom_a = connected_chains.node_a.denom();
 
         let denom_b = derive_ibc_denom(
-            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
         let denom_a_to_b = derive_ibc_denom(
-            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
         let denom_a_to_c = derive_ibc_denom(
-            &node_c.chain_driver().value().chain_type,
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
             &denom_b.as_ref(),
@@ -440,21 +434,18 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
         let denom_a = connected_chains.node_a.denom();
 
         let denom_b = derive_ibc_denom(
-            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
         let denom_a_to_b = derive_ibc_denom(
-            &node_b.chain_driver().value().chain_type,
             &channel_a_to_b.port_b.as_ref(),
             &channel_a_to_b.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
         let denom_a_to_c = derive_ibc_denom(
-            &node_c.chain_driver().value().chain_type,
             &channel_b_to_c.port_b.as_ref(),
             &channel_b_to_c.channel_id_b.as_ref(),
             &denom_b.as_ref(),

@@ -10,7 +10,8 @@
 //!
 //! ```no_run
 //! # use serde_json as json;
-//! # use ibc_relayer::config::{types::Memo, Config, ChainConfig};
+//! # use ibc_relayer::config::{types::Memo, Config};
+//! # use ibc_relayer::config::ChainConfig;
 //! # use ibc_test_framework::ibc::denom::derive_ibc_denom;
 //! # use ibc_test_framework::prelude::*;
 //! # use ibc_test_framework::util::random::{random_string, random_u128_range};
@@ -31,9 +32,9 @@
 //!     fn modify_relayer_config(&self, config: &mut Config) {
 //!         for mut chain in config.chains.iter_mut() {
 //!             match chain {
-//!                 ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
+//!                 ChainConfig::CosmosSdk(chain_config) => {
 //!                     chain_config.memo_prefix = self.memo.clone();
-//!                 }
+//!                 },
 //!             }
 //!         }
 //!     }
@@ -60,7 +61,6 @@
 //!         )?;
 //!
 //!         let denom_b = derive_ibc_denom(
-//!             &chains.node_b.chain_driver().value().chain_type,
 //!             &channel.port_b.as_ref(),
 //!             &channel.channel_id_b.as_ref(),
 //!             &denom_a,
