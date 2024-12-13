@@ -10,7 +10,7 @@ pub trait AsyncIcqMethodsExt<Chain> {
     fn async_icq(&self, channel_id: &ChannelId, query_json: &str, from: &str) -> Result<(), Error>;
 }
 
-impl<Chain: Send> AsyncIcqMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
+impl<'a, Chain: Send> AsyncIcqMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
     fn update_oracle(&self, relayer: &str, fees: &str, init_args: &str) -> Result<(), Error> {
         let driver = *self.value();
 

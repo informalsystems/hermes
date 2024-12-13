@@ -13,8 +13,8 @@ use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::ics::InterchainSecurityChainTest;
 use crate::framework::binary::node::{
-    run_binary_node_test, run_single_node_test, BinaryNodeTest, NamadaParametersOverride,
-    NodeConfigOverride, NodeGenesisOverride,
+    run_binary_node_test, run_single_node_test, BinaryNodeTest, NodeConfigOverride,
+    NodeGenesisOverride,
 };
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
@@ -39,8 +39,7 @@ where
         + RelayerConfigOverride
         + ClientOptionsOverride
         + SupervisorOverride
-        + TestConfigOverride
-        + NamadaParametersOverride,
+        + TestConfigOverride,
 {
     run_binary_chain_test(&RunTwoWayBinaryChainTest::new(test))
 }
@@ -57,8 +56,7 @@ where
         + RelayerConfigOverride
         + ClientOptionsOverride
         + SupervisorOverride
-        + TestConfigOverride
-        + NamadaParametersOverride,
+        + TestConfigOverride,
 {
     run_binary_node_test(&RunBinaryChainTest::new(&RunWithSupervisor::new(test)))
 }
@@ -76,8 +74,7 @@ where
         + NodeGenesisOverride
         + RelayerConfigOverride
         + ClientOptionsOverride
-        + TestConfigOverride
-        + NamadaParametersOverride,
+        + TestConfigOverride,
 {
     run_single_node_test(&RunBinaryChainTest::new(test))
 }
@@ -204,7 +201,7 @@ where
     }
 }
 
-impl<Test, Overrides> BinaryNodeTest for RunBinaryChainTest<'_, Test>
+impl<'a, Test, Overrides> BinaryNodeTest for RunBinaryChainTest<'a, Test>
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -243,7 +240,7 @@ where
     }
 }
 
-impl<Test, Overrides> InterchainSecurityChainTest for RunBinaryChainTest<'_, Test>
+impl<'a, Test, Overrides> InterchainSecurityChainTest for RunBinaryChainTest<'a, Test>
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -282,7 +279,7 @@ where
     }
 }
 
-impl<Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'_, Test> {
+impl<'a, Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'a, Test> {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -311,7 +308,7 @@ impl<Test: BinaryChainTest> BinaryChainTest for RunTwoWayBinaryChainTest<'_, Tes
     }
 }
 
-impl<Test, Overrides> BinaryChainTest for RunWithSupervisor<'_, Test>
+impl<'a, Test, Overrides> BinaryChainTest for RunWithSupervisor<'a, Test>
 where
     Test: BinaryChainTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -335,7 +332,7 @@ where
     }
 }
 
-impl<Test, Overrides> HasOverrides for RunBinaryChainTest<'_, Test>
+impl<'a, Test, Overrides> HasOverrides for RunBinaryChainTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -346,7 +343,7 @@ where
     }
 }
 
-impl<Test, Overrides> HasOverrides for RunTwoWayBinaryChainTest<'_, Test>
+impl<'a, Test, Overrides> HasOverrides for RunTwoWayBinaryChainTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

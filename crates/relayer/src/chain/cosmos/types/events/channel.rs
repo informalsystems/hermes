@@ -1,3 +1,5 @@
+use alloc::collections::btree_map::BTreeMap as HashMap;
+
 use ibc_relayer_types::applications::ics31_icq::events::CrossChainQueryPacket;
 use ibc_relayer_types::core::ics02_client::height::HeightErrorDetail;
 use ibc_relayer_types::core::ics04_channel::error::Error;
@@ -15,10 +17,6 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::events::Error as EventError;
 use ibc_relayer_types::Height;
-
-use crate::chain::cosmos::types::events::raw_object::extract_attribute;
-use crate::chain::cosmos::types::events::raw_object::maybe_extract_attribute;
-use crate::chain::cosmos::types::events::raw_object::RawObject;
 
 fn extract_attributes(object: &RawObject<'_>, namespace: &str) -> Result<Attributes, EventError> {
     Ok(Attributes {
@@ -249,4 +247,42 @@ impl TryFrom<RawObject<'_>> for CrossChainQueryPacket {
                 .map_err(|_| EventError::height())?,
         })
     }
+}
+
+#[derive(Debug, Clone)]
+pub struct RawObject<'a> {
+    pub height: Height,
+    pub action: String,
+    pub idx: usize,
+    pub events: &'a HashMap<String, Vec<String>>,
+}
+
+impl<'a> RawObject<'a> {
+    pub fn new(
+        height: Height,
+        action: String,
+        idx: usize,
+        events: &'a HashMap<String, Vec<String>>,
+    ) -> RawObject<'a> {
+        RawObject {
+            height,
+            action,
+            idx,
+            events,
+        }
+    }
+}
+
+pub fn extract_attribute(object: &RawObject<'_>, key: &str) -> Result<String, EventError> {
+    let value = object
+        .events
+        .get(key)
+        .ok_or_else(|| EventError::missing_key(key.to_string()))?[object.idx]
+        .clone();
+
+    Ok(value)
+}
+
+pub fn maybe_extract_attribute(object: &RawObject<'_>, key: &str) -> Option<String> {
+    object.events.get(key).map(|tags| tags[object.idx].clone())
 }

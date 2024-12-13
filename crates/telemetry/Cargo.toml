@@ -7,7 +7,7 @@ readme       = "README.md"
 keywords     = ["cosmos", "ibc", "relayer", "telemetry"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.79.0"
+rust-version = "1.76.0"
 description  = """
     Telemetry service for the Hermes IBC relayer
 """

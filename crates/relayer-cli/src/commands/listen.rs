@@ -146,7 +146,7 @@ fn subscribe(
     // Q: Should this be restricted only to backends that support it,
     // or are all backends expected to support subscriptions?
     match chain_config {
-        ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => {
+        ChainConfig::CosmosSdk(config) => {
             let (event_source, monitor_tx) = match &config.event_source {
                 EventSourceMode::Push { url, batch_delay } => EventSource::websocket(
                     chain_config.id().clone(),
@@ -189,7 +189,7 @@ fn detect_compatibility_mode(
 ) -> eyre::Result<CompatMode> {
     // TODO(erwan): move this to the cosmos sdk endpoint implementation
     let rpc_addr = match config {
-        ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => config.rpc_addr.clone(),
+        ChainConfig::CosmosSdk(config) => config.rpc_addr.clone(),
     };
 
     let client = HttpClient::builder(rpc_addr.try_into()?)
@@ -197,9 +197,7 @@ fn detect_compatibility_mode(
         .build()?;
 
     let compat_mode = match config {
-        ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => {
-            rt.block_on(fetch_compat_mode(&client, config))?
-        }
+        ChainConfig::CosmosSdk(config) => rt.block_on(fetch_compat_mode(&client, config))?,
     };
 
     Ok(compat_mode)

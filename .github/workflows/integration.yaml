@@ -118,11 +118,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -161,11 +156,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -209,11 +199,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -257,11 +242,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -304,11 +284,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
           command: test
@@ -353,11 +328,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
           command: test

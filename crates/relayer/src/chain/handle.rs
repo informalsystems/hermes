@@ -48,10 +48,10 @@ use crate::{
 
 use super::{
     client::ClientSettings,
+    cosmos::version::Specs,
     endpoint::{ChainStatus, HealthCheck},
     requests::*,
     tracking::TrackedMsgs,
-    version::Specs,
 };
 
 mod base;

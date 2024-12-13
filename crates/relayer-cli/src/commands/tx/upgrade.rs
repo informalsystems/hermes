@@ -127,9 +127,7 @@ impl Runnable for TxIbcUpgradeChainCmd {
         let reference_chain = spawn_chain_runtime(&config, &self.reference_chain_id)
             .unwrap_or_else(exit_with_unrecoverable_error);
 
-        let gov_account = if requires_legacy_upgrade_proposal(reference_chain.clone())
-            .unwrap_or_else(exit_with_unrecoverable_error)
-        {
+        let gov_account = if requires_legacy_upgrade_proposal(reference_chain.clone()) {
             "".to_string()
         } else if let Some(gov_account) = &self.gov_account {
             gov_account.clone()

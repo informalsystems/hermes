@@ -129,7 +129,7 @@ pub struct Packet {
 
 struct PacketData<'a>(&'a [u8]);
 
-impl core::fmt::Debug for PacketData<'_> {
+impl<'a> core::fmt::Debug for PacketData<'a> {
     fn fmt(&self, formatter: &mut core::fmt::Formatter<'_>) -> Result<(), core::fmt::Error> {
         write!(formatter, "{:?}", self.0)
     }

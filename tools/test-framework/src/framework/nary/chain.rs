@@ -12,9 +12,7 @@ use crate::bootstrap::nary::chain::{
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
-use crate::framework::binary::node::{
-    NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
-};
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::node::{run_nary_node_test, NaryNodeTest};
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
@@ -51,7 +49,6 @@ where
         + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
-        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunWithSupervisor::new(test)))
@@ -82,7 +79,6 @@ where
         + NodeGenesisOverride
         + RelayerConfigOverride
         + SupervisorOverride
-        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_node_test(&RunSelfConnectedNaryChainTest::new(
@@ -127,7 +123,7 @@ pub struct RunSelfConnectedNaryChainTest<'a, Test, const SIZE: usize> {
     pub test: &'a Test,
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryNodeTest<SIZE> for RunNaryChainTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<SIZE> for RunNaryChainTest<'a, Test, SIZE>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -161,8 +157,8 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryNodeTest<1>
-    for RunSelfConnectedNaryChainTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<1>
+    for RunSelfConnectedNaryChainTest<'a, Test, SIZE>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -196,7 +192,7 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryChainTest<SIZE> for RunWithSupervisor<'_, Test>
+impl<'a, Test, Overrides, const SIZE: usize> NaryChainTest<SIZE> for RunWithSupervisor<'a, Test>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -238,7 +234,7 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChainTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChainTest<'a, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -249,8 +245,8 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> HasOverrides
-    for RunSelfConnectedNaryChainTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides
+    for RunSelfConnectedNaryChainTest<'a, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

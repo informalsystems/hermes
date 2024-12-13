@@ -52,7 +52,6 @@ impl TestOverrides for DynamicGasTest {
                     GasPrice::new(0.1, chain_config_a.gas_price.denom.clone());
                 chain_config_a.dynamic_gas_price = DynamicGasPrice::unsafe_new(false, 1.1, 0.6);
             }
-            ChainConfig::Namada(_) => {}
         }
 
         match &mut config.chains[1] {
@@ -62,7 +61,6 @@ impl TestOverrides for DynamicGasTest {
                 chain_config_b.dynamic_gas_price =
                     DynamicGasPrice::unsafe_new(self.dynamic_gas_enabled, 1.1, 0.6);
             }
-            ChainConfig::Namada(_) => {}
         }
     }
 
@@ -86,38 +84,15 @@ impl BinaryChannelTest for DynamicGasTest {
         let a_to_b_amount = 12345u64;
 
         let denom_a_to_b = derive_ibc_denom(
-            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,
         )?;
 
-        let gas_denom_str_a = match relayer
-            .config
-            .chains
-            .first()
-            .ok_or_else(|| eyre!("chain configuration is empty"))?
-        {
-            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
-                chain_config.gas_price.denom.clone()
-            }
-        };
-
-        let gas_denom_str_b: String = match relayer
-            .config
-            .chains
-            .get(1)
-            .ok_or_else(|| eyre!("chain configuration is empty"))?
-        {
-            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
-                chain_config.gas_price.denom.clone()
-            }
-        };
-
         let gas_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&gas_denom_str_a, &gas_denom_str_a));
+            MonoTagged::new(Denom::Base("stake".to_owned()));
         let gas_denom_b: MonoTagged<ChainB, Denom> =
-            MonoTagged::new(Denom::base(&gas_denom_str_b, &gas_denom_str_b));
+            MonoTagged::new(Denom::Base("stake".to_owned()));
 
         let balance_relayer_b_before = chains.node_b.chain_driver().query_balance(
             &chains.node_b.wallets().relayer().address(),
@@ -173,7 +148,6 @@ impl BinaryChannelTest for DynamicGasTest {
         let denom_b = chains.node_b.denom();
 
         let denom_b_to_a = derive_ibc_denom(
-            &chains.node_a.chain_driver().value().chain_type,
             &channel.port_a.as_ref(),
             &channel.channel_id_a.as_ref(),
             &denom_b,

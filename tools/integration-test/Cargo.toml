@@ -2,7 +2,7 @@
 name         = "ibc-integration-test"
 version      = "0.30.0"
 edition      = "2021"
-rust-version = "1.79.0"
+rust-version = "1.76.0"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
@@ -50,7 +50,6 @@ new-register-interchain-account = []
 authz                           = []
 benchmark                       = []
 no-denom-trace                  = []
-namada                          = []
 
 [[bin]]
 name = "test_setup_with_binary_channel"
