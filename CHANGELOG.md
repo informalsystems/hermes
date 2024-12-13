@@ -1,15 +1,10 @@
 # CHANGELOG
 
-## v1.11.0
+## v1.10.5
 
-*December 3rd, 2024*
+*December 13rd, 2024*
 
-This release introduces support for the first Non-SDK chain with Namada compatibility. To relay for Namada, ensure the chain type in the configuration is set to `Namada`. Additionally, pull-mode event collection now correctly retrieves events from `finalized_block_events`.
-
-### FEATURES
-
-- Add support for relaying between Namada and CosmosSDK-based chains.
-  ([\#3705](https://github.com/informalsystems/hermes/issues/3705))
+This release addresses an issue with pull-mode event collection. The functionality has been enhanced to accurately retrieve events from `finalized_block_events`, ensuring more reliable event processing.
 
 ### IMPROVEMENTS
 
