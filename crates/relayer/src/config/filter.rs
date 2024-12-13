@@ -208,7 +208,7 @@ impl Serialize for ChannelFilters {
             b: &'a FilterPattern<ChannelId>,
         }
 
-        impl<'a> Serialize for Pair<'a> {
+        impl Serialize for Pair<'_> {
             fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
             where
                 S: Serializer,
@@ -378,7 +378,7 @@ pub(crate) mod port {
 
     pub struct PortFilterMatchVisitor;
 
-    impl<'de> de::Visitor<'de> for PortFilterMatchVisitor {
+    impl de::Visitor<'_> for PortFilterMatchVisitor {
         type Value = PortFilterMatch;
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -407,7 +407,7 @@ pub(crate) mod channel {
 
     pub struct ChannelFilterMatchVisitor;
 
-    impl<'de> de::Visitor<'de> for ChannelFilterMatchVisitor {
+    impl de::Visitor<'_> for ChannelFilterMatchVisitor {
         type Value = ChannelFilterMatch;
 
         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

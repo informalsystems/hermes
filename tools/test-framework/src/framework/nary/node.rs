@@ -45,7 +45,7 @@ pub struct RunNaryNodeTest<'a, Test, const SIZE: usize> {
     pub test: &'a Test,
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> BasicTest for RunNaryNodeTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> BasicTest for RunNaryNodeTest<'_, Test, SIZE>
 where
     Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -75,7 +75,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryNodeTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> HasOverrides for RunNaryNodeTest<'_, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

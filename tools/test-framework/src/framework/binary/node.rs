@@ -101,7 +101,7 @@ pub struct RunSingleNodeTest<'a, Test> {
     pub test: &'a Test,
 }
 
-impl<'a, Test, Overrides> BasicTest for RunBinaryNodeTest<'a, Test>
+impl<Test, Overrides> BasicTest for RunBinaryNodeTest<'_, Test>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -135,7 +135,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> BasicTest for RunSingleNodeTest<'a, Test>
+impl<Test, Overrides> BasicTest for RunSingleNodeTest<'_, Test>
 where
     Test: BinaryNodeTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -159,7 +159,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunBinaryNodeTest<'a, Test>
+impl<Test, Overrides> HasOverrides for RunBinaryNodeTest<'_, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -170,7 +170,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunSingleNodeTest<'a, Test>
+impl<Test, Overrides> HasOverrides for RunSingleNodeTest<'_, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

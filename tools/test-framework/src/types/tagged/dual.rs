@@ -310,7 +310,7 @@ impl<TagA, TagB, Value> Tagged<TagA, TagB, Value> {
     }
 }
 
-impl<'a, TagA, TagB, Value: Clone> Tagged<TagA, TagB, &'a Value> {
+impl<TagA, TagB, Value: Clone> Tagged<TagA, TagB, &Value> {
     /**
         Convert a [`Clone`]eable tagged reference into a tagged value.
 
@@ -376,7 +376,7 @@ impl<TagA, TagB, Value, E> Tagged<TagA, TagB, Result<Value, E>> {
     }
 }
 
-impl<'a, TagA, TagB, Value> AsRef<Value> for Tagged<TagA, TagB, &'a Value> {
+impl<TagA, TagB, Value> AsRef<Value> for Tagged<TagA, TagB, &Value> {
     fn as_ref(&self) -> &Value {
         self.value()
     }

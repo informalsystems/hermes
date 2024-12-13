@@ -69,7 +69,7 @@ pub trait ChainFeeMethodsExt<Chain> {
     ) -> Result<Vec<IdentifiedPacketFees>, Error>;
 }
 
-impl<'a, Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> ChainFeeMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
     fn ibc_token_transfer_with_fee<Counterparty>(
         &self,
         port_id: &TaggedPortIdRef<'_, Chain, Counterparty>,

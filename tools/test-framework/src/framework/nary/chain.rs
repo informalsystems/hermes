@@ -123,7 +123,7 @@ pub struct RunSelfConnectedNaryChainTest<'a, Test, const SIZE: usize> {
     pub test: &'a Test,
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<SIZE> for RunNaryChainTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> NaryNodeTest<SIZE> for RunNaryChainTest<'_, Test, SIZE>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -157,8 +157,8 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> NaryNodeTest<1>
-    for RunSelfConnectedNaryChainTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> NaryNodeTest<1>
+    for RunSelfConnectedNaryChainTest<'_, Test, SIZE>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -192,7 +192,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> NaryChainTest<SIZE> for RunWithSupervisor<'a, Test>
+impl<Test, Overrides, const SIZE: usize> NaryChainTest<SIZE> for RunWithSupervisor<'_, Test>
 where
     Test: NaryChainTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -234,7 +234,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChainTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChainTest<'_, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -245,8 +245,8 @@ where
     }
 }
 
-impl<'a, Test, Overrides, const SIZE: usize> HasOverrides
-    for RunSelfConnectedNaryChainTest<'a, Test, SIZE>
+impl<Test, Overrides, const SIZE: usize> HasOverrides
+    for RunSelfConnectedNaryChainTest<'_, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
