@@ -1,7 +1,9 @@
 use core::ops::{Add, Sub};
 use ibc_relayer_types::applications::transfer::amount::Amount;
 use ibc_relayer_types::applications::transfer::coin::{Coin, RawCoin};
+use ibc_relayer_types::bigint::U256;
 
+use crate::chain::chain_type::ChainType;
 use crate::error::Error;
 use crate::ibc::denom::{derive_ibc_denom, Denom, TaggedDenom, TaggedDenomRef};
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
@@ -21,6 +23,7 @@ pub trait TaggedTokenExt<Chain> {
 
     fn transfer<Counterparty>(
         &self,
+        chain_type: &ChainType,
         port_id: &TaggedPortIdRef<Counterparty, Chain>,
         channel_id: &TaggedChannelIdRef<Counterparty, Chain>,
     ) -> Result<TaggedToken<Counterparty>, Error>;
@@ -45,10 +48,11 @@ impl<Chain> TaggedTokenExt<Chain> for TaggedToken<Chain> {
 
     fn transfer<Counterparty>(
         &self,
+        chain_type: &ChainType,
         port_id: &TaggedPortIdRef<Counterparty, Chain>,
         channel_id: &TaggedChannelIdRef<Counterparty, Chain>,
     ) -> Result<TaggedToken<Counterparty>, Error> {
-        let denom = derive_ibc_denom(port_id, channel_id, &self.denom())?;
+        let denom = derive_ibc_denom(chain_type, port_id, channel_id, &self.denom())?;
 
         Ok(denom.with_amount(self.value().amount))
     }
@@ -69,10 +73,11 @@ impl<Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'_, Chain> {
 
     fn transfer<Counterparty>(
         &self,
+        chain_type: &ChainType,
         port_id: &TaggedPortIdRef<Counterparty, Chain>,
         channel_id: &TaggedChannelIdRef<Counterparty, Chain>,
     ) -> Result<TaggedToken<Counterparty>, Error> {
-        let denom = derive_ibc_denom(port_id, channel_id, &self.denom())?;
+        let denom = derive_ibc_denom(chain_type, port_id, channel_id, &self.denom())?;
 
         Ok(denom.with_amount(self.value().amount))
     }
@@ -80,18 +85,32 @@ impl<Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'_, Chain> {
 
 impl<Chain> TaggedDenomExt<Chain> for TaggedDenom<Chain> {
     fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain> {
+        let amount: Amount = match self.value() {
+            Denom::Base { .. } => amount.into(),
+            Denom::Ibc { token_denom, .. } => {
+                let amount: Amount = amount.into();
+                (amount.0 * U256::from(10).pow(U256::from(*token_denom))).into()
+            }
+        };
         self.map(|denom| Token {
             denom: denom.clone(),
-            amount: amount.into(),
+            amount,
         })
     }
 }
 
 impl<Chain> TaggedDenomExt<Chain> for TaggedDenomRef<'_, Chain> {
     fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain> {
+        let amount: Amount = match self.value() {
+            Denom::Base { .. } => amount.into(),
+            Denom::Ibc { token_denom, .. } => {
+                let amount: Amount = amount.into();
+                (amount.0 * U256::from(10).pow(U256::from(*token_denom))).into()
+            }
+        };
         self.map(|denom| Token {
             denom: (*denom).clone(),
-            amount: amount.into(),
+            amount,
         })
     }
 }

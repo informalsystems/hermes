@@ -48,6 +48,11 @@ pub fn max_gas_from_config(config: &CosmosSdkConfig) -> u64 {
     config.max_gas.unwrap_or(DEFAULT_MAX_GAS)
 }
 
+/// The maximum amount of gas the relayer is willing to pay for a transaction
+pub fn max_gas_from_config_opt(config: &CosmosSdkConfig) -> Option<u64> {
+    config.max_gas
+}
+
 /// The gas multiplier
 pub fn gas_multiplier_from_config(config: &CosmosSdkConfig) -> f64 {
     config.gas_multiplier.unwrap_or_default().to_f64()

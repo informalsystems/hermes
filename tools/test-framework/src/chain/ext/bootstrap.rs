@@ -182,9 +182,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         file: &str,
         cont: impl FnOnce(&mut toml::Value) -> Result<(), Error>,
     ) -> Result<(), Error> {
-        let config_path = format!("config/{file}");
-
-        let config1 = self.read_file(&config_path)?;
+        let config1 = self.read_file(file)?;
 
         let mut config2 = toml::from_str(&config1).map_err(handle_generic_error)?;
 
@@ -192,7 +190,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
 
         let config3 = toml::to_string_pretty(&config2).map_err(handle_generic_error)?;
 
-        self.write_file(&config_path, &config3)?;
+        self.write_file(file, &config3)?;
 
         Ok(())
     }
@@ -245,7 +243,11 @@ impl ChainBootstrapMethodsExt for ChainDriver {
         let key = Secp256k1KeyPair::from_seed_file(&seed_content, &hd_path)
             .map_err(handle_generic_error)?;
 
-        Ok(Wallet::new(wallet_id.to_string(), wallet_address, key))
+        Ok(Wallet::new_secp256(
+            wallet_id.to_string(),
+            wallet_address,
+            key,
+        ))
     }
 
     fn add_genesis_account(&self, wallet: &WalletAddress, amounts: &[&Token]) -> Result<(), Error> {

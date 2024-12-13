@@ -3,6 +3,7 @@ use std::time::Instant;
 use ibc_relayer::chain::tracking::TrackedMsgs;
 use ibc_relayer::config::types::max_msg_num::MaxMsgNum;
 use ibc_relayer::config::ChainConfig;
+use ibc_test_framework::chain::chain_type::ChainType;
 use ibc_test_framework::chain::config;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::transfer::build_transfer_message;
@@ -22,11 +23,20 @@ pub struct SequentialCommitTest;
 
 impl TestOverrides for SequentialCommitTest {
     fn modify_node_config(&self, config: &mut toml::Value) -> Result<(), Error> {
-        config::set_timeout_commit(config, BLOCK_TIME)?;
-        config::set_timeout_propose(config, BLOCK_TIME)?;
+        let config = if let Some(config) = config.get_mut("ledger") {
+            // Namada
+            config
+                .get_mut("cometbft")
+                .ok_or_else(|| eyre!("expect cometbft section"))?
+        } else {
+            config
+        };
+
+        config::cosmos::set_timeout_commit(config, BLOCK_TIME)?;
+        config::cosmos::set_timeout_propose(config, BLOCK_TIME)?;
 
         // Enable priority mempool
-        config::set_mempool_version(config, "v1")?;
+        config::cosmos::set_mempool_version(config, "v1")?;
 
         Ok(())
     }
@@ -34,14 +44,14 @@ impl TestOverrides for SequentialCommitTest {
     fn modify_relayer_config(&self, config: &mut Config) {
         // Use sequential batching for chain A, and default parallel batching for chain B
         match &mut config.chains[0] {
-            ChainConfig::CosmosSdk(chain_config_a) => {
+            ChainConfig::CosmosSdk(chain_config_a) | ChainConfig::Namada(chain_config_a) => {
                 chain_config_a.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
                 chain_config_a.sequential_batch_tx = true;
             }
         };
 
         match &mut config.chains[1] {
-            ChainConfig::CosmosSdk(chain_config_b) => {
+            ChainConfig::CosmosSdk(chain_config_b) | ChainConfig::Namada(chain_config_b) => {
                 chain_config_b.max_msg_num = MaxMsgNum::new(MESSAGES_PER_BATCH).unwrap();
                 chain_config_b.sequential_batch_tx = false;
             }
@@ -67,20 +77,22 @@ impl BinaryChannelTest for SequentialCommitTest {
         {
             let denom_a = chains.node_a.denom();
 
-            let transfer_message = build_transfer_message(
-                &channel.port_a.as_ref(),
-                &channel.channel_id_a.as_ref(),
-                &wallet_a.as_ref(),
-                &wallet_b.address(),
-                &denom_a.with_amount(100u64).as_ref(),
-                Duration::from_secs(30),
-                None,
-            )?;
+            let mut transfer_messages = Vec::new();
+            for i in 0..TOTAL_MESSAGES {
+                let transfer_message = build_transfer_message(
+                    &channel.port_a.as_ref(),
+                    &channel.channel_id_a.as_ref(),
+                    &wallet_a.as_ref(),
+                    &wallet_b.address(),
+                    &denom_a.with_amount(100u64).as_ref(),
+                    Duration::from_secs(30),
+                    // Namada batch transaction can't have the exact same message
+                    Some(i.to_string()),
+                )?;
+                transfer_messages.push(transfer_message);
+            }
 
-            let messages = TrackedMsgs::new_static(
-                vec![transfer_message; TOTAL_MESSAGES],
-                "test_error_events",
-            );
+            let messages = TrackedMsgs::new_static(transfer_messages, "test_sequential_commit");
 
             let start = Instant::now();
 
@@ -95,35 +107,49 @@ impl BinaryChannelTest for SequentialCommitTest {
                 TOTAL_MESSAGES, duration
             );
 
-            // Time taken for submitting sequential batches should be around number of transactions * block time
-
-            assert!(
-                duration
-                    > Duration::from_millis((BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) - 1000)
-            );
-            assert!(
-                duration
-                    < Duration::from_millis((BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) + 1000)
-            );
+            let (min_duration, max_duration) = match chains.node_a.chain_driver().value().chain_type
+            {
+                ChainType::Namada => (
+                    Duration::from_millis((BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) - 1000),
+                    Duration::from_millis(
+                        (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64 * 2) + 1000,
+                    ),
+                ),
+                _ => {
+                    // Time taken for submitting sequential batches should be around number of transactions * block time
+                    (
+                        Duration::from_millis(
+                            (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) - 1000,
+                        ),
+                        Duration::from_millis(
+                            (BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64) + 1000,
+                        ),
+                    )
+                }
+            };
+            assert!(duration > min_duration);
+            assert!(duration < max_duration);
         }
 
         {
             let denom_b = chains.node_b.denom();
 
-            let transfer_message = build_transfer_message(
-                &channel.port_b.as_ref(),
-                &channel.channel_id_b.as_ref(),
-                &wallet_b.as_ref(),
-                &wallet_a.address(),
-                &denom_b.with_amount(100u64).as_ref(),
-                Duration::from_secs(30),
-                None,
-            )?;
+            let mut transfer_messages = Vec::new();
+            for i in 0..TOTAL_MESSAGES {
+                let transfer_message = build_transfer_message(
+                    &channel.port_b.as_ref(),
+                    &channel.channel_id_b.as_ref(),
+                    &wallet_b.as_ref(),
+                    &wallet_a.address(),
+                    &denom_b.with_amount(100u64).as_ref(),
+                    Duration::from_secs(30),
+                    // Namada batch transaction can't have the exact same message
+                    Some(i.to_string()),
+                )?;
+                transfer_messages.push(transfer_message);
+            }
 
-            let messages = TrackedMsgs::new_static(
-                vec![transfer_message; TOTAL_MESSAGES],
-                "test_error_events",
-            );
+            let messages = TrackedMsgs::new_static(transfer_messages, "test_sequential_commit");
 
             let start = Instant::now();
 
@@ -141,7 +167,14 @@ impl BinaryChannelTest for SequentialCommitTest {
                 TOTAL_MESSAGES, duration
             );
 
-            assert!(duration < Duration::from_millis(BLOCK_TIME_MILLIS * 2));
+            let max_duration = match chains.node_b.chain_driver().value().chain_type {
+                ChainType::Namada => {
+                    // Shorter than the sequential batches
+                    Duration::from_millis(BLOCK_TIME_MILLIS * TOTAL_TRANSACTIONS as u64 * 2)
+                }
+                _ => Duration::from_millis(BLOCK_TIME_MILLIS * 2),
+            };
+            assert!(duration < max_duration);
         }
 
         Ok(())

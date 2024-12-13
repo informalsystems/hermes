@@ -158,7 +158,7 @@ port = 5555
 # Specify the chain ID. Required
 id = 'ibc-0'
 
-# Specify the chain type, currently only `CosmosSdk` is supported.
+# Specify the chain type, currently `CosmosSdk` and `Namada` are supported.
 # Default: CosmosSdk
 type = "CosmosSdk"
 

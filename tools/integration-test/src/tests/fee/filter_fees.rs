@@ -22,6 +22,8 @@ struct FilterIncentivizedFeesRelayerTest;
 
 impl TestOverrides for FilterIncentivizedFeesRelayerTest {
     fn modify_relayer_config(&self, config: &mut Config) {
+        config.mode.packets.clear_on_start = false;
+        config.mode.packets.clear_interval = 0;
         config.mode.packets.auto_register_counterparty_payee = true;
         let recv_fee = MinFee::new(50, Some("samoleans".to_owned()));
         let fees_filters = FeePolicy::new(vec![recv_fee]);
@@ -30,7 +32,7 @@ impl TestOverrides for FilterIncentivizedFeesRelayerTest {
         let packet_filter = PacketFilter::new(ChannelPolicy::default(), min_fees);
         for chain_config in config.chains.iter_mut() {
             match chain_config {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.packet_filter = packet_filter.clone();
                 }
             }
@@ -92,6 +94,7 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
             )?;
 
             let denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channel.port_b.as_ref(),
                 &channel.channel_id_b.as_ref(),
                 &denom_a,
@@ -141,6 +144,7 @@ impl BinaryChannelTest for FilterIncentivizedFeesRelayerTest {
             )?;
 
             let denom_b = derive_ibc_denom(
+                &chains.node_b.chain_driver().value().chain_type,
                 &channel.port_b.as_ref(),
                 &channel.channel_id_b.as_ref(),
                 &denom_a,
@@ -180,7 +184,7 @@ impl TestOverrides for FilterByChannelIncentivizedFeesRelayerTest {
         let packet_filter = PacketFilter::new(ChannelPolicy::default(), min_fees);
         for chain_config in config.chains.iter_mut() {
             match chain_config {
-                ChainConfig::CosmosSdk(chain_config) => {
+                ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.packet_filter = packet_filter.clone();
                 }
             }
@@ -227,6 +231,7 @@ impl BinaryChannelTest for FilterByChannelIncentivizedFeesRelayerTest {
         let balance_a2 = balance_a1.clone() - send_amount;
 
         let denom_b = derive_ibc_denom(
+            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,

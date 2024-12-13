@@ -6,7 +6,6 @@
 use core::ops::Add;
 use core::time::Duration;
 use eyre::eyre;
-use ibc_relayer_types::core::ics04_channel::packet::Packet;
 use ibc_relayer_types::events::IbcEvent;
 
 use ibc_proto::google::protobuf::Any;
@@ -20,6 +19,7 @@ use ibc_relayer_types::core::ics04_channel::timeout::TimeoutHeight;
 use ibc_relayer_types::timestamp::Timestamp;
 use tendermint_rpc::HttpClient;
 
+use crate::chain::exec::simple_exec;
 use crate::error::{handle_generic_error, Error};
 use crate::ibc::token::TaggedTokenRef;
 use crate::types::id::{TaggedChannelIdRef, TaggedPortIdRef};
@@ -92,7 +92,7 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
     token: &TaggedTokenRef<'_, SrcChain>,
     memo: Option<String>,
     timeout: Option<Duration>,
-) -> Result<Packet, Error> {
+) -> Result<(), Error> {
     let message = build_transfer_message(
         port_id,
         channel_id,
@@ -103,15 +103,21 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         memo.clone(),
     )?;
 
+    let key = &sender
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
     let events = simple_send_tx(
         rpc_client.into_value(),
         tx_config.value(),
-        &sender.value().key,
+        key,
         vec![message],
     )
     .await?;
 
-    let packet = events
+    let _packet = events
         .into_iter()
         .find_map(|event| match event.event {
             IbcEvent::SendPacket(ev) => Some(ev.packet),
@@ -119,7 +125,95 @@ pub async fn ibc_token_transfer<SrcChain, DstChain>(
         })
         .ok_or_else(|| eyre!("failed to find send packet event"))?;
 
-    Ok(packet)
+    Ok(())
+}
+
+pub fn local_namada_token_transfer(
+    home_path: &str,
+    sender: &str,
+    recipient: &str,
+    denom: &str,
+    amount: &str,
+    rpc_port: &str,
+) -> Result<(), Error> {
+    simple_exec(
+        "namada local transfer",
+        "namadac",
+        &[
+            "--base-dir",
+            home_path,
+            "transparent-transfer",
+            "--source",
+            sender,
+            "--target",
+            recipient,
+            "--token",
+            denom,
+            "--amount",
+            amount,
+            "--signing-keys",
+            &format!("{sender}-key"),
+            "--gas-limit",
+            "150000",
+            "--node",
+            &format!("http://127.0.0.1:{rpc_port}"),
+        ],
+    )?;
+
+    Ok(())
+}
+
+pub fn ibc_namada_token_transfer(
+    home_path: &str,
+    sender: &str,
+    receiver: &str,
+    denom: &str,
+    amount: &str,
+    channel_id: &str,
+    rpc_port: &str,
+    memo: Option<String>,
+    timeout: Option<Duration>,
+) -> Result<(), Error> {
+    let signing_key = format!("{sender}-key");
+    let node = format!("http://127.0.0.1:{rpc_port}");
+    let mut args = vec![
+        "--base-dir",
+        home_path,
+        "ibc-transfer",
+        "--source",
+        sender,
+        "--receiver",
+        receiver,
+        "--token",
+        denom,
+        "--amount",
+        amount,
+        "--signing-keys",
+        &signing_key,
+        "--channel-id",
+        channel_id,
+        "--gas-limit",
+        "150000",
+        "--node",
+        &node,
+    ];
+
+    let memo_str = memo.clone().unwrap_or_default();
+    if memo.is_some() {
+        args.push("--ibc-memo");
+        args.push(&memo_str);
+    }
+
+    let timeout_str;
+    if let Some(timeout) = timeout {
+        args.push("--timeout-sec-offset");
+        timeout_str = timeout.as_secs().to_string();
+        args.push(&timeout_str);
+    }
+
+    simple_exec("namada transfer", "namadac", &args)?;
+
+    Ok(())
 }
 
 pub async fn batched_ibc_token_transfer<SrcChain, DstChain>(
@@ -147,13 +241,13 @@ pub async fn batched_ibc_token_transfer<SrcChain, DstChain>(
     .take(num_msgs)
     .collect::<Result<Vec<_>, _>>()?;
 
-    batched_send_tx(
-        rpc_client.value(),
-        tx_config.value(),
-        &sender.value().key,
-        messages,
-    )
-    .await?;
+    let key = &sender
+        .value()
+        .key
+        .downcast()
+        .ok_or_else(|| eyre!("unable to downcast key"))
+        .map_err(Error::generic)?;
+    batched_send_tx(rpc_client.value(), tx_config.value(), key, messages).await?;
 
     Ok(())
 }

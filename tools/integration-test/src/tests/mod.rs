@@ -10,7 +10,7 @@ pub mod client_expiration;
 pub mod client_filter;
 pub mod client_refresh;
 pub mod client_settings;
-#[cfg(not(feature = "celestia"))]
+#[cfg(not(any(feature = "celestia", feature = "namada")))]
 pub mod client_upgrade;
 pub mod connection_delay;
 pub mod consensus_states;
@@ -21,13 +21,12 @@ pub mod execute_schedule;
 pub mod handshake_on_start;
 pub mod ics20_filter;
 pub mod memo;
+#[cfg(not(feature = "namada"))]
 pub mod python;
 pub mod query_packet;
-#[cfg(not(feature = "celestia"))]
-pub mod sequence_filter;
 pub mod supervisor;
 pub mod tendermint;
-#[cfg(not(feature = "celestia"))]
+#[cfg(not(any(feature = "celestia")))]
 pub mod ternary_transfer;
 pub mod transfer;
 

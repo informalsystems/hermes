@@ -23,6 +23,8 @@ use crate::types::env::{EnvWriter, ExportEnv};
 use crate::types::wallet::WalletAddress;
 use crate::util::retry::assert_eventually_succeed;
 
+use super::cli::query::query_namada_balance;
+
 /**
    Number of times (seconds) to try and query a wallet to reach the
    target amount, as used by [`assert_eventual_wallet_amount`].
@@ -188,7 +190,11 @@ impl ChainDriver {
         as it requires the `"tcp://"` scheme.
     */
     pub fn rpc_listen_address(&self) -> String {
-        format!("tcp://localhost:{}", self.rpc_port)
+        if self.command_path == "namada" {
+            format!("http://localhost:{}", self.rpc_port)
+        } else {
+            format!("tcp://localhost:{}", self.rpc_port)
+        }
     }
 
     /**
@@ -210,13 +216,23 @@ impl ChainDriver {
        Query for the balances for a given wallet address and denomination
     */
     pub fn query_balance(&self, wallet_id: &WalletAddress, denom: &Denom) -> Result<Amount, Error> {
-        query_balance(
-            self.chain_id.as_str(),
-            &self.command_path,
-            &self.rpc_listen_address(),
-            &wallet_id.0,
-            &denom.to_string(),
-        )
+        match self.chain_type {
+            ChainType::Namada => query_namada_balance(
+                self.chain_id.as_str(),
+                &self.command_path,
+                &self.home_path,
+                denom,
+                &wallet_id.0,
+                &self.rpc_listen_address(),
+            ),
+            _ => query_balance(
+                self.chain_id.as_str(),
+                &self.command_path,
+                &self.rpc_listen_address(),
+                &wallet_id.0,
+                &denom.to_string(),
+            ),
+        }
     }
 
     /**
