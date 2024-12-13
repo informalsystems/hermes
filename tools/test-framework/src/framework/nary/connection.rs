@@ -141,8 +141,7 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
-    for RunWithSupervisor<'_, Test>
+impl<Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE> for RunWithSupervisor<'_, Test>
 where
     Test: NaryConnectionTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
