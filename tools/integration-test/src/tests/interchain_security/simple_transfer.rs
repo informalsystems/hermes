@@ -69,7 +69,6 @@ impl BinaryChannelTest for InterchainSecurityTransferTest {
         )?;
 
         let denom_b = derive_ibc_denom(
-            &chains.node_b.chain_driver().value().chain_type,
             &channel.port_b.as_ref(),
             &channel.channel_id_b.as_ref(),
             &denom_a,

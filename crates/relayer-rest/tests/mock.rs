@@ -46,12 +46,9 @@ where
     let response = reqwest::get(&format!("http://127.0.0.1:{port}{path}"))
         .await
         .unwrap()
-        .json()
+        .json::<R>()
         .await
         .unwrap();
-    // Workaround for serde_json deserialization failure
-    // from_str/from_slice() failed for ChainConfig
-    let response = serde_json::from_value::<R>(response).unwrap();
 
     assert_eq!(response, expected);
 

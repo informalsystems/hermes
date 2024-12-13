@@ -80,11 +80,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -137,11 +132,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -194,11 +184,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:
@@ -251,11 +236,6 @@ jobs:
         uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Hermes
         uses: actions-rs/cargo@v1
         with:

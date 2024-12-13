@@ -56,9 +56,9 @@ impl BinaryChainTest for SupervisorTest {
         chains: ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let fee_denom_a: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(0), config.native_token(0)));
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let fee_denom_b: MonoTagged<ChainB, Denom> =
-            MonoTagged::new(Denom::base(config.native_token(1), config.native_token(1)));
+            MonoTagged::new(Denom::base(config.native_token(1)));
         let (connection_id_b, _) = init_connection(
             &chains.handle_a,
             &chains.handle_b,
@@ -95,12 +95,7 @@ impl BinaryChainTest for SupervisorTest {
 
         let denom_a = chains.node_a.denom();
 
-        let denom_b = derive_ibc_denom(
-            &chains.node_b.chain_driver().value().chain_type,
-            &port_b.as_ref(),
-            &channel_id_b.as_ref(),
-            &denom_a,
-        )?;
+        let denom_b = derive_ibc_denom(&port_b.as_ref(), &channel_id_b.as_ref(), &denom_a)?;
 
         // Use the same wallet as the relayer to perform token transfer.
         // This will cause an account sequence mismatch error.
@@ -204,13 +199,9 @@ impl BinaryChannelTest for SupervisorScanTest {
         channels: ConnectedChannel<ChainA, ChainB>,
     ) -> Result<(), Error> {
         let denom_a = chains.node_a.denom();
-        let fee_denom_a = MonoTagged::new(Denom::base(
-            &config.native_tokens[0],
-            &config.native_tokens[0],
-        ));
+        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
 
         let denom_b = derive_ibc_denom(
-            &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
             &denom_a,

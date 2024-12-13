@@ -18,13 +18,7 @@ ibc-relayer-types = { workspace = true }
 ibc-relayer       = { workspace = true }
 ibc-relayer-cli   = { workspace = true }
 ibc-proto         = { workspace = true, features = ["serde"] }
-namada_sdk        = { workspace = true }
-tendermint        = { workspace = true }
 tendermint-rpc    = { workspace = true, features = ["http-client", "websocket-client"] }
-
-# for Namada
-namada-tendermint     = { workspace = true }
-namada-tendermint-rpc = { workspace = true, features = ["http-client", "websocket-client"] }
 
 color-eyre         = { workspace = true }
 crossbeam-channel  = { workspace = true }

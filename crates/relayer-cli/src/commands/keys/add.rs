@@ -10,11 +10,9 @@ use abscissa_core::{Command, Runnable};
 use eyre::eyre;
 use hdpath::StandardHDPath;
 use ibc_relayer::{
-    chain::namada::wallet::CliWalletUtils,
     config::{ChainConfig, Config},
     keyring::{
-        AnySigningKeyPair, KeyRing, NamadaKeyPair, Secp256k1KeyPair, SigningKeyPair,
-        SigningKeyPairSized, Store,
+        AnySigningKeyPair, KeyRing, Secp256k1KeyPair, SigningKeyPair, SigningKeyPairSized, Store,
     },
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -222,36 +220,6 @@ pub fn add_key(
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
         }
-        ChainConfig::Namada(config) => {
-            let mut keyring =
-                KeyRing::new_namada(Store::Test, &config.id, &config.key_store_folder)?;
-
-            check_key_exists(&keyring, key_name, overwrite);
-
-            let path = if file.is_file() {
-                file.parent().ok_or(eyre!("invalid Namada wallet path"))?
-            } else {
-                file
-            };
-            let mut wallet = CliWalletUtils::new(path.to_path_buf());
-            wallet
-                .load()
-                .map_err(|e| eyre!("error loading Namada wallet: {e}"))?;
-
-            let secret_key = wallet
-                .find_secret_key(key_name, None)
-                .map_err(|e| eyre!("error loading the key from Namada wallet: {e}"))?;
-            let address = wallet
-                .find_address(key_name)
-                .ok_or_else(|| eyre!("error loading the address from Namada wallet"))?;
-            let namada_key = NamadaKeyPair {
-                alias: key_name.to_string(),
-                address: address.into_owned(),
-                secret_key: secret_key.clone(),
-            };
-            keyring.add_key(key_name, namada_key.clone())?;
-            namada_key.into()
-        }
     };
 
     Ok(key_pair)
@@ -287,11 +255,6 @@ pub fn restore_key(
 
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
-        }
-        ChainConfig::Namada(_) => {
-            return Err(eyre!(
-                "Namada key can't be restored here. Use Namada wallet."
-            ));
         }
     };
 

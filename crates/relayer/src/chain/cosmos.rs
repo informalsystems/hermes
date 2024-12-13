@@ -98,7 +98,6 @@ use crate::chain::endpoint::{ChainEndpoint, ChainStatus, HealthCheck};
 use crate::chain::handle::Subscription;
 use crate::chain::requests::*;
 use crate::chain::tracking::TrackedMsgs;
-use crate::chain::version::Specs;
 use crate::client_state::{AnyClientState, IdentifiedAnyClientState};
 use crate::config::Error as ConfigError;
 use crate::config::{parse_gas_prices, ChainConfig, GasPrice};
@@ -120,6 +119,7 @@ use crate::HERMES_VERSION;
 
 use self::gas::dynamic_gas_price;
 use self::types::gas::GasConfig;
+use self::version::Specs;
 
 pub mod batch;
 pub mod client;
@@ -1119,7 +1119,8 @@ impl ChainEndpoint for CosmosSdkChain {
             &self.rpc_client,
             &self.config.rpc_addr,
         ))?;
-        Ok(Specs::Cosmos(version_specs))
+
+        Ok(version_specs)
     }
 
     fn query_balance(&self, key_name: Option<&str>, denom: Option<&str>) -> Result<Balance, Error> {
