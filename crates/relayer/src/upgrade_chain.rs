@@ -22,7 +22,6 @@ use tracing::warn;
 use crate::chain::handle::ChainHandle;
 use crate::chain::requests::{IncludeProof, QueryClientStateRequest, QueryHeight};
 use crate::chain::tracking::TrackedMsgs;
-use crate::chain::version::Specs;
 use crate::client_state::AnyClientState;
 use crate::error::Error;
 
@@ -77,7 +76,7 @@ pub fn build_and_send_ibc_upgrade_proposal(
     src_chain: impl ChainHandle, // the source chain; supplies a client state for building the upgrade plan
     opts: &UpgradePlanOptions,
 ) -> Result<TxHash, UpgradeChainError> {
-    let any_msg = if requires_legacy_upgrade_proposal(dst_chain.clone())? {
+    let any_msg = if requires_legacy_upgrade_proposal(dst_chain.clone()) {
         build_legacy_upgrade_proposal(dst_chain.clone(), src_chain, opts)
     } else {
         build_upgrade_proposal(dst_chain.clone(), src_chain, opts)
@@ -99,22 +98,10 @@ pub fn build_and_send_ibc_upgrade_proposal(
 /// or if the newer `MsgIBCSoftwareUpdate` message should be used to upgrade the chain.
 /// If the ibc-go version returned isn't reliable, a deprecated version, then the version
 /// of Cosmos SDK is used, if any. If there is no SDK version, we assume that the legacy upgrade is required.
-pub fn requires_legacy_upgrade_proposal(
-    dst_chain: impl ChainHandle,
-) -> Result<bool, UpgradeChainError> {
+pub fn requires_legacy_upgrade_proposal(dst_chain: impl ChainHandle) -> bool {
     let Ok(version_specs) = dst_chain.version_specs() else {
         warn!("failed to get version specs, assuming legacy upgrade proposal is required");
-        return Ok(true);
-    };
-
-    let version_specs = match version_specs {
-        Specs::Cosmos(v) => v,
-        Specs::Namada(_) => {
-            return Err(UpgradeChainError::submit(
-                dst_chain.id(),
-                crate::chain::namada::error::Error::upgrade().into(),
-            ))
-        }
+        return true;
     };
 
     let sdk_before_50 = version_specs
@@ -123,7 +110,7 @@ pub fn requires_legacy_upgrade_proposal(
         .map(|s| s.minor < 50)
         .unwrap_or(true);
 
-    Ok(match version_specs.ibc_go {
+    match version_specs.ibc_go {
         None => sdk_before_50,
         Some(ibc_version) => {
             // Some ibc-go simapps return unreliable ibc-go versions, such as simapp v8.0.0
@@ -136,7 +123,7 @@ pub fn requires_legacy_upgrade_proposal(
                 ibc_version.major < 8
             }
         }
-    })
+    }
 }
 
 /// Ibc-go versions up to v7.x.x use the deprecated `UpgradeProposal` to upgrade a chain

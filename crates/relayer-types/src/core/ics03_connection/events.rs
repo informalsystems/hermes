@@ -4,7 +4,6 @@ use serde_derive::{Deserialize, Serialize};
 use std::fmt::{Display, Error as FmtError, Formatter};
 use tendermint::abci;
 
-use crate::core::ics04_channel::events::EventType;
 use crate::core::ics24_host::identifier::{ClientId, ConnectionId};
 use crate::events::{IbcEvent, IbcEventType};
 
@@ -69,12 +68,6 @@ impl OpenInit {
     }
 }
 
-impl EventType for OpenInit {
-    fn event_type() -> IbcEventType {
-        IbcEventType::OpenInitConnection
-    }
-}
-
 impl Display for OpenInit {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "OpenInit {{ {} }}", self.0)
@@ -111,12 +104,6 @@ impl OpenTry {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
-    }
-}
-
-impl EventType for OpenTry {
-    fn event_type() -> IbcEventType {
-        IbcEventType::OpenTryConnection
     }
 }
 
@@ -159,12 +146,6 @@ impl OpenAck {
     }
 }
 
-impl EventType for OpenAck {
-    fn event_type() -> IbcEventType {
-        IbcEventType::OpenAckConnection
-    }
-}
-
 impl Display for OpenAck {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "OpenAck {{ {} }}", self.0)
@@ -201,12 +182,6 @@ impl OpenConfirm {
     }
     pub fn connection_id(&self) -> Option<&ConnectionId> {
         self.0.connection_id.as_ref()
-    }
-}
-
-impl EventType for OpenConfirm {
-    fn event_type() -> IbcEventType {
-        IbcEventType::OpenConfirmConnection
     }
 }
 

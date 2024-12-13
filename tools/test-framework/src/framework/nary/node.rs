@@ -3,15 +3,12 @@
    running without setting up the relayer.
 */
 
-use crate::bootstrap::namada::bootstrap_namada_node;
 use crate::bootstrap::single::bootstrap_single_node;
 use crate::chain::builder::ChainBuilder;
 use crate::error::Error;
 use crate::framework::base::HasOverrides;
 use crate::framework::base::{run_basic_test, BasicTest, TestConfigOverride};
-use crate::framework::binary::node::{
-    NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
-};
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::types::config::TestConfig;
 use crate::types::single::node::FullNode;
 use crate::util::array::try_into_array;
@@ -20,8 +17,7 @@ pub fn run_nary_node_test<Test, Overrides, const SIZE: usize>(test: &Test) -> Re
 where
     Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides:
-        NodeConfigOverride + NodeGenesisOverride + TestConfigOverride + NamadaParametersOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride + TestConfigOverride,
 {
     run_basic_test(&RunNaryNodeTest { test })
 }
@@ -49,43 +45,25 @@ pub struct RunNaryNodeTest<'a, Test, const SIZE: usize> {
     pub test: &'a Test,
 }
 
-impl<Test, Overrides, const SIZE: usize> BasicTest for RunNaryNodeTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> BasicTest for RunNaryNodeTest<'a, Test, SIZE>
 where
     Test: NaryNodeTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
-    Overrides: NodeConfigOverride + NodeGenesisOverride + NamadaParametersOverride,
+    Overrides: NodeConfigOverride + NodeGenesisOverride,
 {
     fn run(&self, config: &TestConfig, builder: &ChainBuilder) -> Result<(), Error> {
         let mut nodes = Vec::new();
         let mut node_processes = Vec::new();
 
         for i in 0..SIZE {
-            let is_namada = builder.command_paths == vec!["namada".to_string()]
-                || builder.command_paths.get(i) == Some(&"namada".to_string());
-            let node = if is_namada {
-                bootstrap_namada_node(
-                    builder,
-                    &format!("{}", i + 1),
-                    config.bootstrap_with_random_ids,
-                    |config| self.test.get_overrides().modify_node_config(config),
-                    |genesis| self.test.get_overrides().modify_genesis_file(genesis),
-                    |parameters| {
-                        self.test
-                            .get_overrides()
-                            .namada_modify_parameter_file(parameters)
-                    },
-                    i,
-                )?
-            } else {
-                bootstrap_single_node(
-                    builder,
-                    &format!("{}", i + 1),
-                    config.bootstrap_with_random_ids,
-                    |config| self.test.get_overrides().modify_node_config(config),
-                    |genesis| self.test.get_overrides().modify_genesis_file(genesis),
-                    i,
-                )?
-            };
+            let node = bootstrap_single_node(
+                builder,
+                &format!("{}", i + 1),
+                config.bootstrap_with_random_ids,
+                |config| self.test.get_overrides().modify_node_config(config),
+                |genesis| self.test.get_overrides().modify_genesis_file(genesis),
+                i,
+            )?;
 
             node_processes.push(node.process.clone());
             nodes.push(node);
@@ -97,7 +75,7 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> HasOverrides for RunNaryNodeTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryNodeTest<'a, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

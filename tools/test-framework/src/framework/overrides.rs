@@ -18,9 +18,7 @@ use crate::framework::binary::channel::{
     ChannelOrderOverride, ChannelVersionOverride, PortsOverride,
 };
 use crate::framework::binary::connection::ConnectionDelayOverride;
-use crate::framework::binary::node::{
-    NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
-};
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::channel::PortsOverride as NaryPortsOverride;
 use crate::framework::supervisor::SupervisorOverride;
 use crate::types::config::TestConfig;
@@ -81,10 +79,6 @@ pub trait TestOverrides {
     */
     fn modify_relayer_config(&self, _config: &mut Config) {
         // No modification by default
-    }
-
-    fn namada_modify_parameter_file(&self, _parameter: &mut toml::Value) -> Result<(), Error> {
-        Ok(())
     }
 
     /// Returns the settings for the foreign client on the first chain for the
@@ -183,12 +177,6 @@ impl<Test: TestOverrides> NodeConfigOverride for Test {
 impl<Test: TestOverrides> NodeGenesisOverride for Test {
     fn modify_genesis_file(&self, genesis: &mut serde_json::Value) -> Result<(), Error> {
         TestOverrides::modify_genesis_file(self, genesis)
-    }
-}
-
-impl<Test: TestOverrides> NamadaParametersOverride for Test {
-    fn namada_modify_parameter_file(&self, parameter: &mut toml::Value) -> Result<(), Error> {
-        TestOverrides::namada_modify_parameter_file(self, parameter)
     }
 }
 

@@ -84,7 +84,7 @@ pub struct RunBasicTest<'a, Test> {
     pub test: &'a Test,
 }
 
-impl<Test, Overrides> PrimitiveTest for RunBasicTest<'_, Test>
+impl<'a, Test, Overrides> PrimitiveTest for RunBasicTest<'a, Test>
 where
     Test: BasicTest,
     Test: HasOverrides<Overrides = Overrides>,

@@ -16,7 +16,7 @@ use crate::framework::binary::chain::{
     BinaryChainTest, ClientOptionsOverride, RelayerConfigOverride, RunBinaryChainTest,
 };
 use crate::framework::binary::node::{
-    run_binary_node_test, NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
+    run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
@@ -41,8 +41,7 @@ where
         + RelayerConfigOverride
         + ClientOptionsOverride
         + SupervisorOverride
-        + ConnectionDelayOverride
-        + NamadaParametersOverride,
+        + ConnectionDelayOverride,
 {
     run_binary_connection_test(&RunTwoWayBinaryConnectionTest::new(test))
 }
@@ -60,8 +59,7 @@ where
         + RelayerConfigOverride
         + ClientOptionsOverride
         + SupervisorOverride
-        + ConnectionDelayOverride
-        + NamadaParametersOverride,
+        + ConnectionDelayOverride,
 {
     run_binary_node_test(&RunBinaryChainTest::new(&RunBinaryConnectionTest::new(
         &RunWithSupervisor::new(test),
@@ -144,7 +142,7 @@ where
     }
 }
 
-impl<Test, Overrides> BinaryChainTest for RunBinaryConnectionTest<'_, Test>
+impl<'a, Test, Overrides> BinaryChainTest for RunBinaryConnectionTest<'a, Test>
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -174,7 +172,9 @@ where
     }
 }
 
-impl<Test: BinaryConnectionTest> BinaryConnectionTest for RunTwoWayBinaryConnectionTest<'_, Test> {
+impl<'a, Test: BinaryConnectionTest> BinaryConnectionTest
+    for RunTwoWayBinaryConnectionTest<'a, Test>
+{
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
         config: &TestConfig,
@@ -210,7 +210,7 @@ impl<Test: BinaryConnectionTest> BinaryConnectionTest for RunTwoWayBinaryConnect
     }
 }
 
-impl<Test, Overrides> BinaryConnectionTest for RunWithSupervisor<'_, Test>
+impl<'a, Test, Overrides> BinaryConnectionTest for RunWithSupervisor<'a, Test>
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -235,7 +235,7 @@ where
     }
 }
 
-impl<Test, Overrides> HasOverrides for RunBinaryConnectionTest<'_, Test>
+impl<'a, Test, Overrides> HasOverrides for RunBinaryConnectionTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -246,7 +246,7 @@ where
     }
 }
 
-impl<Test, Overrides> HasOverrides for RunTwoWayBinaryConnectionTest<'_, Test>
+impl<'a, Test, Overrides> HasOverrides for RunTwoWayBinaryConnectionTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

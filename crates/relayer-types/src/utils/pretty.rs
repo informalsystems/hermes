@@ -13,7 +13,7 @@ impl Display for PrettyDuration<'_> {
 
 pub struct PrettyOption<'a, T>(pub &'a Option<T>);
 
-impl<T: Display> Display for PrettyOption<'_, T> {
+impl<'a, T: Display> Display for PrettyOption<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         match &self.0 {
             Some(v) => write!(f, "{v}"),
@@ -62,7 +62,7 @@ impl Display for PrettyValidatorSet<'_> {
 
 pub struct PrettySlice<'a, T>(pub &'a [T]);
 
-impl<T: Display> Display for PrettySlice<'_, T> {
+impl<'a, T: Display> Display for PrettySlice<'a, T> {
     fn fmt(&self, f: &mut Formatter<'_>) -> Result<(), FmtError> {
         write!(f, "[ ")?;
         let mut vec_iterator = self.0.iter().peekable();

@@ -6,7 +6,6 @@ pub mod array;
 pub mod assert;
 pub mod file;
 pub mod interchain_security;
-pub mod namada;
 pub mod proposal_status;
 pub mod random;
 pub mod retry;

@@ -12,9 +12,7 @@ use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
 use crate::framework::binary::connection::{BinaryConnectionTest, ConnectionDelayOverride};
-use crate::framework::binary::node::{
-    NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
-};
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::chain::{NaryChainTest, RunNaryChainTest};
 use crate::framework::nary::node::run_nary_node_test;
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
@@ -37,7 +35,6 @@ where
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride
-        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunNaryConnectionTest::new(
@@ -95,8 +92,8 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryChainTest<SIZE>
-    for RunNaryConnectionTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> NaryChainTest<SIZE>
+    for RunNaryConnectionTest<'a, Test, SIZE>
 where
     Test: NaryConnectionTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -128,7 +125,7 @@ where
     }
 }
 
-impl<Test> NaryConnectionTest<2> for RunBinaryAsNaryConnectionTest<'_, Test>
+impl<'a, Test> NaryConnectionTest<2> for RunBinaryAsNaryConnectionTest<'a, Test>
 where
     Test: BinaryConnectionTest,
 {
@@ -144,7 +141,8 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE> for RunWithSupervisor<'_, Test>
+impl<'a, Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
+    for RunWithSupervisor<'a, Test>
 where
     Test: NaryConnectionTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -169,7 +167,7 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> HasOverrides for RunNaryConnectionTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryConnectionTest<'a, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -180,7 +178,7 @@ where
     }
 }
 
-impl<Test, Overrides> HasOverrides for RunBinaryAsNaryConnectionTest<'_, Test>
+impl<'a, Test, Overrides> HasOverrides for RunBinaryAsNaryConnectionTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

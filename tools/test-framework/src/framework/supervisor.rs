@@ -46,7 +46,7 @@ impl<'a, Test> RunWithSupervisor<'a, Test> {
     }
 }
 
-impl<Test, Overrides> HasOverrides for RunWithSupervisor<'_, Test>
+impl<'a, Test, Overrides> HasOverrides for RunWithSupervisor<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

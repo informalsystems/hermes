@@ -53,7 +53,7 @@ pub trait ChainProposalMethodsExt {
     ) -> Result<(), Error>;
 }
 
-impl<Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &ChainDriver> {
+impl<'a, Chain: Send> ChainProposalMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
     fn query_upgrade_proposal_height(
         &self,
         grpc_address: &Uri,

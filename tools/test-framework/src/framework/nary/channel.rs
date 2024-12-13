@@ -14,9 +14,7 @@ use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
 use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::connection::ConnectionDelayOverride;
-use crate::framework::binary::node::{
-    NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
-};
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::chain::RunNaryChainTest;
 use crate::framework::nary::connection::{NaryConnectionTest, RunNaryConnectionTest};
 use crate::framework::nary::node::run_nary_node_test;
@@ -41,7 +39,6 @@ where
         + ConnectionDelayOverride
         + PortsOverride<SIZE>
         + ChannelOrderOverride
-        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunNaryConnectionTest::new(
@@ -61,7 +58,6 @@ where
         + ConnectionDelayOverride
         + PortsOverride<2>
         + ChannelOrderOverride
-        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(test))
@@ -161,8 +157,8 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
-    for RunNaryChannelTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> NaryConnectionTest<SIZE>
+    for RunNaryChannelTest<'a, Test, SIZE>
 where
     Test: NaryChannelTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -198,7 +194,7 @@ where
     }
 }
 
-impl<Test> NaryChannelTest<2> for RunBinaryAsNaryChannelTest<'_, Test>
+impl<'a, Test> NaryChannelTest<2> for RunBinaryAsNaryChannelTest<'a, Test>
 where
     Test: BinaryChannelTest,
 {
@@ -214,7 +210,7 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> NaryChannelTest<SIZE> for RunWithSupervisor<'_, Test>
+impl<'a, Test, Overrides, const SIZE: usize> NaryChannelTest<SIZE> for RunWithSupervisor<'a, Test>
 where
     Test: NaryChannelTest<SIZE>,
     Test: HasOverrides<Overrides = Overrides>,
@@ -239,7 +235,7 @@ where
     }
 }
 
-impl<Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChannelTest<'_, Test, SIZE>
+impl<'a, Test, Overrides, const SIZE: usize> HasOverrides for RunNaryChannelTest<'a, Test, SIZE>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -250,7 +246,7 @@ where
     }
 }
 
-impl<Test, Overrides> HasOverrides for RunBinaryAsNaryChannelTest<'_, Test>
+impl<'a, Test, Overrides> HasOverrides for RunBinaryAsNaryChannelTest<'a, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

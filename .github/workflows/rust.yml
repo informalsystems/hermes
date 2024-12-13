@@ -54,11 +54,6 @@ jobs:
         with:
           toolchain: stable
           components: clippy
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/clippy-check@v1
         with:
           name: clippy-all-features
@@ -73,11 +68,6 @@ jobs:
         with:
           toolchain: stable
           components: clippy
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/clippy-check@v1
         with:
           name: clippy-no-default-features
@@ -92,11 +82,6 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
       - uses: actions-rs/cargo@v1
@@ -115,17 +100,12 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: stable
-      - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
-        with:
-          version: "25.0"
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall
       - name: Install cargo-msrv
-        run: cargo binstall --no-confirm --force cargo-msrv@0.17.1
+        run: cargo binstall --no-confirm --force cargo-msrv@0.16.0-beta.20
       - name: Check MSRV
-        run: cargo msrv verify --output-format json --manifest-path crates/relayer-cli/Cargo.toml
+        run: cargo msrv verify --output-format minimal --manifest-path crates/relayer-cli/Cargo.toml -- 'cargo check --all-features'
 
   # test-coverage:
   #   runs-on: ubuntu-latest

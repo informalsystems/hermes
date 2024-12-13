@@ -217,7 +217,7 @@ where
 
     struct StringOrInt;
 
-    impl Visitor<'_> for StringOrInt {
+    impl<'de> Visitor<'de> for StringOrInt {
         type Value = u64;
 
         fn expecting(&self, formatter: &mut Formatter<'_>) -> fmt::Result {

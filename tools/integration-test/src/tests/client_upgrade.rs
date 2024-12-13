@@ -21,7 +21,7 @@ use ibc_relayer::chain::requests::QueryHeight;
 use ibc_relayer::client_state::AnyClientState;
 use ibc_relayer::upgrade_chain::{build_and_send_ibc_upgrade_proposal, UpgradePlanOptions};
 use ibc_relayer_types::core::ics02_client::height::Height;
-use ibc_test_framework::chain::config::cosmos::{
+use ibc_test_framework::chain::config::{
     set_max_deposit_period, set_min_deposit_amount, set_voting_period,
 };
 use ibc_test_framework::chain::ext::bootstrap::ChainBootstrapMethodsExt;
@@ -82,10 +82,8 @@ impl BinaryChainTest for ClientUpgradeTest {
         chains: ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
-        let fee_denom_a: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base(
-            &config.native_tokens[0],
-            &config.native_tokens[0],
-        ));
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         // Create and send an chain upgrade proposal
@@ -243,10 +241,8 @@ impl BinaryChainTest for HeightTooHighClientUpgradeTest {
         chains: ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
-        let fee_denom_a: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base(
-            &config.native_tokens[0],
-            &config.native_tokens[0],
-        ));
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         // Create and send an chain upgrade proposal
@@ -343,10 +339,8 @@ impl BinaryChainTest for HeightTooLowClientUpgradeTest {
         chains: ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
     ) -> Result<(), ibc_test_framework::prelude::Error> {
         let upgraded_chain_id = ChainId::new("upgradedibc".to_owned(), 1);
-        let fee_denom_a: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base(
-            &config.native_tokens[0],
-            &config.native_tokens[0],
-        ));
+        let fee_denom_a: MonoTagged<ChainA, Denom> =
+            MonoTagged::new(Denom::base(config.native_token(0)));
         let foreign_clients = chains.clone().foreign_clients;
 
         let opts = create_upgrade_plan(config, &chains, &upgraded_chain_id)?;
@@ -438,10 +432,8 @@ fn create_upgrade_plan<ChainA: ChainHandle, ChainB: ChainHandle>(
     chains: &ibc_test_framework::prelude::ConnectedChains<ChainA, ChainB>,
     upgraded_chain_id: &ChainId,
 ) -> Result<UpgradePlanOptions, Error> {
-    let fee_denom_a: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::base(
-        &config.native_tokens[0],
-        &config.native_tokens[0],
-    ));
+    let fee_denom_a: MonoTagged<ChainA, Denom> =
+        MonoTagged::new(Denom::base(config.native_token(0)));
     let foreign_clients = chains.clone().foreign_clients;
 
     let src_client_id = foreign_clients.client_id_b().0.clone();
