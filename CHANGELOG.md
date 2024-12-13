@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## v1.10.5
+
+*December 13rd, 2024*
+
+This release addresses an issue with pull-mode event collection. The functionality has been enhanced to accurately retrieve events from `finalized_block_events`, ensuring more reliable event processing.
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Collect events from `finalized_block_events` when using `pull` mode
+    ([\#4263](https://github.com/informalsystems/hermes/issues/4263))
+- [Integration Test Framework](tools/test-framework)
+  - Update the version of Juno running the integration tests in the CI from `v24.0.0`
+    to `v25.0.0` ([\#4203](https://github.com/informalsystems/hermes/issues/4203))
+
 ## v1.10.4
 
 *November 19th, 2024*
