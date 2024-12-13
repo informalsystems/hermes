@@ -54,7 +54,7 @@ impl<Chain> TaggedTokenExt<Chain> for TaggedToken<Chain> {
     }
 }
 
-impl<'a, Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'a, Chain> {
+impl<Chain> TaggedTokenExt<Chain> for TaggedTokenRef<'_, Chain> {
     fn denom(&self) -> TaggedDenomRef<Chain> {
         self.map_ref(|t| &t.denom)
     }
@@ -87,7 +87,7 @@ impl<Chain> TaggedDenomExt<Chain> for TaggedDenom<Chain> {
     }
 }
 
-impl<'a, Chain> TaggedDenomExt<Chain> for TaggedDenomRef<'a, Chain> {
+impl<Chain> TaggedDenomExt<Chain> for TaggedDenomRef<'_, Chain> {
     fn with_amount(&self, amount: impl Into<Amount>) -> TaggedToken<Chain> {
         self.map(|denom| Token {
             denom: (*denom).clone(),

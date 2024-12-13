@@ -86,7 +86,7 @@ pub trait ChainTransferMethodsExt<Chain> {
     ) -> Result<(), Error>;
 }
 
-impl<'a, Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> ChainTransferMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
     fn ibc_transfer_token<Counterparty>(
         &self,
         port_id: &TaggedPortIdRef<Chain, Counterparty>,

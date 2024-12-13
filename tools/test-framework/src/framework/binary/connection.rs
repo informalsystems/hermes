@@ -142,7 +142,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> BinaryChainTest for RunBinaryConnectionTest<'a, Test>
+impl<Test, Overrides> BinaryChainTest for RunBinaryConnectionTest<'_, Test>
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -172,8 +172,8 @@ where
     }
 }
 
-impl<'a, Test: BinaryConnectionTest> BinaryConnectionTest
-    for RunTwoWayBinaryConnectionTest<'a, Test>
+impl<Test: BinaryConnectionTest> BinaryConnectionTest
+    for RunTwoWayBinaryConnectionTest<'_, Test>
 {
     fn run<ChainA: ChainHandle, ChainB: ChainHandle>(
         &self,
@@ -210,7 +210,7 @@ impl<'a, Test: BinaryConnectionTest> BinaryConnectionTest
     }
 }
 
-impl<'a, Test, Overrides> BinaryConnectionTest for RunWithSupervisor<'a, Test>
+impl<Test, Overrides> BinaryConnectionTest for RunWithSupervisor<'_, Test>
 where
     Test: BinaryConnectionTest,
     Test: HasOverrides<Overrides = Overrides>,
@@ -235,7 +235,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunBinaryConnectionTest<'a, Test>
+impl<Test, Overrides> HasOverrides for RunBinaryConnectionTest<'_, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {
@@ -246,7 +246,7 @@ where
     }
 }
 
-impl<'a, Test, Overrides> HasOverrides for RunTwoWayBinaryConnectionTest<'a, Test>
+impl<Test, Overrides> HasOverrides for RunTwoWayBinaryConnectionTest<'_, Test>
 where
     Test: HasOverrides<Overrides = Overrides>,
 {

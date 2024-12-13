@@ -7,7 +7,7 @@ pub trait ChainVersionMethodsExt {
     fn major_version(&self) -> Result<u64, Error>;
 }
 
-impl<'a, Chain: Send> ChainVersionMethodsExt for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> ChainVersionMethodsExt for MonoTagged<Chain, &ChainDriver> {
     fn major_version(&self) -> Result<u64, Error> {
         major_version(&self.value().command_path)
     }

@@ -103,7 +103,7 @@ impl<Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, FullNode> {
     }
 }
 
-impl<'a, Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, &'a FullNode> {
+impl<Chain> TaggedFullNodeExt<Chain> for MonoTagged<Chain, &FullNode> {
     fn chain_id(&self) -> MonoTagged<Chain, &ChainId> {
         self.map_ref(|c| &c.chain_driver.chain_id)
     }

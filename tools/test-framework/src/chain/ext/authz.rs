@@ -36,7 +36,7 @@ pub trait AuthzMethodsExt<Chain> {
     ) -> Result<(), Error>;
 }
 
-impl<'a, Chain: Send> AuthzMethodsExt<Chain> for MonoTagged<Chain, &'a ChainDriver> {
+impl<Chain: Send> AuthzMethodsExt<Chain> for MonoTagged<Chain, &ChainDriver> {
     fn authz_grant(
         &self,
         granter: &str,
