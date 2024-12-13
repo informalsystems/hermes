@@ -8,7 +8,7 @@ readme       = "README.md"
 keywords     = ["ibc", "rest", "api", "cosmos", "tendermint"]
 homepage     = "https://hermes.informal.systems/"
 repository   = "https://github.com/informalsystems/hermes"
-rust-version = "1.79.0"
+rust-version = "1.76.0"
 description  = """
   Rust implementation of a RESTful API server for Hermes
 """
@@ -24,6 +24,5 @@ tokio             = { workspace = true }
 tracing           = { workspace = true }
 
 [dev-dependencies]
-reqwest    = { workspace = true, features = ["json"] }
-serde_json = { workspace = true }
-toml       = { workspace = true }
+reqwest = { workspace = true, features = ["json"] }
+toml    = { workspace = true }

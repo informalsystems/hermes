@@ -24,7 +24,7 @@ use crate::framework::binary::connection::{
 };
 use crate::framework::binary::ics::run_binary_interchain_security_node_test;
 use crate::framework::binary::node::{
-    run_binary_node_test, NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
+    run_binary_node_test, NodeConfigOverride, NodeGenesisOverride,
 };
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
 use crate::relayer::driver::RelayerDriver;
@@ -54,8 +54,7 @@ where
         + ConnectionDelayOverride
         + PortsOverride
         + ChannelOrderOverride
-        + ChannelVersionOverride
-        + NamadaParametersOverride,
+        + ChannelVersionOverride,
 {
     run_binary_channel_test(&RunTwoWayBinaryChannelTest::new(test))
 }
@@ -76,8 +75,7 @@ where
         + ConnectionDelayOverride
         + PortsOverride
         + ChannelOrderOverride
-        + ChannelVersionOverride
-        + NamadaParametersOverride,
+        + ChannelVersionOverride,
 {
     run_binary_node_test(&RunBinaryChainTest::new(&RunBinaryConnectionTest::new(
         &RunBinaryChannelTest::new(&RunWithSupervisor::new(test)),

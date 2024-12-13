@@ -14,6 +14,5 @@
 pub mod binary;
 pub mod consumer;
 pub mod init;
-pub mod namada;
 pub mod nary;
 pub mod single;

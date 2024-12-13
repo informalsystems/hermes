@@ -1,13 +1,9 @@
-use ibc_relayer::{
-    chain::{
-        cosmos::query::consensus_state::query_consensus_states,
-        requests::{PageRequest, QueryConsensusStateHeightsRequest, QueryConsensusStatesRequest},
-    },
-    config::ChainConfig,
+use ibc_relayer::chain::{
+    cosmos::query::consensus_state::query_consensus_states,
+    requests::{PageRequest, QueryConsensusStateHeightsRequest, QueryConsensusStatesRequest},
 };
 
 use ibc_test_framework::prelude::*;
-use ibc_test_framework::util::namada;
 
 #[test]
 fn test_consensus_state_heights() -> Result<(), Error> {
@@ -52,42 +48,29 @@ impl BinaryChainTest for ConsensusStateHeights {
             &CONSENSUS_STATES_COUNT,
         )?;
 
-        let states = match chains.handle_b().config().expect("Config should exist") {
-            ChainConfig::Namada(config) => chains.node_b.value().chain_driver.runtime.block_on(
-                namada::query_consensus_states(
-                    config
-                        .rpc_addr
-                        .to_string()
-                        .parse()
-                        .expect("RPC address should be converted"),
-                    chains.client_id_b().value(),
-                ),
-            )?,
-            _ => {
-                let grpc_address = chains
-                    .node_b
-                    .value()
-                    .chain_driver
-                    .grpc_address()
-                    .as_str()
-                    .parse()
-                    .unwrap();
+        let grpc_address = chains
+            .node_b
+            .value()
+            .chain_driver
+            .grpc_address()
+            .as_str()
+            .parse()
+            .unwrap();
 
-                chains
-                    .node_b
-                    .value()
-                    .chain_driver
-                    .runtime
-                    .block_on(query_consensus_states(
-                        chains.node_b.chain_id().value(),
-                        &grpc_address,
-                        QueryConsensusStatesRequest {
-                            client_id: (*chains.client_id_b().value()).clone(),
-                            pagination: Some(PageRequest::all()),
-                        },
-                    ))?
-            }
-        };
+        let states =
+            chains
+                .node_b
+                .value()
+                .chain_driver
+                .runtime
+                .block_on(query_consensus_states(
+                    chains.node_b.chain_id().value(),
+                    &grpc_address,
+                    QueryConsensusStatesRequest {
+                        client_id: (*chains.client_id_b().value()).clone(),
+                        pagination: Some(PageRequest::all()),
+                    },
+                ))?;
 
         assert_eq(
             "did not find the expected number of consensus states",

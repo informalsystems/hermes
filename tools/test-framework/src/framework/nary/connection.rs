@@ -12,9 +12,7 @@ use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
 use crate::framework::binary::connection::{BinaryConnectionTest, ConnectionDelayOverride};
-use crate::framework::binary::node::{
-    NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
-};
+use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
 use crate::framework::nary::chain::{NaryChainTest, RunNaryChainTest};
 use crate::framework::nary::node::run_nary_node_test;
 use crate::framework::supervisor::{RunWithSupervisor, SupervisorOverride};
@@ -37,7 +35,6 @@ where
         + RelayerConfigOverride
         + SupervisorOverride
         + ConnectionDelayOverride
-        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunNaryConnectionTest::new(

@@ -209,7 +209,7 @@ async fn sequential_send_messages_as_batches(
     Ok(tx_sync_results)
 }
 
-pub fn response_to_tx_sync_result(
+fn response_to_tx_sync_result(
     chain_id: &ChainId,
     message_count: usize,
     response: Response,

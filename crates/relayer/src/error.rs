@@ -36,7 +36,6 @@ use ibc_relayer_types::proofs::ProofError;
 
 use crate::chain::cosmos::version;
 use crate::chain::cosmos::BLOCK_MAX_BYTES_MAX_FRACTION;
-use crate::chain::namada::error::Error as NamadaError;
 use crate::config::Error as ConfigError;
 use crate::event::source;
 use crate::keyring::{errors::Error as KeyringError, KeyType};
@@ -643,10 +642,6 @@ define_error! {
         Ics24HostValidationError
             [ ValidationError ]
             |_| { "ICS24 host validation error" },
-
-        Namada
-            [ NamadaError ]
-            |_| { "Namada error" },
     }
 }
 

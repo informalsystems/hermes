@@ -42,10 +42,7 @@ impl BinaryChannelTest for FeeGrantTest {
         let denom_a = chains.node_a.denom();
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
-        let fee_denom_a = MonoTagged::new(Denom::base(
-            &config.native_tokens[0],
-            &config.native_tokens[0],
-        ));
+        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
 
         let a_to_b_amount = 12345u64;
         let granter = chains
@@ -73,7 +70,6 @@ impl BinaryChannelTest for FeeGrantTest {
         thread::sleep(Duration::from_secs(5));
 
         let denom_b = derive_ibc_denom(
-            &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
             &denom_a,
@@ -85,13 +81,10 @@ impl BinaryChannelTest for FeeGrantTest {
             .first()
             .ok_or_else(|| eyre!("chain configuration is empty"))?
         {
-            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
-                chain_config.gas_price.denom.clone()
-            }
+            ChainConfig::CosmosSdk(chain_config) => chain_config.gas_price.denom.clone(),
         };
 
-        let gas_denom: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&gas_denom_str, &gas_denom_str));
+        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base(gas_denom_str));
 
         let balance_user1_before = chains
             .node_a
@@ -111,7 +104,7 @@ impl BinaryChannelTest for FeeGrantTest {
             .for_each(|chain_config| {
                 if chain_config.id() == chains.node_a.chain_id().0 {
                     match chain_config {
-                        ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => {
+                        ChainConfig::CosmosSdk(c) => {
                             c.fee_granter = Some("user2".to_owned());
                         }
                     }
@@ -192,10 +185,7 @@ impl BinaryChannelTest for NoFeeGrantTest {
         let wallet_a = chains.node_a.wallets().user1().cloned();
         let wallet_a2 = chains.node_a.wallets().user2().cloned();
         let wallet_b = chains.node_b.wallets().user1().cloned();
-        let fee_denom_a = MonoTagged::new(Denom::base(
-            &config.native_tokens[0],
-            &config.native_tokens[0],
-        ));
+        let fee_denom_a = MonoTagged::new(Denom::base(config.native_token(0)));
 
         let a_to_b_amount = 12345u64;
         let granter = chains
@@ -223,7 +213,6 @@ impl BinaryChannelTest for NoFeeGrantTest {
         thread::sleep(Duration::from_secs(5));
 
         let denom_b = derive_ibc_denom(
-            &chains.node_b.chain_driver().value().chain_type,
             &channels.port_b.as_ref(),
             &channels.channel_id_b.as_ref(),
             &denom_a,
@@ -235,13 +224,10 @@ impl BinaryChannelTest for NoFeeGrantTest {
             .first()
             .ok_or_else(|| eyre!("chain configuration is empty"))?
         {
-            ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
-                chain_config.gas_price.denom.clone()
-            }
+            ChainConfig::CosmosSdk(chain_config) => chain_config.gas_price.denom.clone(),
         };
 
-        let gas_denom: MonoTagged<ChainA, Denom> =
-            MonoTagged::new(Denom::base(&gas_denom_str, &gas_denom_str));
+        let gas_denom: MonoTagged<ChainA, Denom> = MonoTagged::new(Denom::Base(gas_denom_str));
 
         let balance_user1_before = chains
             .node_a
