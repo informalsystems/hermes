@@ -57,7 +57,7 @@ bytes                    = "1.8.0"
 clap                     = "3.2"
 clap_complete            = "3.2"
 color-eyre               = "0.6"
-console                  = "0.15.5"
+console                  = "0.15.10"
 crossbeam-channel        = "0.5.12"
 dashmap                  = "5.4.0"
 derive_more              = { version = "0.99.18", default-features = false }
