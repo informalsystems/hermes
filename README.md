@@ -54,6 +54,14 @@ The crates in this project require Rust `1.76.0`.
 
 We have a comprehensive guide at [hermes.informal.systems](http://hermes.informal.systems).
 
+## Support
+
+If you encounter any issues or have questions related to Hermes, we encourage you to open a GitHub issue. This ensures a streamlined process for tracking and resolving problems.
+
+Please use the following link to report your issue: https://github.com/informalsystems/hermes/issues/new?assignees=&labels=&projects=&template=bug-report.md
+
+Providing clear and detailed information in your issue will help us address it more efficiently.
+
 ## Contributing
 
 IBC is specified in English in the [cosmos/ibc repo](https://github.com/cosmos/ibc). Any
