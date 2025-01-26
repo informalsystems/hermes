@@ -16,6 +16,7 @@ impl TestOverrides for PythonTest {
                     // with external relayer commands.
                     chain_config.key_store_type = Store::Test;
                 }
+                ChainConfig::Penumbra(_) => { /* no-op */ }
             }
         }
     }

@@ -134,6 +134,7 @@ impl BinaryChainTest for ClientFailsTest {
                         ChainConfig::Namada(config_chain_a) => {
                             config_chain_a.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
                         }
+                        ChainConfig::Penumbra(_) => { /* no-op */ }
                     }
                 }
 
@@ -144,6 +145,7 @@ impl BinaryChainTest for ClientFailsTest {
                     ChainConfig::Namada(config_chain_b) => {
                         config_chain_b.gas_multiplier = Some(GasMultiplier::unsafe_new(0.8));
                     }
+                    ChainConfig::Penumbra(_) => { /* no-op */ }
                 }
             },
             config,

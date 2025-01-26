@@ -640,6 +640,14 @@ define_error! {
             { channel: String }
             |e| { format!("invalid channel string {}", e.channel) },
 
+        Other
+            { reason: String}
+            |e| { format!("other error: {}", e.reason) },
+
+        TempPenumbraError
+            { detail: String }
+            |e| { format!("penumbra error: {}", e.detail) },
+
         Ics24HostValidationError
             [ ValidationError ]
             |_| { "ICS24 host validation error" },

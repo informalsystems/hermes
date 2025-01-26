@@ -7,7 +7,8 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
 use crate::{
     chain::{
-        cosmos::CosmosSdkChain, handle::ChainHandle, namada::NamadaChain, runtime::ChainRuntime,
+        cosmos::CosmosSdkChain, handle::ChainHandle, namada::NamadaChain, penumbra::PenumbraChain,
+        runtime::ChainRuntime,
     },
     config::{ChainConfig, Config},
     error::Error as RelayerError,
@@ -85,6 +86,7 @@ pub fn spawn_chain_runtime_with_config<Handle: ChainHandle>(
     let handle = match config {
         ChainConfig::CosmosSdk(_) => ChainRuntime::<CosmosSdkChain>::spawn(config, rt),
         ChainConfig::Namada(_) => ChainRuntime::<NamadaChain>::spawn(config, rt),
+        ChainConfig::Penumbra(_) => ChainRuntime::<PenumbraChain>::spawn(config, rt),
     }
     .map_err(SpawnError::relayer)?;
 

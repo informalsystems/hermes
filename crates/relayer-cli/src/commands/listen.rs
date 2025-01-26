@@ -1,7 +1,9 @@
 use alloc::sync::Arc;
 use core::fmt::{Display, Error as FmtError, Formatter};
 use core::str::FromStr;
+use ibc_relayer::chain::penumbra;
 use std::thread;
+use tendermint_rpc::Client;
 
 use abscissa_core::application::fatal_error;
 use abscissa_core::clap::Parser;
@@ -180,6 +182,32 @@ fn subscribe(
             let subscription = monitor_tx.subscribe()?;
             Ok(subscription)
         }
+        ChainConfig::Penumbra(config) => {
+            let (event_source, monitor_tx) = match &config.event_source {
+                EventSourceMode::Push { url, batch_delay } => EventSource::websocket(
+                    chain_config.id().clone(),
+                    url.clone(),
+                    compat_mode,
+                    *batch_delay,
+                    rt,
+                ),
+                EventSourceMode::Pull {
+                    interval,
+                    max_retries,
+                } => EventSource::rpc(
+                    chain_config.id().clone(),
+                    HttpClient::new(config.rpc_addr.clone())?,
+                    *interval,
+                    *max_retries,
+                    rt,
+                ),
+            }?;
+
+            thread::spawn(move || event_source.run());
+
+            let subscription = monitor_tx.subscribe()?;
+            Ok(subscription)
+        }
     }
 }
 
@@ -187,9 +215,9 @@ fn detect_compatibility_mode(
     config: &ChainConfig,
     rt: Arc<TokioRuntime>,
 ) -> eyre::Result<CompatMode> {
-    // TODO(erwan): move this to the cosmos sdk endpoint implementation
     let rpc_addr = match config {
         ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => config.rpc_addr.clone(),
+        ChainConfig::Penumbra(config) => config.rpc_addr.clone(),
     };
 
     let client = HttpClient::builder(rpc_addr.try_into()?)
@@ -199,6 +227,11 @@ fn detect_compatibility_mode(
     let compat_mode = match config {
         ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => {
             rt.block_on(fetch_compat_mode(&client, config))?
+        }
+        ChainConfig::Penumbra(config) => {
+            let status = rt.block_on(client.status())?;
+            penumbra::util::compat_mode_from_version(&config.compat_mode, status.node_info.version)?
+                .into()
         }
     };
 
