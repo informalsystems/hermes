@@ -49,7 +49,7 @@ pub struct TestConfig {
 
     /**
        Whether to suspend a test case when it fails whenever possible.
-       Defaults to `false`. This can be overrideen by setting `HANG_ON_FAIL=1`.
+       Defaults to `false`. This can be overridden by setting `HANG_ON_FAIL=1`.
 
        Note that even when this is enabled, not all test case will necessary
        suspend on failure. The suspend-on-failure hook is handled by individual
