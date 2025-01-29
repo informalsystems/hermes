@@ -62,10 +62,14 @@ pub fn query_balance(
                     "--output",
                     "json",
                 ],
-            )?
-            .stdout;
+            )?;
+            let output = if res.stdout.is_empty() {
+                res.stderr
+            } else {
+                res.stdout
+            };
             let amounts_array =
-                json::from_str::<json::Value>(&res).map_err(handle_generic_error)?;
+                json::from_str::<json::Value>(&output).map_err(handle_generic_error)?;
 
             let balances = amounts_array
                 .get("balances")
