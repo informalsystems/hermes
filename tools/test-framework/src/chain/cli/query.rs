@@ -276,9 +276,14 @@ pub fn query_auth_module(
             "json",
         ],
     ) {
-        Ok(output) => {
+        Ok(raw_output) => {
+            let output = if raw_output.stdout.is_empty() {
+                raw_output.stderr
+            } else {
+                raw_output.stdout
+            };
             let json_res: HashMap<String, serde_json::Value> =
-                serde_json::from_str(&output.stdout).map_err(handle_generic_error)?;
+                serde_json::from_str(&output).map_err(handle_generic_error)?;
 
             json_res
                 .get("account")
@@ -287,7 +292,7 @@ pub fn query_auth_module(
         }
         Err(e) => {
             debug!("CLI `query auth module-account` failed, will try with `query auth module-accounts`: {e}");
-            let output = simple_exec(
+            let raw_output = simple_exec(
                 chain_id,
                 command_path,
                 &[
@@ -301,8 +306,12 @@ pub fn query_auth_module(
                     "--output",
                     "json",
                 ],
-            )?
-            .stdout;
+            )?;
+            let output = if raw_output.stdout.is_empty() {
+                raw_output.stderr
+            } else {
+                raw_output.stdout
+            };
             let json_res: HashMap<String, serde_json::Value> =
                 serde_json::from_str(&output).map_err(handle_generic_error)?;
 
