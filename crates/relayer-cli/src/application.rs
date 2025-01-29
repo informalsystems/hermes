@@ -202,7 +202,7 @@ impl Application for CliApp {
         let is_start_cmd = command
             .command
             .as_ref()
-            .map_or(false, |cmd| matches!(cmd, CliCmd::Start(_)));
+            .is_some_and(|cmd| matches!(cmd, CliCmd::Start(_)));
 
         if command.json {
             // Enable JSON by using the crate-level `Tracing`

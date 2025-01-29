@@ -454,7 +454,7 @@ fn filter_batch(
         IbcEvent::SendPacket(packet) => incentivized_recv_cache
             .acquire_read()
             .get(&packet.packet.sequence)
-            .map_or(false, |incentivized_event| {
+            .is_some_and(|incentivized_event| {
                 let grouped_amounts =
                     retrieve_all_fees_from_incentivized_packet(incentivized_event);
 
