@@ -124,6 +124,7 @@ jobs:
             --features namada
 
   namada:
+    timeout-minutes: 240 # Set timeout to 4 hours
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
