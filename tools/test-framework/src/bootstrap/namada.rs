@@ -61,7 +61,8 @@ pub fn bootstrap_namada_node(
         config::namada::set_default_mint_limit(parameters, i64::MAX)?;
         config::namada::set_epochs_per_year(parameters, 31536)?;
         config::namada::set_default_per_epoch_throughput_limit(parameters, i64::MAX)?;
-        config::namada::set_pipeline_len(parameters, 2000)?;
+        config::namada::set_pipeline_len(parameters, 2)?;
+        config::namada::set_unbonding_len(parameters, 400)?;
 
         parameters_modifier(parameters)?;
 
