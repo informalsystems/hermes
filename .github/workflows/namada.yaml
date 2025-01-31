@@ -29,7 +29,7 @@ concurrency:
 
 jobs:
   cosmos-namada:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -125,7 +125,7 @@ jobs:
 
   namada:
     timeout-minutes: 240 # Set timeout to 4 hours
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
     steps:
