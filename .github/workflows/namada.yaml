@@ -91,7 +91,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/188247367" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/196980850" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
@@ -178,7 +178,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/188247367" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/196980850" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
