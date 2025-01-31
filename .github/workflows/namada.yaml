@@ -136,6 +136,13 @@ jobs:
           repository: anoma/namada
           ref: v0.46.1
           path: namada
+      - name: Add Swap Memory
+        run: |
+          sudo fallocate -l 4G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          free -h
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: |
@@ -195,6 +202,6 @@ jobs:
           ACCOUNT_PREFIXES: ''
           NATIVE_TOKENS: nam
         run: |
-          cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=1 \
+          taskset -c 0,1 cargo nextest run -p ibc-integration-test --no-fail-fast --failure-output final --test-threads=1 \
             --features namada
 
