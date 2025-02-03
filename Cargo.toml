@@ -43,7 +43,7 @@ tendermint-rpc                   = { version = "0.40.0" }
 tendermint-testgen               = { version = "0.40.0" }
 
 # Namada dependencies
-namada_sdk        = { git = "https://github.com/anoma/namada", tag = "v0.46.1" }
+namada_sdk        = { git = "https://github.com/anoma/namada", rev = "a0cc88cc21656229b5fcab8509be3d6b360204a3" }
 # Different tendermint-rs version for Namada
 namada-tendermint       = { package = "tendermint", version = "0.38.0", default-features = false }
 namada-tendermint-proto = { package = "tendermint-proto", version = "0.38.0" }

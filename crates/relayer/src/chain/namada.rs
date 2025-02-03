@@ -158,7 +158,7 @@ impl NamadaChain {
         let (value, _) = self.query(key, QueryHeight::Latest, IncludeProof::No)?;
         let epoch_duration =
             EpochDuration::try_from_slice(&value[..]).map_err(NamadaError::borsh_decode)?;
-        let unbonding_period = pos_params.pipeline_len * epoch_duration.min_duration.0;
+        let unbonding_period = pos_params.unbonding_len * epoch_duration.min_duration.0;
         Ok(Duration::from_secs(unbonding_period))
     }
 
