@@ -231,11 +231,11 @@
         "wasmvm_2_1_4-src": "wasmvm_2_1_4-src"
       },
       "locked": {
-        "lastModified": 1736331154,
-        "narHash": "sha256-4B1divgZCXyiMGqL5KRcJp9xDEulHAE2zb7hpbbkXxM=",
+        "lastModified": 1738754233,
+        "narHash": "sha256-Z3xF0UsI1O+3AZYEAfNegW2UCB1jvlSH1UZzsY0+DL8=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "662d2ec410e5d0a0a069aafe41458b2a2ace654d",
+        "rev": "b7125841f14af672a4f656f5607f9cf8b8c67970",
         "type": "github"
       },
       "original": {
@@ -1485,11 +1485,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1738009863,
-        "narHash": "sha256-KxmFlQ2j9PpDhKRXWu85bv3R2wmfkUqdpJhEwz9JN/E=",
+        "lastModified": 1738797219,
+        "narHash": "sha256-KRwX9Z1XavpgeSDVM/THdFd6uH8rNm/6R+7kIbGa+2s=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "f898cbfddfab52593da301a397a17d0af801bbc3",
+        "rev": "1da52dd49a127ad74486b135898da2cef8c62665",
         "type": "github"
       },
       "original": {
@@ -1502,18 +1502,18 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1731942173,
-        "narHash": "sha256-Ie+LKLrWthkGgJGlVpiTDwBvgA+Mo77Isa65vIOr1Ao=",
-        "owner": "osmosis-labs",
-        "repo": "osmosis",
-        "rev": "100ba81036f01a348271ed59917881e2b83d0fbc",
-        "type": "github"
+        "lastModified": 1733410232,
+        "narHash": "sha256-XU6eRpngXZMzDS3C68T7ocHAorPXPP0jtC/nDB7XGeE=",
+        "ref": "refs/tags/v28.0.0",
+        "rev": "39ec8f9e54742aa52ed531210b02218171dfadd9",
+        "revCount": 4026,
+        "type": "git",
+        "url": "https://github.com/osmosis-labs/osmosis"
       },
       "original": {
-        "owner": "osmosis-labs",
-        "ref": "v27.0.1",
-        "repo": "osmosis",
-        "type": "github"
+        "ref": "refs/tags/v28.0.0",
+        "type": "git",
+        "url": "https://github.com/osmosis-labs/osmosis"
       }
     },
     "pre-commit-hooks": {
