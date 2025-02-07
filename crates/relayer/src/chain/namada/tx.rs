@@ -13,7 +13,7 @@ use namada_sdk::chain::ChainId;
 use namada_sdk::io::NamadaIo;
 use namada_sdk::tx::{prepare_tx, ProcessTxResponse};
 use namada_sdk::{rpc, signing, tx, Namada};
-use namada_tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
 use tracing::{debug, debug_span, trace, warn};
 
 use crate::chain::cosmos::gas::{adjust_estimated_gas, AdjustGas};
@@ -334,8 +334,8 @@ impl NamadaChain {
 
     fn update_tx_sync_result(&self, tx_sync_result: &mut TxSyncResult) -> Result<(), Error> {
         if let TxStatus::Pending { .. } = tx_sync_result.status {
-            let tm_hash = namada_tendermint::Hash::from_bytes(
-                namada_tendermint::hash::Algorithm::Sha256,
+            let tm_hash = tendermint::Hash::from_bytes(
+                tendermint::hash::Algorithm::Sha256,
                 tx_sync_result.response.hash.as_bytes(),
             )
             .expect("tendermint hash should be converted");

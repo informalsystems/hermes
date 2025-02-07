@@ -54,12 +54,12 @@ use namada_sdk::token::{Amount, DenominatedAmount, Denomination};
 use namada_sdk::wallet::Store;
 use namada_sdk::wallet::Wallet;
 use namada_sdk::{rpc, Namada, NamadaImpl};
-use namada_tendermint::block::Height as TmHeight;
-use namada_tendermint::{node, Time};
-use namada_tendermint_rpc::client::CompatMode;
-use namada_tendermint_rpc::endpoint::broadcast::tx_sync::Response;
-use namada_tendermint_rpc::{HttpClient, Url};
+use tendermint::block::Height as TmHeight;
+use tendermint::{node, Time};
 use tendermint_proto::Protobuf as TmProtobuf;
+use tendermint_rpc::client::CompatMode;
+use tendermint_rpc::endpoint::broadcast::tx_sync::Response;
+use tendermint_rpc::{HttpClient, Url};
 use tokio::runtime::Runtime as TokioRuntime;
 
 use crate::account::Balance;
@@ -1164,8 +1164,8 @@ impl ChainEndpoint for NamadaChain {
                 }
             }
             QueryTxRequest::Transaction(tx) => {
-                let tm_hash = namada_tendermint::Hash::from_bytes(
-                    namada_tendermint::hash::Algorithm::Sha256,
+                let tm_hash = tendermint::Hash::from_bytes(
+                    tendermint::hash::Algorithm::Sha256,
                     tx.0.as_bytes(),
                 )
                 .expect("hash should be converted");
@@ -1207,7 +1207,7 @@ impl ChainEndpoint for NamadaChain {
             .rt
             .block_on(rpc_call)
             .map_err(|e| NamadaError::rpc(self.config.rpc_addr.clone(), e))?;
-        let raw_header = namada_tendermint_proto::v0_37::types::Header::from(response.block.header);
+        let raw_header = tendermint_proto::v0_37::types::Header::from(response.block.header);
         let encoded_header = raw_header.encode_to_vec();
         let raw_header: tendermint_proto::v0_37::types::Header =
             prost::Message::decode(&encoded_header[..])
@@ -1389,10 +1389,6 @@ async fn fetch_node_info(
 }
 
 fn into_tm_response(response: Response) -> tendermint_rpc::endpoint::broadcast::tx_sync::Response {
-    let code = match response.code {
-        namada_tendermint::abci::Code::Ok => tendermint::abci::Code::Ok,
-        namada_tendermint::abci::Code::Err(c) => tendermint::abci::Code::Err(c),
-    };
     let hash = tendermint::Hash::from_bytes(
         tendermint::hash::Algorithm::Sha256,
         response.hash.as_bytes(),
@@ -1400,7 +1396,7 @@ fn into_tm_response(response: Response) -> tendermint_rpc::endpoint::broadcast::
     .expect("hash should be converted");
     tendermint_rpc::endpoint::broadcast::tx_sync::Response {
         codespace: response.codespace,
-        code,
+        code: response.code,
         data: response.data,
         log: response.log,
         hash,

@@ -1,8 +1,8 @@
 use flex_error::{define_error, DisplayOnly, TraceError};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
-use namada_tendermint::Error as TendermintError;
-use namada_tendermint_proto::Error as TendermintProtoError;
-use namada_tendermint_rpc::Error as TendermintRpcError;
+use tendermint::Error as TendermintError;
+use tendermint_proto::Error as TendermintProtoError;
+use tendermint_rpc::Error as TendermintRpcError;
 
 define_error! {
     Error {

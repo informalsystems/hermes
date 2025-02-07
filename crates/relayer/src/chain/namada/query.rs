@@ -15,10 +15,10 @@ use namada_sdk::rpc;
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::tx::data::ResultCode;
 use namada_sdk::tx::event::{Batch as BatchAttr, Code as CodeAttr};
-use namada_tendermint::block::Height as TmHeight;
-use namada_tendermint::merkle::proof::ProofOps;
-use namada_tendermint::Hash as TmHash;
-use namada_tendermint_proto::v0_37::abci::Event as TmEvent;
+use tendermint::block::Height as TmHeight;
+use tendermint::merkle::proof::ProofOps;
+use tendermint::Hash as TmHash;
+use tendermint_proto::v0_37::abci::Event as TmEvent;
 
 use crate::chain::endpoint::ChainEndpoint;
 use crate::chain::requests::{
