@@ -14,7 +14,7 @@
 //!
 //! For the IBC relayer binary, please see [Hermes] (`ibc-relayer-cli` crate).
 //!
-//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.10.5/
+//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.11.0/
 
 extern crate alloc;
 
@@ -48,4 +48,4 @@ pub mod upgrade_chain;
 pub mod util;
 pub mod worker;
 
-pub const HERMES_VERSION: &str = "1.10.5";
+pub const HERMES_VERSION: &str = "1.11.0";
