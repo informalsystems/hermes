@@ -14,7 +14,9 @@ use crate::framework::base::{HasOverrides, TestConfigOverride};
 use crate::framework::binary::chain::{RelayerConfigOverride, TopologyOverride};
 use crate::framework::binary::channel::{BinaryChannelTest, ChannelOrderOverride};
 use crate::framework::binary::connection::ConnectionDelayOverride;
-use crate::framework::binary::node::{NodeConfigOverride, NodeGenesisOverride};
+use crate::framework::binary::node::{
+    NamadaParametersOverride, NodeConfigOverride, NodeGenesisOverride,
+};
 use crate::framework::nary::chain::RunNaryChainTest;
 use crate::framework::nary::connection::{NaryConnectionTest, RunNaryConnectionTest};
 use crate::framework::nary::node::run_nary_node_test;
@@ -39,6 +41,7 @@ where
         + ConnectionDelayOverride
         + PortsOverride<SIZE>
         + ChannelOrderOverride
+        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_node_test(&RunNaryChainTest::new(&RunNaryConnectionTest::new(
@@ -58,6 +61,7 @@ where
         + ConnectionDelayOverride
         + PortsOverride<2>
         + ChannelOrderOverride
+        + NamadaParametersOverride
         + TopologyOverride,
 {
     run_nary_channel_test(&RunBinaryAsNaryChannelTest::new(test))

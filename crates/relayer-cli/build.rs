@@ -75,7 +75,7 @@ mod git {
             Command::new("git")
                 .args(["rev-parse", "--git-dir"])
                 .output()
-                .map_or(false, |o| o.status.success())
+                .is_ok_and(|o| o.status.success())
         }
     }
 }

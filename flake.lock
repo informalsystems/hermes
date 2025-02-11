@@ -180,6 +180,7 @@
         "ibc-go-v8-src": "ibc-go-v8-src",
         "ibc-go-v8-wasm-src": "ibc-go-v8-wasm-src",
         "ibc-go-v9-src": "ibc-go-v9-src",
+        "ibc-go-v9-wasm-src": "ibc-go-v9-wasm-src",
         "ibc-rs-src": "ibc-rs-src",
         "ica-src": "ica-src",
         "ignite-cli-src": "ignite-cli-src",
@@ -225,14 +226,16 @@
         "wasmvm_2_0_0-src": "wasmvm_2_0_0-src",
         "wasmvm_2_0_3-src": "wasmvm_2_0_3-src",
         "wasmvm_2_1_0-src": "wasmvm_2_1_0-src",
-        "wasmvm_2_1_2-src": "wasmvm_2_1_2-src"
+        "wasmvm_2_1_2-src": "wasmvm_2_1_2-src",
+        "wasmvm_2_1_3-src": "wasmvm_2_1_3-src",
+        "wasmvm_2_1_4-src": "wasmvm_2_1_4-src"
       },
       "locked": {
-        "lastModified": 1729681912,
-        "narHash": "sha256-Ym4WfC/Iogqft2KOoHEv2FlWlgsxOAA5CZCbGXPf65o=",
+        "lastModified": 1738754233,
+        "narHash": "sha256-Z3xF0UsI1O+3AZYEAfNegW2UCB1jvlSH1UZzsY0+DL8=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "04a2efd0e01206b5df601b205d7662db79a765f0",
+        "rev": "b7125841f14af672a4f656f5607f9cf8b8c67970",
         "type": "github"
       },
       "original": {
@@ -1083,6 +1086,23 @@
         "type": "github"
       }
     },
+    "ibc-go-v9-wasm-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1734690421,
+        "narHash": "sha256-E0LxbmwuGAM3c9OvncRpfvxeQHYbJS2PADGTuI0w38Y=",
+        "owner": "cosmos",
+        "repo": "ibc-go",
+        "rev": "ae2bfabb6df53c000c1212ae41b7d0a0743b851a",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "08-wasm/release/v0.5.x%2Bibc-go-v9.0.x-wasmvm-v2.1.x",
+        "repo": "ibc-go",
+        "type": "github"
+      }
+    },
     "ibc-rs-src": {
       "flake": false,
       "locked": {
@@ -1465,11 +1485,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1731531548,
-        "narHash": "sha256-sz8/v17enkYmfpgeeuyzniGJU0QQBfmAjlemAUYhfy8=",
+        "lastModified": 1738797219,
+        "narHash": "sha256-KRwX9Z1XavpgeSDVM/THdFd6uH8rNm/6R+7kIbGa+2s=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "24f0d4acd634792badd6470134c387a3b039dace",
+        "rev": "1da52dd49a127ad74486b135898da2cef8c62665",
         "type": "github"
       },
       "original": {
@@ -1482,18 +1502,18 @@
     "osmosis-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1719537675,
-        "narHash": "sha256-8Lb2SppNfq3+JwP3uanmCxuCek6tXOO/GcG27XGxRrE=",
-        "owner": "osmosis-labs",
-        "repo": "osmosis",
-        "rev": "b973bffdf127866f45624d7e5a81f31fdc8e8e0b",
-        "type": "github"
+        "lastModified": 1733410232,
+        "narHash": "sha256-XU6eRpngXZMzDS3C68T7ocHAorPXPP0jtC/nDB7XGeE=",
+        "ref": "refs/tags/v28.0.0",
+        "rev": "39ec8f9e54742aa52ed531210b02218171dfadd9",
+        "revCount": 4026,
+        "type": "git",
+        "url": "https://github.com/osmosis-labs/osmosis"
       },
       "original": {
-        "owner": "osmosis-labs",
-        "ref": "v25.2.0",
-        "repo": "osmosis",
-        "type": "github"
+        "ref": "refs/tags/v28.0.0",
+        "type": "git",
+        "url": "https://github.com/osmosis-labs/osmosis"
       }
     },
     "pre-commit-hooks": {
@@ -2128,6 +2148,40 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.1.2",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_2_1_3-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1727089467,
+        "narHash": "sha256-gYrK2EHhXnearJgLX38O6NLI6TfoGtpzA9be/7S/0ZU=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "2a104d140a5b2974dab7c15044da652769018cbe",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.1.3",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_2_1_4-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1733824920,
+        "narHash": "sha256-Bkrp8ocQftzfAAgZ8D8Gifi4qQJl32Urazf4ZAcCnpI=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "1ddd563a80546192e10a9cf38060b5ee5262808e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.1.4",
         "repo": "wasmvm",
         "type": "github"
       }

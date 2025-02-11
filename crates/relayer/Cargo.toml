@@ -7,7 +7,7 @@ readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.76.0"
+rust-version = "1.79.0"
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -46,6 +46,7 @@ humantime                        = { workspace = true }
 humantime-serde                  = { workspace = true }
 itertools                        = { workspace = true }
 moka                             = { workspace = true, features = ["sync"] }
+namada_sdk                       = { workspace = true }
 num-bigint                       = { workspace = true, features = ["serde"] }
 num-rational                     = { workspace = true, features = ["num-bigint", "serde"] }
 once_cell                        = { workspace = true }
@@ -54,6 +55,7 @@ regex                            = { workspace = true }
 reqwest                          = { workspace = true, features = ["rustls-tls-native-roots", "json"] }
 retry                            = { workspace = true }
 ripemd                           = { workspace = true }
+rpassword                        = { workspace = true }
 secp256k1                        = { workspace = true, features = ["rand-std"] }
 semver                           = { workspace = true }
 serde                            = { workspace = true }

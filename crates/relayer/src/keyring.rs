@@ -5,6 +5,8 @@ pub use key_type::KeyType;
 pub use secp256k1_key_pair::Secp256k1KeyPair;
 pub use signing_key_pair::{SigningKeyPair, SigningKeyPairSized};
 
+pub use crate::chain::namada::key::NamadaKeyPair;
+
 mod any_signing_key_pair;
 mod ed25519_key_pair;
 mod key_type;
@@ -286,7 +288,15 @@ impl KeyRing<Ed25519KeyPair> {
     }
 }
 
-// Why is this not a method on `ChainConfig`?
+impl KeyRing<NamadaKeyPair> {
+    pub fn new_namada(
+        store: Store,
+        chain_id: &ChainId,
+        ks_folder: &Option<PathBuf>,
+    ) -> Result<Self, Error> {
+        Self::new(store, "", chain_id, ks_folder)
+    }
+}
 
 fn disk_store_path(folder_name: &str, keystore_folder: &Option<PathBuf>) -> Result<PathBuf, Error> {
     let ks_folder = match keystore_folder {

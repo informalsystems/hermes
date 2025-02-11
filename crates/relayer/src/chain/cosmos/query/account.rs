@@ -45,10 +45,10 @@ pub async fn get_or_fetch_account<'a>(
 
 /// Refresh the account sequence behind the `&mut Account` by refetching the
 /// account and updating the `&mut` reference.
-pub async fn refresh_account<'a>(
+pub async fn refresh_account(
     grpc_address: &Uri,
     account_address: &str,
-    m_account: &'a mut Account,
+    m_account: &'_ mut Account,
 ) -> Result<(), Error> {
     let account = query_account(grpc_address, account_address).await?;
 

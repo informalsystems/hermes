@@ -211,7 +211,7 @@ create channel <chain-a-id> --connection-a <connection-id> --port-a <port-id> --
 start <chain-a-id> <chain-b-id> --port-a <port-id> --port-b <port-id> [--order <order>] [--version <version>]
 ```
 
-- relay packets over a _new_ channel that re-uses an _existing_ connection:
+- relay packets over a _new_ channel that reuses an _existing_ connection:
 
 ```
 start <chain-a-id> --connection-a <connection-id> --port-a <port-id> --port-b <port-id> [--order <order>] [--version <version>]

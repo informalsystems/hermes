@@ -153,12 +153,12 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             ))
         })?;
 
-        let update_header: &TmHeader = match any_header {
-            AnyHeader::Tendermint(header) => Ok(header),
+        let update_header = match any_header {
+            AnyHeader::Tendermint(header) => Ok::<_, Error>(header),
         }?;
 
         let client_state = match client_state {
-            AnyClientState::Tendermint(client_state) => Ok(client_state),
+            AnyClientState::Tendermint(client_state) => Ok::<_, Error>(client_state),
         }?;
 
         let next_validators = self
@@ -322,7 +322,7 @@ impl LightClient {
         let scheduler = components::scheduler::basic_bisecting_schedule;
 
         let client_state = match client_state {
-            AnyClientState::Tendermint(client_state) => Ok(client_state),
+            AnyClientState::Tendermint(client_state) => Ok::<_, Error>(client_state),
         }?;
 
         Ok(TmLightClient::new(
