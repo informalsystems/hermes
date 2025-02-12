@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## v1.11.0
+
+*February 11th, 2024*
+
+This release introduces support for the first non-SDK chain with Namada compatibility 🎉 
+
+To relay for Namada, ensure the chain type in the configuration is set to `Namada`.
+
+### FEATURES
+
+- Add support for relaying between Namada and CosmosSDK-based chains.
+  ([\#3705](https://github.com/informalsystems/hermes/issues/3705))
+
 ## v1.10.5
 
 *December 13rd, 2024*
