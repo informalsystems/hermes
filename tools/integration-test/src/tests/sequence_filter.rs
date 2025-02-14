@@ -55,6 +55,7 @@ impl TestOverrides for FilterClearOnStartTest {
             ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                 chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
+            ChainConfig::Penumbra(_) => { /* no-op */ }
         }
         config.mode.channels.enabled = true;
 
@@ -92,6 +93,7 @@ impl TestOverrides for FilterClearIntervalTest {
             ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                 chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
+            ChainConfig::Penumbra(_) => { /* no-op */ }
         }
         config.mode.channels.enabled = true;
 
@@ -251,6 +253,7 @@ impl TestOverrides for StandardRelayingNoFilterTest {
             ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                 chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
+            ChainConfig::Penumbra(_) => { /* no-op */ }
         }
         config.mode.packets.clear_on_start = true;
         config.mode.packets.clear_interval = 0;

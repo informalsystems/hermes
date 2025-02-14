@@ -88,6 +88,7 @@ impl BinaryChannelTest for FeeGrantTest {
             ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                 chain_config.gas_price.denom.clone()
             }
+            ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         };
 
         let gas_denom: MonoTagged<ChainA, Denom> =
@@ -113,6 +114,9 @@ impl BinaryChannelTest for FeeGrantTest {
                     match chain_config {
                         ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => {
                             c.fee_granter = Some("user2".to_owned());
+                        }
+                        ChainConfig::Penumbra(_) => {
+                            panic!("running tests with Penumbra chain not supported")
                         }
                     }
                 }
@@ -238,6 +242,7 @@ impl BinaryChannelTest for NoFeeGrantTest {
             ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                 chain_config.gas_price.denom.clone()
             }
+            ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         };
 
         let gas_denom: MonoTagged<ChainA, Denom> =

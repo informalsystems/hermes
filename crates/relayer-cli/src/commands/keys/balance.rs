@@ -80,6 +80,7 @@ fn get_balance(chain: impl ChainHandle, key_name: Option<String>, denom: Option<
                     ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                         chain_config.key_name
                     }
+                    ChainConfig::Penumbra(_) => unimplemented!("not yet supported for penumbra"),
                 }
             });
 
@@ -104,6 +105,7 @@ fn get_balances(chain: impl ChainHandle, key_name: Option<String>) {
                     ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                         chain_config.key_name
                     }
+                    ChainConfig::Penumbra(_) => unimplemented!("not yet supported for penumbra"),
                 }
             });
 

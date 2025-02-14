@@ -345,6 +345,7 @@ impl TestOverrides for ClearPacketOverrideTest {
                 ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.clear_interval = Some(10)
                 }
+                ChainConfig::Penumbra(_) => { /* no-op */ }
             }
         }
     }

@@ -133,6 +133,14 @@ jobs:
         uses: jlumbroso/free-disk-space@main
         with:
           tool-cache: false
+      - name: Install prerequisites # required for librocksdb-sys
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            clang \
+            llvm-dev \
+            libclang-dev
       - uses: actions/checkout@v4
       - name: Clone Namada
         uses: actions/checkout@v4
@@ -140,13 +148,6 @@ jobs:
           repository: anoma/namada
           ref: v1.1.1
           path: namada
-      - name: Add Swap Memory
-        run: |
-          sudo fallocate -l 4G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
-          free -h
       - name: Retrieve Namada repository path
         id: namada-repo-path
         run: |

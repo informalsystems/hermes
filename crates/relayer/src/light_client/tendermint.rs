@@ -29,6 +29,7 @@ use ibc_relayer_types::Height as ICSHeight;
 
 use crate::{
     chain::cosmos::{config::CosmosSdkConfig, CosmosSdkChain},
+    chain::penumbra::config::PenumbraConfig,
     client_state::AnyClientState,
     error::Error,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
@@ -275,6 +276,40 @@ fn io_for_addr(
 }
 
 impl LightClient {
+    pub fn from_penumbra_config(config: &PenumbraConfig, peer_id: PeerId) -> Result<Self, Error> {
+        let live_io = io_for_addr(&config.rpc_addr, peer_id, Some(config.rpc_timeout))?;
+
+        let io = match &config.genesis_restart {
+            None => AnyIo::Prod(live_io),
+            Some(genesis_restart) => {
+                let archive_io = io_for_addr(
+                    &genesis_restart.archive_addr,
+                    peer_id,
+                    Some(config.rpc_timeout),
+                )?;
+
+                AnyIo::RestartAware(RestartAwareIo::new(
+                    genesis_restart.restart_height,
+                    live_io,
+                    archive_io,
+                ))
+            }
+        };
+
+        // If the full node is configured as trusted then, in addition to headers not being verified,
+        // the verification traces will not be provided. This may cause failure in client
+        // updates after significant change in validator sets.
+        let enable_verification = false;
+
+        Ok(Self {
+            chain_id: config.id.clone(),
+            peer_id,
+            io,
+
+            enable_verification,
+        })
+    }
+
     pub fn from_cosmos_sdk_config(
         config: &CosmosSdkConfig,
         peer_id: PeerId,

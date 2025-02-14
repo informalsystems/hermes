@@ -86,6 +86,7 @@ impl TestOverrides for DynamicGasTest {
 
                 chain_config_a.dynamic_gas_price = DynamicGasPrice::unsafe_new(false, 1.1, 0.6);
             }
+            ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         }
 
         match &mut config.chains[1] {
@@ -98,6 +99,7 @@ impl TestOverrides for DynamicGasTest {
                 chain_config_b.dynamic_gas_price =
                     DynamicGasPrice::unsafe_new(self.dynamic_gas_enabled, 1.1, 0.6);
             }
+            ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         }
     }
 

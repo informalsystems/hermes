@@ -12,6 +12,17 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
     let span = error_span!("wallet", chain = %chain.id());
 
     spawn_background_task(span, Some(Duration::from_secs(5)), move || {
+        let chain_config = chain
+            .config()
+            .map_err(|e| TaskError::Fatal(format!("failed to get chain config: {e}")))?;
+
+        if !chain_config.keyring_support() {
+            return Err(TaskError::Ignore(format!(
+                "chain {} does not support keyring",
+                chain.id()
+            )));
+        }
+
         let key = chain.get_key().map_err(|e| {
             TaskError::Fatal(format!("failed to get key in use by the relayer: {e}"))
         })?;
