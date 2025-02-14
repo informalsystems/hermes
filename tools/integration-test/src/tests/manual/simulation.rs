@@ -32,6 +32,9 @@ impl TestOverrides for SimulationTest {
                 ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.max_msg_num = MaxMsgNum::new(MAX_MSGS).unwrap();
                 }
+                ChainConfig::Penumbra(_) => {
+                    panic!("running tests with Penumbra chain not supported")
+                }
             }
         }
     }

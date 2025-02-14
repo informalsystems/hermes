@@ -525,7 +525,7 @@ impl ChainEndpoint for PenumbraChain {
             .block_on(ViewServer::load_or_initialize(
                 view_file,
                 registry_path,
-                &fvk,
+                fvk,
                 config.grpc_addr.clone().into(),
             ))
             .map_err(|e| Error::temp_penumbra_error(e.to_string()))?;

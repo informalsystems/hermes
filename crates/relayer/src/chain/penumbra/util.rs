@@ -15,10 +15,10 @@ pub fn compat_mode_from_version(
     match (configured_version, queried_version) {
         (Some(configured), Ok(queried)) if configured != &queried => {
             warn!("be wary of potential `compat_mode` misconfiguration. Configured version: {}, chain version: {}. Hermes will use the configured `compat_mode` version `{}`. If this configuration is done on purpose this message can be ignored.", configured, queried, configured);
-            Ok(configured.clone())
+            Ok(*configured)
         }
-        (Some(configured), _) => Ok(configured.clone()),
-        (_, Ok(queried)) => Ok(queried.into()),
+        (Some(configured), _) => Ok(*configured),
+        (_, Ok(queried)) => Ok(queried),
         (_, Err(e)) => Err(Error::invalid_compat_mode(e)),
     }
 }

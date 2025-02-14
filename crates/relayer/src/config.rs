@@ -655,6 +655,7 @@ pub enum EventSourceMode {
 // below when adding a new chain type.
 #[derive(Clone, Debug, PartialEq, Serialize)]
 #[serde(tag = "type")]
+#[allow(clippy::large_enum_variant)]
 pub enum ChainConfig {
     CosmosSdk(CosmosSdkConfig),
     // Reuse CosmosSdkConfig for tendermint light clients
@@ -785,9 +786,7 @@ impl ChainConfig {
 
     pub fn clock_drift(&self) -> Duration {
         match self {
-            Self::CosmosSdk(config) | Self::Namada(config) => {
-                config.clock_drift
-            }
+            Self::CosmosSdk(config) | Self::Namada(config) => config.clock_drift,
             Self::Penumbra(config) => config.clock_drift,
         }
     }

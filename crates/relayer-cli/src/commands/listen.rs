@@ -231,7 +231,6 @@ fn detect_compatibility_mode(
         ChainConfig::Penumbra(config) => {
             let status = rt.block_on(client.status())?;
             penumbra::util::compat_mode_from_version(&config.compat_mode, status.node_info.version)?
-                .into()
         }
     };
 

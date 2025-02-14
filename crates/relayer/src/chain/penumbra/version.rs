@@ -24,4 +24,3 @@ impl Display for Specs {
         write!(f, "Penumbra {}, {}", penumbra, consensus)
     }
 }
-

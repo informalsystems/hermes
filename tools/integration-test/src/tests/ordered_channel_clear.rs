@@ -54,6 +54,9 @@ impl TestOverrides for OrderedChannelClearTest {
                 ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                     chain_config.sequential_batch_tx = self.sequential_batch_tx;
                 }
+                ChainConfig::Penumbra(_) => {
+                    panic!("running tests with Penumbra chain not supported")
+                }
             }
         }
 
@@ -62,6 +65,7 @@ impl TestOverrides for OrderedChannelClearTest {
             ChainConfig::CosmosSdk(chain_config) | ChainConfig::Namada(chain_config) => {
                 chain_config.sequential_batch_tx = self.sequential_batch_tx;
             }
+            ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         }
     }
 
@@ -201,6 +205,9 @@ impl TestOverrides for OrderedChannelClearEqualCLITest {
                     chain_config.sequential_batch_tx = true;
                     chain_config.max_msg_num = MaxMsgNum::new(3).unwrap();
                 }
+                ChainConfig::Penumbra(_) => {
+                    panic!("running tests with Penumbra chain not supported")
+                }
             }
         }
 
@@ -210,6 +217,7 @@ impl TestOverrides for OrderedChannelClearEqualCLITest {
                 chain_config.sequential_batch_tx = true;
                 chain_config.max_msg_num = MaxMsgNum::new(3).unwrap();
             }
+            ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         }
     }
 
