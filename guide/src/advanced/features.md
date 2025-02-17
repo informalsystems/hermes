@@ -125,7 +125,7 @@ __Feature comparison between Hermes and the Go relayer__
 | Modular Architecture   | ✅    | ✅     | defined interface can be implemented for different chain types
 | Cl_Non_Tendermint      | ❌    | ❌     | supports non tendermint IBC light clients
 | Namada support         | ✅    | ❌     | supports Namada non-cosmos-SDK chain
-| Penumbra support       | ❌    | ✅     | supports Penumbra non-cosmos-SDK chain
+| Penumbra support       | ✅    | ✅     | supports Penumbra non-cosmos-SDK chain
 |                        |       |        |
 | Cfg_Static            | ✅    | ✅     | provides means for configuration prior to being started
 | Cfg_Dynamic           | ❌    | ❌     | provides means for configuration and monitoring during runtime
