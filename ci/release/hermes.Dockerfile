@@ -23,7 +23,10 @@ RUN ARCH=$(uname -m) && \
     unzip /tmp/protoc.zip -d /usr/local && \
     rm -rf /tmp/protoc.zip
 
+RUN apt update && apt install -y clang libssl-dev pkg-config
+
 COPY . .
+
 RUN cargo build --release
 
 FROM ubuntu:latest
