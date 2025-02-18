@@ -7,7 +7,7 @@
 > for the older release candidates in reverse chronological order to update to
 > v1.5.0 first and then follow these instructions.
 
-- The `websocket_addr` configuration option has been removed in favour of the new `event_source` setting.
+- The `websocket_addr` configuration option has been removed in favor of the new `event_source` setting.
 
   In every chain configuration section, replace the `websocket_addr = 'WS_URL'` setting with:
 
