@@ -1,0 +1,32 @@
+# Create GitHub release and upload Hermes binaries.
+
+name: Release
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/namada.yaml
+      - Cargo.toml
+      - Cargo.lock
+      - flake.nix
+      - flake.lock
+      - ci/**
+      - e2e/**
+      - crates/**
+      - tools/**
+
+  cross-compile-aarch:
+    strategy:
+      fail-fast: false
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Protoc
+        uses: heliaxdev/setup-protoc@v2
+        with:
+          version: "25.0"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install Cross
+        run: cargo install cross --locked
+      - name: Cross Compile
+        run: cross build --release --bin hermes --target aarch64-unknown-linux-gnu
