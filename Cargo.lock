@@ -1961,9 +1961,9 @@ dependencies = [
 
 [[package]]
 name = "decaf377-fmd"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "75933274c34a6be0134f123c0bd9ee4ffac425d2bd270a2efc1765877c531489"
+checksum = "38631f9b754fda19d1cd8ca85261a8c436de8a273b4875b937ef06227a6516e5"
 dependencies = [
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
@@ -7691,9 +7691,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-proto"
-version = "1.0.1"
+version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9db1e94a34376794470852d25eee00280f26e4a761a846e2c16b12322e4540d7"
+checksum = "f17f2a0b6ca982922b411a3bfd80660d5feb8a0996a280147e7af63ca401b78e"
 dependencies = [
  "anyhow",
  "async-trait",
