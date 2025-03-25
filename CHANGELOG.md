@@ -2,7 +2,7 @@
 
 ## v1.12.0
 
-*February 14th, 2024*
+*February 14th, 2025*
 
 This release introduces support for Penumbra chain. Please note that this feature has not been tested in the Hermes CI pipeline, but it was tested in production.
 
@@ -13,7 +13,7 @@ This release introduces support for Penumbra chain. Please note that this featur
 
 ## v1.11.0
 
-*February 11th, 2024*
+*February 11th, 2025*
 
 This release introduces support for the first non-SDK chain with Namada compatibility 🎉 
 
