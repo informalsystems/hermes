@@ -235,7 +235,7 @@ pub struct RelayPath {
 ```
 All `Option` fields with `None` values mean "any" values. For `direction`, default is bidirectional.
 All non-`Option` fields are mandatory and must appear in the configuration file.
-If the relayer is started with an invalid configuration file, an error is displayed and the realyer process exits.
+If the relayer is started with an invalid configuration file, an error is displayed and the relayer process exits.
 
 ### Relayer Commands
 
@@ -281,7 +281,7 @@ The following queries are required:
 
 ### Relayer Concurrency Architecture
 The following threads are spawned and execute within the relayer process:
-- one Tendermint full light client thread, per configured configured source chain. For example if A->C and B->C paths are enabled then there will be two light client threads, one for A and one for B. These threads download light client headers (block header and commits), verify them and store them as trusted headers in the per chain stores.
+- one Tendermint full light client thread, per configured source chain. For example if A->C and B->C paths are enabled then there will be two light client threads, one for A and one for B. These threads download light client headers (block header and commits), verify them and store them as trusted headers in the per chain stores.
 - one thread for the main relaying functionality, aka relay thread.
 - one thread to relay notifications from source chain and to generate IBC events to the relay thread.
 
@@ -308,7 +308,7 @@ Future versions may create multiple relay threads. One possibility is to create 
 
 A relayer algorithm is described in [relayer algorithm described in IBC Specification](https://github.com/cosmos/ibc/tree/main/spec/relayer/ics-018-relayer-algorithms/README.md#L47) and [Go relayer implementation ](https://github.com/cosmos/relayer/blob/f3a302df9e6e0c28883f5480199d3190821bcc06/relayer/strategies.go#L49.).
 
-This section describes some of the details of the really thread algorithm in the Rust implementation. Inputs are the IBC Events and the events of interest are described in Appendix A.
+This section describes some of the details of the relay thread algorithm in the Rust implementation. Inputs are the IBC Events and the events of interest are described in Appendix A.
 
 At high level, for each event from a source chain, the relayer:
 - queries client, connection, channels and/or packet related state on source and destination chains,
