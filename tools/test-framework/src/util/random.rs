@@ -13,36 +13,36 @@ use std::{
 
 /// Generates a random `u32` value.
 pub fn random_u32() -> u32 {
-    let mut rng = rand::thread_rng();
-    rng.gen()
+    let mut rng = rand::rng();
+    rng.random()
 }
 
 /// Generates a random `u64` value.
 pub fn random_u64() -> u64 {
-    let mut rng = rand::thread_rng();
-    rng.gen()
+    let mut rng = rand::rng();
+    rng.random()
 }
 
 pub fn random_u128() -> u128 {
-    let mut rng = rand::thread_rng();
-    rng.gen()
+    let mut rng = rand::rng();
+    rng.random()
 }
 
 /// Generates a random `u64` value between the given min and max.
 pub fn random_u64_range(min: u64, max: u64) -> u64 {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(min..max)
+    let mut rng = rand::rng();
+    rng.random_range(min..max)
 }
 
 /// Generates a random `u128` value between the given min and max.
 pub fn random_u128_range(min: u128, max: u128) -> u128 {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(min..max)
+    let mut rng = rand::rng();
+    rng.random_range(min..max)
 }
 
 pub fn random_amount_range(min: u128, max: u128) -> Amount {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(min..max).into()
+    let mut rng = rand::rng();
+    rng.random_range(min..max).into()
 }
 
 /// Generates a random string value, in the form of `u64` hex for simplicity.
@@ -52,8 +52,8 @@ pub fn random_string() -> String {
 
 /// Generates a random non-privileged port that is greater than 1024.
 fn random_port() -> u16 {
-    let mut rng = rand::thread_rng();
-    rng.gen_range(1024..=u16::MAX)
+    let mut rng = rand::rng();
+    rng.random_range(1024..=u16::MAX)
 }
 
 /// Find a random unused non-privileged TCP port.
