@@ -2818,7 +2818,7 @@ handle errors ([#1158])
 
 ### IMPROVEMENTS
 
-- Add semantic validation of of `max_tx_size` and `max_num_msg` config options ([#1245])
+- Add semantic validation of `max_tx_size` and `max_num_msg` config options ([#1245])
 
 [#1245]: https://github.com/informalsystems/hermes/issues/1245
 
