@@ -22,7 +22,7 @@ This project comprises primarily of 6 crates:
   configuration for Hermes.
 - [`ibc-telemetry`][ibc-telemetry-crate-link] is a library for use in the Hermes CLI,
   for gathering telemetry data and exposing that in a Prometheus endpoint.
-- [`ibc-relayer-rest`][ibc-telemetry-crate-link] is a library for use in the Hermes CLI,
+- [`ibc-relayer-rest`][relayer-rest-crate-link] is a library for use in the Hermes CLI,
   for exposing a REST API to inspect the state of the relayer.
 - [`ibc-test-framework`][ibc-test-framework-crate-link] provides the infrastructure and framework
   for writing end-to-end (E2E) tests that include the spawning of the relayer together with Cosmos full nodes.
