@@ -6,15 +6,14 @@ use ibc_relayer_types::Height as ICSHeight;
 use namada_sdk::address::{Address, InternalAddress};
 use namada_sdk::borsh::BorshDeserialize;
 use namada_sdk::events::extend::Height as HeightAttr;
-use namada_sdk::events::Event as NamadaEvent;
 use namada_sdk::ibc::storage::{ibc_trace_key_prefix, is_ibc_trace_key};
 use namada_sdk::io::Client;
 use namada_sdk::io::NamadaIo;
 use namada_sdk::queries::RPC;
-use namada_sdk::rpc;
+use namada_sdk::rpc::TxResponse as NamadaTxResponse;
+use namada_sdk::rpc::{self, TxAppliedEvents as NamadaTxAppliedEvents};
 use namada_sdk::storage::{BlockHeight, Epoch, Key, PrefixValue};
 use namada_sdk::tx::data::ResultCode;
-use namada_sdk::tx::event::{Batch as BatchAttr, Code as CodeAttr};
 use tendermint::block::Height as TmHeight;
 use tendermint::merkle::proof::ProofOps;
 use tendermint::Hash as TmHash;
@@ -118,27 +117,23 @@ impl NamadaChain {
     pub fn query_tx_events(&self, tx_hash: &TmHash) -> Result<Vec<IbcEventWithHeight>, Error> {
         match self.query_applied_event(tx_hash)? {
             Some(applied) => {
-                let h = applied
-                    .read_attribute::<HeightAttr>()
-                    .map_err(|_| Error::invalid_height_no_source())?;
-                let height = ICSHeight::new(self.config.id.version(), h.0)
+                let tx_response = NamadaTxResponse::try_from(applied)
+                    .expect("Could not extract tx response from a Namada event");
+                let height = ICSHeight::new(self.config.id.version(), tx_response.height.0)
                     .map_err(|_| Error::invalid_height_no_source())?;
                 // Check if the tx is valid
-                let tx_result = applied
-                    .read_attribute::<BatchAttr<'_>>()
-                    .expect("The batch attribute should exist");
-                let code = applied
-                    .read_attribute::<CodeAttr>()
-                    .expect("The code attribute should exist");
-                if code != ResultCode::Ok {
+                if tx_response.code != ResultCode::Ok {
                     return Ok(vec![IbcEventWithHeight::new(
                         IbcEvent::ChainError(format!(
-                            "The transaction was invalid: TxResult {tx_result}",
+                            "The transaction was invalid: TxResult {:#?}",
+                            tx_response.batch
                         )),
                         height,
                     )]);
                 }
-                let events = tx_result.iter().filter_map(|(_, r)| {
+                let events = match tx_response.batch {
+                    Some(tx_result) => {
+                        tx_result.iter().filter_map(|(_, r)| {
                     r.as_ref().map(|batched_tx_result| {
                         // Get IBC events when the transaction was accepted
                         if batched_tx_result.is_accepted() {
@@ -156,14 +151,20 @@ impl NamadaChain {
                             )]
                         }
                     }).ok()
-                }).flatten().collect();
+                }).flatten().collect()
+                    }
+                    None => Default::default(),
+                };
                 Ok(events)
             }
             None => Ok(vec![]),
         }
     }
 
-    fn query_applied_event(&self, tx_hash: &TmHash) -> Result<Option<NamadaEvent>, Error> {
+    fn query_applied_event(
+        &self,
+        tx_hash: &TmHash,
+    ) -> Result<Option<NamadaTxAppliedEvents>, Error> {
         self.rt
             .block_on(RPC.shell().applied(
                 self.ctx.client(),
