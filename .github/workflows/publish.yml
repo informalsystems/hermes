@@ -15,9 +15,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: katyo/publish-crates@v2
         with:

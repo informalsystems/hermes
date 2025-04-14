@@ -32,9 +32,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Check templates
         run: bash scripts/auto_gen_templates.sh --mode "check"

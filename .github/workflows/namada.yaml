@@ -70,9 +70,8 @@ jobs:
       - name: Install libudev
         run: sudo apt-get update && sudo apt-get -y install libudev-dev
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -158,9 +157,8 @@ jobs:
       - name: Install libudev
         run: sudo apt-get update && sudo apt-get -y install libudev-dev
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
