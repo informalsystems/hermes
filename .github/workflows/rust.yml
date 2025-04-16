@@ -55,9 +55,8 @@ jobs:
           toolchain: stable
           components: clippy
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/clippy-check@v1
         with:
@@ -74,9 +73,8 @@ jobs:
           toolchain: stable
           components: clippy
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/clippy-check@v1
         with:
@@ -93,9 +91,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install cargo-nextest
         run: curl -LsSf https://get.nexte.st/latest/linux | tar zxf - -C ${CARGO_HOME:-~/.cargo}/bin
@@ -116,9 +113,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Install cargo-binstall
         uses: taiki-e/install-action@cargo-binstall

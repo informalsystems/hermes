@@ -39,7 +39,7 @@ concurrency:
 
 jobs:
   integration-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 180
     strategy:
       fail-fast: false
@@ -119,9 +119,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -144,7 +143,7 @@ jobs:
               --features=${{ matrix.chain.features }}
 
   ordered-channel-test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
@@ -162,9 +161,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -183,7 +181,7 @@ jobs:
             --features ordered test_ordered_channel
 
   interchain-security-ica:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -210,9 +208,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -234,7 +231,7 @@ jobs:
 
   interchain-security-icq:
     if: false # Disable CCQ test
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -258,9 +255,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -280,7 +276,7 @@ jobs:
             --features interchain-security,ics31 interchain_security::
 
   celestia-to-gaia:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -305,9 +301,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -330,7 +325,7 @@ jobs:
 
   # Run the transfer test using IPv6 for gRPC endpoint
   ipv6-grpc-endpoint:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -354,9 +349,8 @@ jobs:
         with:
           toolchain: stable
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:

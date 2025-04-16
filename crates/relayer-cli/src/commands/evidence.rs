@@ -345,7 +345,7 @@ fn submit_duplicate_vote_evidence(
     let consensus_state_height_before_infraction_height = consensus_state_heights
         .into_iter()
         .filter(|height| height.revision_height() < infraction_height.value())
-        .last();
+        .next_back();
 
     let Some(trusted_height) = consensus_state_height_before_infraction_height else {
         error!(
@@ -655,8 +655,8 @@ fn has_consensus_state(
 ///
 /// 1. Fetch all connections on the given chain
 /// 2. For each connection:
-///     2.1. Fetch the client state of the counterparty client of that connection.
-///     2.2. From the client state, extract the chain id of the counterparty chain.
+///    2.1. Fetch the client state of the counterparty client of that connection.
+///    2.2. From the client state, extract the chain id of the counterparty chain.
 /// 4. Return a list of all counterparty chains and counterparty clients.
 fn fetch_all_counterparty_clients(
     config: &Config,

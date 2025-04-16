@@ -3,7 +3,7 @@
 # Usage: (from the root of the working copy)
 #   $ docker build . -t informalsystems/hermes -f ci/release/hermes.Dockerfile
 
-FROM rust:1-buster AS build-env
+FROM rust:1-bookworm AS build-env
 
 ARG TAG
 ARG PROTOC_VERSION=28.3

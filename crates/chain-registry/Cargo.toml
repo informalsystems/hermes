@@ -6,7 +6,7 @@ license      = "Apache-2.0"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.79.0"
+rust-version = "1.83.0"
 description  = """
     Service to fetch data from the chain-registry
 """

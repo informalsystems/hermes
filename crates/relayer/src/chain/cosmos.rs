@@ -2706,7 +2706,7 @@ fn client_id_suffix(client_id: &ClientId) -> Option<u64> {
     client_id
         .as_str()
         .split('-')
-        .last()
+        .next_back()
         .and_then(|e| e.parse::<u64>().ok())
 }
 
