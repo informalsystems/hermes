@@ -37,7 +37,7 @@ concurrency:
 
 jobs:
   light-client-attack:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -94,7 +94,7 @@ jobs:
           nix shell .#${{ matrix.chain.package }} -c bash misbehaviour_test.sh
 
   ics-light-client-attack:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -150,7 +150,7 @@ jobs:
           nix shell .#cometbft .#${{ matrix.chain.package }} -c bash light_client_attack_test.sh
 
   ics-light-client-attack-freeze:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -206,7 +206,7 @@ jobs:
           nix shell .#${{ matrix.chain.package }} -c bash light_client_attack_freeze_test.sh
 
   ics-double-sign:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false
