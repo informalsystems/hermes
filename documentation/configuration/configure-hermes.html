@@ -24,17 +24,18 @@
         <link rel="stylesheet" href="../../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="../../highlight.css">
-        <link rel="stylesheet" href="../../tomorrow-night.css">
-        <link rel="stylesheet" href="../../ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
-        <!-- Provide site root to javascript -->
+        <!-- Provide site root and default themes to javascript -->
         <script>
-            var path_to_root = "../../";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../../toc.js"></script>
@@ -44,8 +45,8 @@
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -59,7 +60,8 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
@@ -72,8 +74,8 @@
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -109,6 +111,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
@@ -192,7 +195,7 @@ You will need to use a text editor to create the file and add content to it.</p>
 <!-- markdown-link-check-disable -->
 <blockquote>
 <p><strong>Note:</strong> As of 0.6.0, the Hermes configuration file is self-documented.
-Please read the configuration file <a href="https://github.com/informalsystems/hermes/blob/v1.12.0/config.toml"><code>config.toml</code></a>
+Please read the configuration file <a href="https://github.com/informalsystems/hermes/blob/v1.13.0/config.toml"><code>config.toml</code></a>
 itself for the most up-to-date documentation of parameters.</p>
 </blockquote>
 <p>By default, Hermes will relay on all channels available between all the configured chains.
@@ -201,7 +204,7 @@ and as a destination (to relay packets that others chains have sent).</p>
 <p>For example, if there are only two chains configured, then Hermes will only relay packets between those two,
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
 Hermes will ignore all events that pertain to chains which are unknown (i.e. not present in config.toml).</p>
-<p>To restrict relaying on specific channels, or uni-directionally, you can use <a href="https://github.com/informalsystems/hermes/blob/v1.12.0/config.toml#L209-L231">packet filtering policies</a>.</p>
+<p>To restrict relaying on specific channels, or uni-directionally, you can use <a href="https://github.com/informalsystems/hermes/blob/v1.13.0/config.toml#L209-L231">packet filtering policies</a>.</p>
 <p>Check out the example <a href="https://github.com/informalsystems/hermes/blob/master/config.toml">config.toml</a> file in the Hermes repo to see how the different parameters can be configured.</p>
 <!-- markdown-link-check-enabled -->
 <h2 id="adding-private-keys"><a class="header" href="#adding-private-keys">Adding Private Keys</a></h2>

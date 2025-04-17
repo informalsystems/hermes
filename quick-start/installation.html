@@ -24,17 +24,18 @@
         <link rel="stylesheet" href="../fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="../highlight.css">
-        <link rel="stylesheet" href="../tomorrow-night.css">
-        <link rel="stylesheet" href="../ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="../highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="../tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
 
-        <!-- Provide site root to javascript -->
+        <!-- Provide site root and default themes to javascript -->
         <script>
-            var path_to_root = "../";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc.js"></script>
@@ -44,8 +45,8 @@
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -59,7 +60,8 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             const html = document.documentElement;
@@ -72,8 +74,8 @@
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -109,6 +111,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
@@ -171,8 +174,8 @@ option is to <a href="#install-by-downloading">download the latest binary</a>.</
 <p>Simply head to the GitHub <a href="https://github.com/informalsystems/hermes/releases">Releases</a> page and download the latest
 version of Hermes binary matching your platform:</p>
 <ul>
-<li>macOS: <code>hermes-v1.12.0-x86_64-apple-darwin.tar.gz</code> (or .zip),</li>
-<li>Linux: <code>hermes-v1.12.0-x86_64-unknown-linux-gnu.tar.gz</code> (or .zip).</li>
+<li>macOS: <code>hermes-v1.13.0-x86_64-apple-darwin.tar.gz</code> (or .zip),</li>
+<li>Linux: <code>hermes-v1.13.0-x86_64-unknown-linux-gnu.tar.gz</code> (or .zip).</li>
 </ul>
 <p>The step-by-step instruction below should carry you through the whole process:</p>
 <ol>
@@ -204,7 +207,7 @@ if that is the case.</p>
 
 </code></pre>
 <p>Which should be:</p>
-<pre><code>hermes v1.12.0
+<pre><code>hermes v1.13.0
 </code></pre>
 <h2 id="install-via-cargo"><a class="header" href="#install-via-cargo">Install via Cargo</a></h2>
 <blockquote>
@@ -230,7 +233,7 @@ For most shells, this can be done by adding the following line to your
 
 </code></pre>
 <p>Which should be:</p>
-<pre><code>hermes v1.12.0
+<pre><code>hermes v1.13.0
 </code></pre>
 <h2 id="build-from-source"><a class="header" href="#build-from-source">Build from source</a></h2>
 <h3 id="clone-the-repository"><a class="header" href="#clone-the-repository">Clone the repository</a></h3>
@@ -243,8 +246,8 @@ For most shells, this can be done by adding the following line to your
 </code></pre>
 <h3 id="checkout-the-latest-release"><a class="header" href="#checkout-the-latest-release">Checkout the latest release</a></h3>
 <p>Go to the <a href="https://github.com/informalsystems/hermes/releases">hermes releases</a> page to see what is the most recent release.</p>
-<p>Then checkout the release, for example if the most recent release is <code>v1.12.0 </code> then execute the command:</p>
-<pre><code class="language-shell">git checkout v1.12.0
+<p>Then checkout the release, for example if the most recent release is <code>v1.13.0 </code> then execute the command:</p>
+<pre><code class="language-shell">git checkout v1.13.0
 </code></pre>
 <h3 id="building-with-cargo-build"><a class="header" href="#building-with-cargo-build">Building with <code>cargo build</code></a></h3>
 <p>This command builds all the crates from the <a href="https://github.com/informalsystems/hermes"><strong><code>hermes</code></strong></a> repository, namely: the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer"><strong><code>ibc-relayer</code></strong></a> crate, and the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> crate.
