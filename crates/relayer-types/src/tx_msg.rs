@@ -7,7 +7,9 @@ pub trait Msg: Clone {
     type ValidationError;
     type Raw: From<Self> + Message;
 
-    // TODO: Clarify what is this function supposed to do & its connection to ICS26 routing mod.
+    /// Returns the identifier of the IBC module (e.g., \"client\", \"connection\", \"transfer\")
+    /// responsible for processing this message. The ICS26 routing module uses this identifier
+    /// to dispatch the message to the appropriate module handler logic.
     fn route(&self) -> String;
 
     /// Unique type identifier for this message, to support encoding to/from `prost_types::Any`.
