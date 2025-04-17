@@ -37,7 +37,7 @@ ics23                    = "0.12.0"
 tendermint                       = { version = "0.40.0", default-features = false }
 tendermint-light-client          = { version = "0.40.0", default-features = false }
 tendermint-light-client-detector = { version = "0.40.0", default-features = false }
-tendermint-light-client-verifier = { version = "0.40.0", default-features = false }
+tendermint-light-client-verifier = { version = "0.40.3", default-features = false }
 tendermint-proto                 = { version = "0.40.0" }
 tendermint-rpc                   = { version = "0.40.0" }
 tendermint-testgen               = { version = "0.40.0" }
