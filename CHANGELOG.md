@@ -1033,6 +1033,8 @@ distributed both on Docker Hub and the GitHub Content Repository.
   ([#3235](https://github.com/informalsystems/hermes/issues/3235))
 - Add White Whale migaloo chain to ICS29 tests
   ([#3345](https://github.com/informalsystems/hermes/issues/3345))
+- Clarify documentation for `Msg::route()` regarding its role in ICS26 routing.
+  ([#4347](https://github.com/informalsystems/hermes/pull/4347))
 
 ## v1.4.1
  
