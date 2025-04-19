@@ -1,8 +1,8 @@
 [package]
 name         = "ibc-integration-test"
-version      = "0.31.0"
+version      = "0.32.0"
 edition      = "2021"
-rust-version = "1.79.0"
+rust-version = "1.83.0"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]

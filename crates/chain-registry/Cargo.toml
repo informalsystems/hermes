@@ -1,12 +1,12 @@
 [package]
 name         = "ibc-chain-registry"
-version      = "0.31.0"
+version      = "0.32.0"
 edition      = "2021"
 license      = "Apache-2.0"
 keywords     = ["cosmos", "ibc", "relayer", "chain", "registry"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.79.0"
+rust-version = "1.83.0"
 description  = """
     Service to fetch data from the chain-registry
 """

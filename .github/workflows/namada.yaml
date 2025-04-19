@@ -48,7 +48,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: anoma/namada
-          ref: v1.1.1
+          ref: v101.0.0
           path: namada
       - name: Retrieve Namada repository path
         id: namada-repo-path
@@ -70,9 +70,8 @@ jobs:
       - name: Install libudev
         run: sudo apt-get update && sudo apt-get -y install libudev-dev
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -91,7 +90,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/198667141" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/212279570" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
@@ -146,7 +145,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: anoma/namada
-          ref: v1.1.1
+          ref: v101.0.0
           path: namada
       - name: Retrieve Namada repository path
         id: namada-repo-path
@@ -158,9 +157,8 @@ jobs:
       - name: Install libudev
         run: sudo apt-get update && sudo apt-get -y install libudev-dev
       - name: Install Protoc
-        uses: heliaxdev/setup-protoc@v2
+        uses: arduino/setup-protoc@v3
         with:
-          version: "25.0"
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: actions-rs/cargo@v1
         with:
@@ -179,7 +177,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/198667141" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/212279570" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac

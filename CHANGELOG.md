@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## v1.13.0
+
+*April 16th, 2025*
+
+This release updates the Namada compatibility to v101.0.0. Please note that this breaks compatibility with Namada v1.1.x.
+
+### BREAKING CHANGES
+
+- Update for Namada v101.0.0. This update is not compatible with Namada v1.1.x.
+  ([\#4342](https://github.com/informalsystems/hermes/issues/4342))
+
+### IMPROVEMENTS
+
+- Update for Namada v101.0.0
+  ([\#4342](https://github.com/informalsystems/hermes/issues/4342))
+
 ## v1.12.0
 
 *February 14th, 2025*

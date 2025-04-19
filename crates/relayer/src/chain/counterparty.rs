@@ -488,15 +488,15 @@ pub fn unreceived_acknowledgements_sequences(
 /// This method involves two separate queries:
 ///
 /// 1. It performs a [`QueryPacketCommitmentsRequest`] on the counterparty chain.
-///     This query returns the sequences for the packets with stored
-///     commitments in the counterparty chain's state, and the height at which the query was made
+///    This query returns the sequences for the packets with stored
+///    commitments in the counterparty chain's state, and the height at which the query was made
 ///
-///     This step relies on [`commitments_on_chain`], see that method for more details.
+///    This step relies on [`commitments_on_chain`], see that method for more details.
 ///
 /// 2. It performs a [`QueryUnreceivedPacketsRequest`] on the (target) chain.
-///     Given the sequences of packet commitments on the counterparty (query #1),
-///     this query returns the sequences of the packets which the target
-///     chain has not yet _received_.
+///    Given the sequences of packet commitments on the counterparty (query #1),
+///    this query returns the sequences of the packets which the target
+///    chain has not yet _received_.
 ///
 ///    This step relies on [`unreceived_packets_sequences`], see that method for more details.
 ///
@@ -575,23 +575,23 @@ pub fn acknowledgements_on_chain(
 /// This method involves two separate queries:
 ///
 /// 1. It performs a [`QueryPacketCommitmentsRequest`] on the target chain.
-///     This query returns the sequences for the packets with stored
-///     commitments in the target chain's state, and the height at which the query was made
+///    This query returns the sequences for the packets with stored
+///    commitments in the target chain's state, and the height at which the query was made
 ///
-///     This step relies on [`commitments_on_chain`], see that method for more details.
+///    This step relies on [`commitments_on_chain`], see that method for more details.
 ///
 /// 2. It performs a [`QueryPacketAcknowledgementsRequest`] on the counterparty chain.
-///     Given the sequences of packet commitments on the target chain (query #1),
-///     this query returns the sequences of the packets which the counterparty chain has
-///     _acknowledged_.
+///    Given the sequences of packet commitments on the target chain (query #1),
+///    this query returns the sequences of the packets which the counterparty chain has
+///    _acknowledged_.
 ///
-///     This step relies on [`packet_acknowledgements`], see that method for more details.
+///    This step relies on [`packet_acknowledgements`], see that method for more details.
 ///
 /// 3. It performs a [`QueryUnreceivedAcksRequest`] on the target chain.
-///     Given the sequences of packet acknowledgements on the counterparty (step #2),
-///     this query fetches the subset for which acknowledgements have not been
-///     received by the target chain.
-///     This step relies on [`unreceived_acknowledgements_sequences`].
+///    Given the sequences of packet acknowledgements on the counterparty (step #2),
+///    this query fetches the subset for which acknowledgements have not been
+///    received by the target chain.
+///    This step relies on [`unreceived_acknowledgements_sequences`].
 pub fn unreceived_acknowledgements(
     chain: &impl ChainHandle,
     counterparty_chain: &impl ChainHandle,
