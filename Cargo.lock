@@ -3801,6 +3801,7 @@ dependencies = [
  "hyper 1.6.0",
  "hyper-util",
  "rustls 0.23.26",
+ "rustls-native-certs 0.8.1",
  "rustls-pki-types",
  "tokio",
  "tokio-rustls 0.26.2",
@@ -3979,7 +3980,7 @@ dependencies = [
  "ibc-relayer",
  "ibc-relayer-types",
  "itertools 0.13.0",
- "reqwest 0.11.27",
+ "reqwest 0.12.15",
  "serde",
  "serde_json",
  "tendermint-rpc",
@@ -4528,7 +4529,7 @@ dependencies = [
  "penumbra-sdk-wallet",
  "prost",
  "regex",
- "reqwest 0.11.27",
+ "reqwest 0.12.15",
  "retry",
  "ripemd",
  "rpassword",
@@ -4611,7 +4612,7 @@ dependencies = [
  "crossbeam-channel",
  "ibc-relayer",
  "ibc-relayer-types",
- "reqwest 0.11.27",
+ "reqwest 0.12.15",
  "serde",
  "serde_json",
  "tokio",
@@ -8633,6 +8634,60 @@ dependencies = [
 ]
 
 [[package]]
+name = "quinn"
+version = "0.11.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c3bd15a6f2967aef83887dcb9fec0014580467e33720d073560cf015a5683012"
+dependencies = [
+ "bytes",
+ "cfg_aliases",
+ "pin-project-lite",
+ "quinn-proto",
+ "quinn-udp",
+ "rustc-hash 2.1.1",
+ "rustls 0.23.26",
+ "socket2",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "web-time",
+]
+
+[[package]]
+name = "quinn-proto"
+version = "0.11.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b820744eb4dc9b57a3398183639c511b5a26d2ed702cedd3febaa1393caa22cc"
+dependencies = [
+ "bytes",
+ "getrandom 0.3.2",
+ "rand 0.9.0",
+ "ring 0.17.14",
+ "rustc-hash 2.1.1",
+ "rustls 0.23.26",
+ "rustls-pki-types",
+ "slab",
+ "thiserror 2.0.12",
+ "tinyvec",
+ "tracing",
+ "web-time",
+]
+
+[[package]]
+name = "quinn-udp"
+version = "0.5.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "541d0f57c6ec747a90738a52741d3221f7960e8ac2f0ff4b1a63680e033b4ab5"
+dependencies = [
+ "cfg_aliases",
+ "libc",
+ "once_cell",
+ "socket2",
+ "tracing",
+ "windows-sys 0.59.0",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.40"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -8916,7 +8971,11 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
+ "quinn",
+ "rustls 0.23.26",
+ "rustls-native-certs 0.8.1",
  "rustls-pemfile 2.2.0",
+ "rustls-pki-types",
  "serde",
  "serde_json",
  "serde_urlencoded",
@@ -8924,6 +8983,7 @@ dependencies = [
  "system-configuration 0.6.1",
  "tokio",
  "tokio-native-tls",
+ "tokio-rustls 0.26.2",
  "tower 0.5.2",
  "tower-service",
  "url",
@@ -9235,6 +9295,9 @@ name = "rustls-pki-types"
 version = "1.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "917ce264624a4b4db1c364dcc35bfca9ded014d0a958cd47ad3e960e988ea51c"
+dependencies = [
+ "web-time",
+]
 
 [[package]]
 name = "rustls-webpki"
@@ -11539,6 +11602,16 @@ name = "web-sys"
 version = "0.3.77"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "33b6dd2ef9186f1f2072e409e99cd22a975331a6b3591b12c764e0e55c60d5d2"
+dependencies = [
+ "js-sys",
+ "wasm-bindgen",
+]
+
+[[package]]
+name = "web-time"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5a6580f308b1fad9207618087a65c04e7a10bc77e02c8e84e9b00dd4b12fa0bb"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
