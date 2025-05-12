@@ -4,7 +4,7 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-    cosmos-nix.url = "github:informalsystems/cosmos.nix";
+    cosmos-nix.url = "github:informalsystems/cosmos.nix/luca_joss/add-ibc-go-v10";
   };
 
   outputs = inputs: let
@@ -42,6 +42,7 @@
           ibc-go-v7-simapp
           ibc-go-v8-simapp
           ibc-go-v9-simapp
+          ibc-go-v10-simapp
           interchain-security
           migaloo
           neutron
