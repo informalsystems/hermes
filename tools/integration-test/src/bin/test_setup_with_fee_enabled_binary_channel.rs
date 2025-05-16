@@ -25,6 +25,9 @@
     ```
 */
 
+// TODO: fix error variants too long
+#![allow(clippy::result_large_err)]
+
 use ibc_relayer::config::ChainConfig;
 use ibc_relayer::keyring::Store;
 use ibc_relayer_types::core::ics04_channel::version::Version;

@@ -6,6 +6,8 @@
     rust_2018_idioms
 )]
 #![allow(clippy::too_many_arguments)]
+// TODO: fix error variants too long
+#![allow(clippy::result_large_err)]
 // TODO: disable unwraps:
 //  https://github.com/informalsystems/hermes/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]
