@@ -80,10 +80,6 @@ define_error! {
             }
             |e| { format_args!("send_tx resulted in chain error event: {}", e.detail) },
 
-        WebSocket
-            { url: tendermint_rpc::Url }
-            |e| { format!("Websocket error to endpoint {}", e.url) },
-
         EventSource
             [ source::Error ]
             |_| { "event source error" },
@@ -398,18 +394,6 @@ define_error! {
             |e| {
                 format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}",
                     e.endpoint, e.chain_id, e.address)
-            },
-
-        FetchVersionGrpcStatus
-            {
-                chain_id: ChainId,
-                address: String,
-                endpoint: String,
-                status: tonic::Status
-            }
-            |e| {
-                format!("failed while fetching version info from endpoint {0} on the gRPC interface of chain {1}:{2}; caused by: {3}",
-                    e.endpoint, e.chain_id, e.address, e.status)
             },
 
         FetchVersionInvalidVersionResponse

@@ -176,8 +176,7 @@ impl Encoder for JsonEncoder {
     fn encode<W: Write>(&self, metric_families: &[MetricFamily], writer: &mut W) -> Result<()> {
         let json = self.encode_json(metric_families)?;
 
-        serde_json::to_writer(writer, &json)
-            .map_err(|e| Error::Io(io::Error::new(io::ErrorKind::Other, e)))
+        serde_json::to_writer(writer, &json).map_err(|e| Error::Io(io::Error::other(e)))
     }
 
     fn format_type(&self) -> &str {
