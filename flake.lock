@@ -184,7 +184,6 @@
         "provenance-src": "provenance-src",
         "regen-src": "regen-src",
         "relayer-src": "relayer-src",
-        "rollapp-evm-src": "rollapp-evm-src",
         "rust-overlay": "rust-overlay",
         "sbt-derivation": "sbt-derivation",
         "sconfig-src": "sconfig-src",
@@ -216,16 +215,15 @@
         "wasmvm_2_1_4-src": "wasmvm_2_1_4-src"
       },
       "locked": {
-        "lastModified": 1747065739,
-        "narHash": "sha256-defikN6tNGqKEqX8hqrZNLbS1u7xORWZEQ2l474XVQk=",
+        "lastModified": 1747387017,
+        "narHash": "sha256-hgZvWvXG57RaDjDkTNVRJ9t1S49s2IbLPhC3pmnzNPY=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "2be4a465835e2633fd3e2c410162bd0b1347b69e",
+        "rev": "58f8b59ec52fa69a82349d40597fa2bfa601ec3a",
         "type": "github"
       },
       "original": {
         "owner": "informalsystems",
-        "ref": "luca_joss/add-ibc-go-v10",
         "repo": "cosmos.nix",
         "type": "github"
       }
@@ -1488,11 +1486,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1746576598,
-        "narHash": "sha256-FshoQvr6Aor5SnORVvh/ZdJ1Sa2U4ZrIMwKBX5k2wu0=",
+        "lastModified": 1747312588,
+        "narHash": "sha256-MmJvj6mlWzeRwKGLcwmZpKaOPZ5nJb/6al5CXqJsgjo=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b3582c75c7f21ce0b429898980eddbbf05c68e55",
+        "rev": "b1bebd0fe266bbd1820019612ead889e96a8fa2d",
         "type": "github"
       },
       "original": {
@@ -1596,22 +1594,6 @@
         "owner": "cosmos",
         "ref": "v1.0.0",
         "repo": "relayer",
-        "type": "github"
-      }
-    },
-    "rollapp-evm-src": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-bOH7QsNYjZVVHW7x5ysrO0IJmRNEUeE+bJRVPwdb5U8=",
-        "owner": "dymensionxyz",
-        "repo": "rollapp-evm",
-        "rev": "21b29f6e77f5c11a2036252d60819810abbbd7b8",
-        "type": "github"
-      },
-      "original": {
-        "owner": "dymensionxyz",
-        "repo": "rollapp-evm",
-        "rev": "21b29f6e77f5c11a2036252d60819810abbbd7b8",
         "type": "github"
       }
     },

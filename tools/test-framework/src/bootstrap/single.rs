@@ -112,7 +112,7 @@ pub fn bootstrap_single_node(
         Ok(())
     })?;
 
-    let minimum_gas = format!("0{}", native_token);
+    let minimum_gas = format!("0{native_token}");
     chain_driver.update_chain_config("config/app.toml", |config| {
         if builder.ipv6_grpc {
             config::cosmos::set_grpc_port_ipv6(config, chain_driver.grpc_port)?;
