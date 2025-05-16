@@ -95,11 +95,6 @@ jobs:
             account_prefix: pb
             native_token: nhash
             features: fee-grant,authz,async-icq
-          - package: migaloo
-            command: migalood
-            account_prefix: migaloo
-            native_token: stake
-            features: ics29-fee,ica,forward-packet
           # Disable Injective because wasmvm hasn't been correctly
           # wired for Injective in Cosmos Nix
           #- package: injective
