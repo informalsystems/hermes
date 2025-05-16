@@ -53,7 +53,7 @@ pub fn spawn_refresh_client<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                 // If `client.refresh()` failed and the retry mechanism
                 // exceeded the maximum delay, return a fatal error.
-                Err(e) => Err(TaskError::Fatal(e)),
+                Err(e) => Err(TaskError::Fatal(Box::new(e))),
             }
         },
     ))

@@ -73,7 +73,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                         Err(_) => RetryResult::Retry(index),
                                     },
                                 )
-                                .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+                                .map_err(|e| TaskError::Fatal(Box::new(RunError::retry(e)))),
 
                                 IbcEventType::UpgradeErrorChannel => retry_with_index(
                                     channel_handshake_retry::default_strategy(max_block_times),
@@ -97,7 +97,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                         Err(_) => RetryResult::Retry(index),
                                     },
                                 )
-                                .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+                                .map_err(|e| TaskError::Fatal(RunError::retry(e).into())),
 
                                 _ => retry_with_index(
                                     channel_handshake_retry::default_strategy(max_block_times),
@@ -111,7 +111,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                         Err(_) => RetryResult::Retry(index),
                                     },
                                 )
-                                .map_err(|e| TaskError::Fatal(RunError::retry(e))),
+                                .map_err(|e| TaskError::Fatal(RunError::retry(e).into())),
                             }
                         } else {
                             Ok(Next::Continue)
@@ -140,7 +140,7 @@ pub fn spawn_channel_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                 Err(_) => RetryResult::Retry(index),
                             },
                         )
-                        .map_err(|e| TaskError::Fatal(RunError::retry(e)))
+                        .map_err(|e| TaskError::Fatal(RunError::retry(e).into()))
                     }
 
                     // nothing to do
