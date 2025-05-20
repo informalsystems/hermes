@@ -4201,7 +4201,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-chain-registry"
-version = "0.32.0"
+version = "0.32.1"
 dependencies = [
  "async-trait",
  "flex-error",
@@ -4697,7 +4697,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer"
-version = "0.32.0"
+version = "0.32.1"
 dependencies = [
  "anyhow",
  "async-stream",
@@ -4773,7 +4773,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-cli"
-version = "1.13.0"
+version = "1.13.1"
 dependencies = [
  "abscissa_core",
  "clap 3.2.25",
@@ -4812,7 +4812,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-rest"
-version = "0.32.0"
+version = "0.32.1"
 dependencies = [
  "axum 0.6.20",
  "crossbeam-channel",
@@ -4825,7 +4825,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-relayer-types"
-version = "0.32.0"
+version = "0.32.1"
 dependencies = [
  "bytes",
  "derive_more 0.99.20",
@@ -4851,7 +4851,7 @@ dependencies = [
 
 [[package]]
 name = "ibc-telemetry"
-version = "0.32.0"
+version = "0.32.1"
 dependencies = [
  "axum 0.6.20",
  "dashmap",
