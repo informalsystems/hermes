@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## v1.13.1
+
+This release adds testing for ibc-go v10 and Cosmos SDK v0.53 compatibility.
+
+### IMPROVEMENTS
+
+- [Relayer Library](relayer)
+  - Add compatibility with ibc-go `v10.2.0` and Cosmos SDK `v0.53.0`
+    ([\#4263](https://github.com/informalsystems/hermes/issues/4356))
+
 ## v1.13.0
 
 *April 16th, 2025*
