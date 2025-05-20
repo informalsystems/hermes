@@ -14,21 +14,24 @@ pub fn spawn_wallet_worker<Chain: ChainHandle>(chain: Chain) -> TaskHandle {
     spawn_background_task(span, Some(Duration::from_secs(5)), move || {
         let chain_config = chain
             .config()
-            .map_err(|e| TaskError::Fatal(format!("failed to get chain config: {e}")))?;
+            .map_err(|e| TaskError::Fatal(format!("failed to get chain config: {e}").into()))?;
 
         if !chain_config.keyring_support() {
-            return Err(TaskError::Ignore(format!(
-                "chain {} does not support keyring",
-                chain.id()
-            )));
+            return Err(TaskError::Ignore(
+                format!("chain {} does not support keyring", chain.id()).into(),
+            ));
         }
 
         let key = chain.get_key().map_err(|e| {
-            TaskError::Fatal(format!("failed to get key in use by the relayer: {e}"))
+            TaskError::Fatal(Box::new(format!(
+                "failed to get key in use by the relayer: {e}"
+            )))
         })?;
 
         let balance = chain.query_balance(None, None).map_err(|e| {
-            TaskError::Ignore(format!("failed to query balance for the account: {e}"))
+            TaskError::Ignore(Box::new(format!(
+                "failed to query balance for the account: {e}"
+            )))
         })?;
 
         match balance.amount.parse::<f64>() {

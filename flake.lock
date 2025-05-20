@@ -49,35 +49,19 @@
         "type": "github"
       }
     },
-    "beaker-src": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-ZLDuTwB8PG0rMiDcLRxCf/xuoFowgK+aat9mSZVp+Dw=",
-        "owner": "osmosis-labs",
-        "repo": "beaker",
-        "rev": "fc046f8fe9d8baecdd76404b57b31f5a4e100301",
-        "type": "github"
-      },
-      "original": {
-        "owner": "osmosis-labs",
-        "ref": "v0.1.8",
-        "repo": "beaker",
-        "type": "github"
-      }
-    },
     "celestia-app-src": {
       "flake": false,
       "locked": {
-        "lastModified": 1722019080,
-        "narHash": "sha256-NN3O1nN+LTxDzYBzXjksfKl9DMCbFy+MsuxPBKgv9Dc=",
+        "lastModified": 1730300893,
+        "narHash": "sha256-ui67KRaabQyZiV5QD4Qyaqobky++rAe9ppJ2yveoXOs=",
         "owner": "celestiaorg",
         "repo": "celestia-app",
-        "rev": "b6db108a444c234e4b4656031d876bc45421c5f3",
+        "rev": "06f24f5dbe48c29964e1d8cfb030cffd90797ded",
         "type": "github"
       },
       "original": {
         "owner": "celestiaorg",
-        "ref": "v1.14.0",
+        "ref": "v2.3.1",
         "repo": "celestia-app",
         "type": "github"
       }
@@ -85,15 +69,16 @@
     "celestia-node-src": {
       "flake": false,
       "locked": {
-        "narHash": "sha256-O5a8Dy7WOSaLzYHTZAZFHFeJwqOLyajcHmGEcphOpKg=",
+        "lastModified": 1725294938,
+        "narHash": "sha256-AiNd7dM8QK8KSL5CzMDZ2kdMKLAJF55IWMkF8X22Pio=",
         "owner": "celestiaorg",
         "repo": "celestia-node",
-        "rev": "e55e1c88708b46839867bcbbed9bcdd8a3ffa830",
+        "rev": "6744f648649ebb5fee1b27faf7aca96ecf4519b2",
         "type": "github"
       },
       "original": {
         "owner": "celestiaorg",
-        "ref": "v0.13.0",
+        "ref": "v0.16.0",
         "repo": "celestia-node",
         "type": "github"
       }
@@ -137,7 +122,6 @@
         "akash-src": "akash-src",
         "andromeda-src": "andromeda-src",
         "apalache-src": "apalache-src",
-        "beaker-src": "beaker-src",
         "celestia-app-src": "celestia-app-src",
         "celestia-node-src": "celestia-node-src",
         "cometbft-src": "cometbft-src",
@@ -170,6 +154,7 @@
         "gomod2nix": "gomod2nix",
         "haqq-src": "haqq-src",
         "hermes-src": "hermes-src",
+        "ibc-go-v10-src": "ibc-go-v10-src",
         "ibc-go-v2-src": "ibc-go-v2-src",
         "ibc-go-v3-src": "ibc-go-v3-src",
         "ibc-go-v4-src": "ibc-go-v4-src",
@@ -199,7 +184,6 @@
         "provenance-src": "provenance-src",
         "regen-src": "regen-src",
         "relayer-src": "relayer-src",
-        "rollapp-evm-src": "rollapp-evm-src",
         "rust-overlay": "rust-overlay",
         "sbt-derivation": "sbt-derivation",
         "sconfig-src": "sconfig-src",
@@ -231,11 +215,11 @@
         "wasmvm_2_1_4-src": "wasmvm_2_1_4-src"
       },
       "locked": {
-        "lastModified": 1738754233,
-        "narHash": "sha256-Z3xF0UsI1O+3AZYEAfNegW2UCB1jvlSH1UZzsY0+DL8=",
+        "lastModified": 1747387017,
+        "narHash": "sha256-hgZvWvXG57RaDjDkTNVRJ9t1S49s2IbLPhC3pmnzNPY=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "b7125841f14af672a4f656f5607f9cf8b8c67970",
+        "rev": "58f8b59ec52fa69a82349d40597fa2bfa601ec3a",
         "type": "github"
       },
       "original": {
@@ -918,6 +902,23 @@
         "type": "github"
       }
     },
+    "ibc-go-v10-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1746016806,
+        "narHash": "sha256-4y7Hm5pIad6Ahu3D95CfXfM2L8wJpaFrvZwQfWQlBK8=",
+        "owner": "cosmos",
+        "repo": "ibc-go",
+        "rev": "e120ef5d4778c3e659ce57b59f028b250be5bb2e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "v10.2.0",
+        "repo": "ibc-go",
+        "type": "github"
+      }
+    },
     "ibc-go-v2-src": {
       "flake": false,
       "locked": {
@@ -1438,11 +1439,11 @@
     },
     "nixpkgs_2": {
       "locked": {
-        "lastModified": 1723603349,
-        "narHash": "sha256-VMg6N7MryOuvSJ8Sj6YydarnUCkL7cvMdrMcnsJnJCE=",
+        "lastModified": 1746576598,
+        "narHash": "sha256-FshoQvr6Aor5SnORVvh/ZdJ1Sa2U4ZrIMwKBX5k2wu0=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "daf7bb95821b789db24fc1ac21f613db0c1bf2cb",
+        "rev": "b3582c75c7f21ce0b429898980eddbbf05c68e55",
         "type": "github"
       },
       "original": {
@@ -1485,11 +1486,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1738797219,
-        "narHash": "sha256-KRwX9Z1XavpgeSDVM/THdFd6uH8rNm/6R+7kIbGa+2s=",
+        "lastModified": 1747312588,
+        "narHash": "sha256-MmJvj6mlWzeRwKGLcwmZpKaOPZ5nJb/6al5CXqJsgjo=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "1da52dd49a127ad74486b135898da2cef8c62665",
+        "rev": "b1bebd0fe266bbd1820019612ead889e96a8fa2d",
         "type": "github"
       },
       "original": {
@@ -1593,22 +1594,6 @@
         "owner": "cosmos",
         "ref": "v1.0.0",
         "repo": "relayer",
-        "type": "github"
-      }
-    },
-    "rollapp-evm-src": {
-      "flake": false,
-      "locked": {
-        "narHash": "sha256-bOH7QsNYjZVVHW7x5ysrO0IJmRNEUeE+bJRVPwdb5U8=",
-        "owner": "dymensionxyz",
-        "repo": "rollapp-evm",
-        "rev": "21b29f6e77f5c11a2036252d60819810abbbd7b8",
-        "type": "github"
-      },
-      "original": {
-        "owner": "dymensionxyz",
-        "repo": "rollapp-evm",
-        "rev": "21b29f6e77f5c11a2036252d60819810abbbd7b8",
         "type": "github"
       }
     },

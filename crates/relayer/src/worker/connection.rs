@@ -40,12 +40,12 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                 chains.b.clone(),
                                 &event_with_height.event,
                             )
-                            .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
+                            .map_err(|e| TaskError::Fatal(Box::new(RunError::connection(e))))?;
 
                             retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                                 handshake_connection.step_event(&event_with_height.event, index)
                             })
-                            .map_err(|e| TaskError::Fatal(RunError::retry(e)))
+                            .map_err(|e| TaskError::Fatal(RunError::retry(e).into()))
                         } else {
                             Ok(Next::Continue)
                         }
@@ -59,7 +59,7 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
 
                         let height = current_height
                             .decrement()
-                            .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?;
+                            .map_err(|e| TaskError::Fatal(RunError::ics02(e).into()))?;
 
                         let (mut handshake_connection, state) =
                             RelayConnection::restore_from_state(
@@ -68,14 +68,14 @@ pub fn spawn_connection_worker<ChainA: ChainHandle, ChainB: ChainHandle>(
                                 connection.clone(),
                                 height,
                             )
-                            .map_err(|e| TaskError::Fatal(RunError::connection(e)))?;
+                            .map_err(|e| TaskError::Fatal(RunError::connection(e).into()))?;
 
                         complete_handshake_on_new_block = false;
 
                         retry_with_index(retry_strategy::worker_default_strategy(), |index| {
                             handshake_connection.step_state(state, index)
                         })
-                        .map_err(|e| TaskError::Fatal(RunError::retry(e)))
+                        .map_err(|e| TaskError::Fatal(RunError::retry(e).into()))
                     }
 
                     // nothing to do

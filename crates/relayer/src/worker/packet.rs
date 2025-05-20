@@ -46,9 +46,9 @@ fn handle_link_error_in_task(e: LinkError) -> TaskError<RunError> {
     if e.is_expired_or_frozen_error() {
         // If the client is expired or frozen, terminate the packet worker
         // as there is no point of relaying further packets.
-        TaskError::Fatal(RunError::link(e))
+        TaskError::Fatal(RunError::link(e).into())
     } else {
-        TaskError::Ignore(RunError::link(e))
+        TaskError::Ignore(RunError::link(e).into())
     }
 }
 
@@ -530,10 +530,10 @@ fn handle_execute_schedule<ChainA: ChainHandle, ChainB: ChainHandle>(
 
     link.a_to_b.execute_schedule().map_err(|e| {
         if e.is_expired_or_frozen_error() {
-            TaskError::Fatal(RunError::link(e))
+            TaskError::Fatal(RunError::link(e).into())
         } else {
             error!("will retry: schedule execution encountered error: {}", e,);
-            TaskError::Ignore(RunError::link(e))
+            TaskError::Ignore(RunError::link(e).into())
         }
     })?;
 

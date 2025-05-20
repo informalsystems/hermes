@@ -70,6 +70,11 @@ jobs:
             account_prefix: cosmos
             native_token: stake
             features: ica,ics29-fee,new-register-interchain-account,channel-upgrade,authz,no-denom-trace
+          - package: ibc-go-v10-simapp
+            command: simd
+            account_prefix: cosmos
+            native_token: stake
+            features: ica,new-register-interchain-account,authz,no-denom-trace
           - package: wasmd
             command: wasmd
             account_prefix: wasm
@@ -90,11 +95,6 @@ jobs:
             account_prefix: pb
             native_token: nhash
             features: fee-grant,authz,async-icq
-          - package: migaloo
-            command: migalood
-            account_prefix: migaloo
-            native_token: stake
-            features: ics29-fee,ica,forward-packet
           # Disable Injective because wasmvm hasn't been correctly
           # wired for Injective in Cosmos Nix
           #- package: injective

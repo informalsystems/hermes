@@ -273,6 +273,7 @@ impl ChainBootstrapMethodsExt for ChainDriver {
             &self.home_path,
             &wallet_id.0,
             &token.to_string(),
+            &token.denom.to_string(),
         )
     }
 

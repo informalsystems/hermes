@@ -3,6 +3,8 @@
 #![allow(clippy::type_complexity)]
 #![allow(clippy::ptr_arg)]
 #![doc = include_str!("../README.md")]
+// TODO: fix error variants too long
+#![allow(clippy::result_large_err)]
 
 //! ## Overview
 //!

@@ -104,6 +104,7 @@ pub fn add_genesis_validator(
     home_path: &str,
     wallet_id: &str,
     amount: &str,
+    native_token: &str,
 ) -> Result<(), Error> {
     // Cosmos SDK v0.47.0 introduced the `genesis` subcommand, this match is required to
     // support pre and post SDK v0.47.0. https://github.com/cosmos/cosmos-sdk/pull/14149
@@ -121,6 +122,8 @@ pub fn add_genesis_validator(
             "--chain-id",
             chain_id,
             amount,
+            "--fees",
+            &format!("1{native_token}"),
         ],
     ) {
         Ok(_) => Ok(()),
@@ -138,6 +141,8 @@ pub fn add_genesis_validator(
                     "--chain-id",
                     chain_id,
                     amount,
+                    "--fees",
+                    &format!("1{native_token}"),
                 ],
             )?;
             Ok(())

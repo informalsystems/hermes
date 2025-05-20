@@ -74,9 +74,6 @@ jobs:
           - package: osmosis
             command: osmosisd
             account_prefix: osmo
-          - package: migaloo
-            command: migalood
-            account_prefix: migaloo
           - package: wasmd
             command: wasmd
             account_prefix: wasm
