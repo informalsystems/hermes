@@ -40,17 +40,9 @@ RUN groupadd -g ${GID} hermes && useradd -l -m hermes -s /bin/bash -u ${UID} -g 
 
 WORKDIR /home/hermes
 
-RUN ARCH=$(uname -m) && \
-    if [ "$ARCH" = "x86_64" ]; then \
-        DEB_URL=http://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.23_amd64.deb; \
-    elif [ "$ARCH" = "aarch64" ]; then \
-        DEB_URL=http://ports.ubuntu.com/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2_arm64.deb; \
-    else \
-        echo "Unsupported architecture: $ARCH"; exit 1; \
-    fi && \
-    wget $DEB_URL -O /tmp/libssl1.1.deb && \
-    dpkg -i /tmp/libssl1.1.deb && \
-    rm -rf /tmp/libssl1.1.deb
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends libssl-dev ca-certificates wget && \
+    update-ca-certificates
 
 USER hermes:hermes
 ENTRYPOINT ["/usr/bin/hermes"]
