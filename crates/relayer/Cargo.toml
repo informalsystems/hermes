@@ -21,7 +21,7 @@ default   = ["flex-error/std", "flex-error/eyre_tracer"]
 [dependencies]
 penumbra-sdk-proto       = { version = "1.0.0", features = ["box-grpc", "rpc"] }
 penumbra-sdk-wallet      = "1.0.0"
-penumbra-sdk-keys        = "1.0.0"
+penumbra-sdk-keys        = "1.5.2"
 penumbra-sdk-ibc         = "1.0.0"
 penumbra-sdk-custody     = "1.0.0"
 penumbra-sdk-fee         = "1.0.0"
