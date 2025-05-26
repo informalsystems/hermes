@@ -1556,9 +1556,9 @@ dependencies = [
 
 [[package]]
 name = "cnidarium-component"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f13c12371f4978ff9855ea2f33f212a6a3dbcd6381b590f44db183c1afe82a72"
+checksum = "c839fc2e8138143955d482e058d67d76ccb6389d8754f4d45a81fa3e8d52c53c"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -2028,9 +2028,9 @@ dependencies = [
 
 [[package]]
 name = "decaf377-fmd"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0665e4487866ec72f4bcfb08c9d3cd70017b648110e2dedc03ff4361c4c22591"
+checksum = "b769bc966ff431974f25c3505590ad953fe3f884a77c632e1675f7039e60a06b"
 dependencies = [
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
@@ -2060,9 +2060,9 @@ dependencies = [
 
 [[package]]
 name = "decaf377-ka"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f40ce11cb7c65266632a56bfd5c2fa6a171221195aed4a1e6558f1005d810242"
+checksum = "160638f00d27a3cd45d73d5f5048b7f0ed77282c5b3922c5b432123fae3a2e9c"
 dependencies = [
  "ark-ff 0.4.2",
  "decaf377",
@@ -7226,9 +7226,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-asset"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cdbd0f44c4f5c64173c6eca00ccfc57d4f22cf480985e67d9198aec2e5d43096"
+checksum = "0b15fba90bd4670394c8adc799c16b3ac14469d27838180ac4cca150deaa9f60"
 dependencies = [
  "anyhow",
  "ark-ff 0.4.2",
@@ -7583,9 +7583,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-ibc"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4bb44eea5a64cacb386572dc1be9d560c1115781ebf52bae57be682650194a34"
+checksum = "8fcf74824ebcbf7c832e574d417cbbab34f45c81bebeb58baac5ab589e7cb944"
 dependencies = [
  "anyhow",
  "ark-ff 0.4.2",
@@ -7620,9 +7620,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-keys"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d719fff27f91ee0334ea35194d1adf7e758aa8dd05d3be9848dd6a0d703bc464"
+checksum = "e8ecbb1847d9e805b2acee859c73f7a8ffc1cfb4f8bd60b6e2b7405e5b8ab12b"
 dependencies = [
  "aes",
  "anyhow",
@@ -7665,9 +7665,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-num"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99b1382ce3f39581945a17ae32ba41393c48d72111aff8837b1988bd01ffcecc"
+checksum = "836d615e799eb7b4dfe505c1d91afdb09ea4b964d230f622a5246426b7310e6b"
 dependencies = [
  "anyhow",
  "ark-ff 0.4.2",
@@ -7732,9 +7732,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-proto"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1edbc7af41e90098581a47aad49f1e1311dc1f2dac9513e2ebb95ec685bcec85"
+checksum = "16f914d68ac56227d51576157bb4957f449c52b2f271cfc73eb5aa890c778a0f"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -7765,9 +7765,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-sct"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4e254f295ef1e92813d958bac7d58c20ab077b74aee7e5ca9999594c8fb40334"
+checksum = "514f93ef7b3b2748611f3e4b099ededb466df0710d6e5ee7b415bf9749b0be57"
 dependencies = [
  "anyhow",
  "ark-ff 0.4.2",
@@ -7897,9 +7897,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-tct"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8d0bc180facebf0e97a6c101c7722cbafcf65e96ed33c76f611cfdc920e738a1"
+checksum = "ca112e02aff8793d0470aca45cf7893e6c18efd1824d72b297b0088d0a48d359"
 dependencies = [
  "ark-ed-on-bls12-377",
  "ark-ff 0.4.2",
@@ -8003,9 +8003,9 @@ dependencies = [
 
 [[package]]
 name = "penumbra-sdk-txhash"
-version = "1.5.1"
+version = "1.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c78db20681af6f0ba0415fb26ab11a5aa49f8736c0074fe898097214f1af889"
+checksum = "c0a2146be9347087d390b9442eaf60e2d641077451ca363aff8a213196567b87"
 dependencies = [
  "anyhow",
  "blake2b_simd 1.0.3",
