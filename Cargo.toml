@@ -111,7 +111,7 @@ subtle-encoding          = "0.5.1"
 test-log                 = "0.2.14"
 thiserror                = "1.0.69"
 time                     = "0.3"
-tiny-bip39               = "1.0.0"
+tiny-bip39               = "2.0.0"
 tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = "1.39.2"
 tokio-stream             = "0.1.16"
