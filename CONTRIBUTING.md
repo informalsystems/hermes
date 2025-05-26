@@ -81,7 +81,7 @@ contributors and maintainers in order to ensure that:
 We welcome bug reports, feature requests, and other contributions to our project.
 To open an issue, please follow these guidelines:
 
-1. **Search existing issues**: Before opening a new issue, please search existing issues to ensure that is not a duplicates.
+1. **Search existing issues**: Before opening a new issue, please search existing issues to ensure that is not a duplicate.
 
 2. **Provide a clear and descriptive title**: This helps others understand the nature of the issue at a glance.
 
