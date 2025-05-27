@@ -7,7 +7,7 @@ use ibc_relayer::chain::handle::ChainHandle;
 use tracing::info;
 
 use crate::bootstrap::nary::chain::{
-    boostrap_chains_with_nodes, boostrap_chains_with_self_connected_node,
+    bootstrap_chains_with_nodes, bootstrap_chains_with_self_connected_node,
 };
 use crate::error::Error;
 use crate::framework::base::{HasOverrides, TestConfigOverride};
@@ -134,7 +134,7 @@ where
     Overrides: RelayerConfigOverride + TopologyOverride,
 {
     fn run(&self, config: &TestConfig, nodes: [FullNode; SIZE]) -> Result<(), Error> {
-        let (relayer, chains) = boostrap_chains_with_nodes(
+        let (relayer, chains) = bootstrap_chains_with_nodes(
             config,
             nodes,
             self.test.get_overrides().topology(),
@@ -169,7 +169,7 @@ where
     Overrides: RelayerConfigOverride + TopologyOverride,
 {
     fn run(&self, config: &TestConfig, nodes: [FullNode; 1]) -> Result<(), Error> {
-        let (relayer, chains) = boostrap_chains_with_self_connected_node(
+        let (relayer, chains) = bootstrap_chains_with_self_connected_node(
             config,
             nodes[0].clone(),
             self.test.get_overrides().topology(),
