@@ -116,9 +116,11 @@ impl NaryChannelTest<4> for IbcForwardHopTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
+            "60m".to_owned(),
             wallet_d.address().value().to_string(),
             channel_c_to_d.port_a.to_string(),
             channel_c_to_d.channel.a_channel_id().unwrap().to_string(),
+            "60m".to_owned(),
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
@@ -241,9 +243,11 @@ impl NaryChannelTest<4> for AtomicIbcForwardHopTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
+            "60m".to_owned(),
             wallet_d.address().value().to_string(),
             channel_c_to_d.port_a.to_string(),
             "InvalidChannelFromCtoD".to_owned(),
+            "60m".to_owned(),
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
