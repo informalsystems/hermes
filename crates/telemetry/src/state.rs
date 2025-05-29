@@ -224,6 +224,9 @@ pub struct TelemetryState {
 
     /// Observed ICS31 CrossChainQuery error Responses
     cross_chain_query_error_responses: Counter<u64>,
+
+    /// Number of persistent packet data query failures per channel
+    persistent_packet_data_query_failures: Counter<u64>,
 }
 
 impl TelemetryState {
@@ -446,6 +449,11 @@ impl TelemetryState {
             cross_chain_query_error_responses: meter
                 .u64_counter("cross_chain_query_error_responses")
                 .with_description("Number of ICS-31 error query responses")
+                .init(),
+
+            persistent_packet_data_query_failures: meter
+                .u64_counter("persistent_packet_data_query_failures")
+                .with_description("Number of persistent or repeated failures to query packet data for relaying. Helps distinguish transient from long-standing issues.")
                 .init(),
         }
     }
@@ -1293,6 +1301,32 @@ impl TelemetryState {
             } else {
                 self.cross_chain_query_error_responses.add(&cx, 1, labels);
             }
+        }
+    }
+
+    /// Number of persistent packet data query failures, per channel
+    #[allow(clippy::too_many_arguments)]
+    pub fn persistent_packet_data_query_failures(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        src_channel: &ChannelId,
+        dst_channel: &ChannelId,
+        src_port: &PortId,
+        dst_port: &PortId,
+        count: u64,
+    ) {
+        let cx = Context::current();
+        if count > 0 {
+            let labels = &[
+                KeyValue::new("src_chain", src_chain.to_string()),
+                KeyValue::new("dst_chain", dst_chain.to_string()),
+                KeyValue::new("src_channel", src_channel.to_string()),
+                KeyValue::new("dst_channel", dst_channel.to_string()),
+                KeyValue::new("src_port", src_port.to_string()),
+                KeyValue::new("dst_port", dst_port.to_string()),
+            ];
+            self.persistent_packet_data_query_failures.add(&cx, count, labels);
         }
     }
 }
