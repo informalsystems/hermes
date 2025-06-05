@@ -109,7 +109,7 @@ Unless required by applicable law or agreed to in writing, software distributed 
 [relayer-rest-docs-link]: https://docs.rs/ibc-relayer-rest/
 [ibc-telemetry-crate-image]: https://img.shields.io/crates/v/ibc-telemetry.svg
 [ibc-telemetry-crate-link]: https://crates.io/crates/ibc-telemetry
-[ibc-telemetry-docs-image]: https://docs.rs/ibc-telemetry/badge.svg
+[ibc-telemetry-docs-image]: https://img.shields.io/docsrs/ibc-telemetry/latest
 [ibc-telemetry-docs-link]: https://docs.rs/ibc-telemetry/
 [ibc-test-framework-crate-image]: https://img.shields.io/crates/v/ibc-test-framework.svg
 [ibc-test-framework-crate-link]: https://crates.io/crates/ibc-test-framework
