@@ -158,7 +158,7 @@ impl FullNode {
         };
 
         let dynamic_gas_price = if chain_type.enable_dynamic_fee() {
-            DynamicGasPrice::unsafe_new(true, 1.3, 5.0)
+            DynamicGasPrice::unsafe_new(true, 1.3, 5.0, None)
         } else {
             DynamicGasPrice::disabled()
         };

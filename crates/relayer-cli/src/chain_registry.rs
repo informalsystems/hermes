@@ -118,7 +118,7 @@ where
 
     // Use EIP-1559 dynamic gas price for Osmosis
     let dynamic_gas_price = if chain_data.chain_id.as_str() == "osmosis-1" {
-        DynamicGasPrice::unsafe_new(true, 1.1, 0.6)
+        DynamicGasPrice::unsafe_new(true, 1.1, 0.6, None)
     } else {
         DynamicGasPrice::disabled()
     };
