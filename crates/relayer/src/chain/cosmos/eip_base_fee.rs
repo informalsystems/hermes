@@ -10,31 +10,29 @@ use tracing::{debug, trace};
 use ibc_proto::cosmos::base::v1beta1::{DecCoin, DecProto};
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
-use crate::error::Error;
+use crate::{config::dynamic_gas::DynamicGasType, error::Error};
 
 pub async fn query_eip_base_fee(
     rpc_address: &Url,
     gas_price_denom: &str,
+    dynamic_gas_type: &Option<DynamicGasType>,
     chain_id: &ChainId,
 ) -> Result<f64, Error> {
-    debug!("Querying Omosis EIP-1559 base fee from {rpc_address}");
-
-    let chain_name = chain_id.name();
-
-    let is_osmosis = chain_name.starts_with("osmosis") || chain_name.starts_with("osmo-test");
-
-    let url = if is_osmosis {
-        format!(
-            "{}abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"",
-            rpc_address
-        )
-    } else {
-        format!(
-            "{}abci_query?path=\"/feemarket.feemarket.v1.Query/GasPrices\"&denom={}",
-            rpc_address, gas_price_denom
-        )
+    let dynamic_gas_type = match dynamic_gas_type {
+        Some(dynamic_gas_type) => dynamic_gas_type,
+        None => {
+            // backward compatibility for chains that do not specify dynamic gas type
+            if chain_id.name().starts_with("osmosis") || chain_id.name().starts_with("osmo-test") {
+                &DynamicGasType::Osmosis
+            } else {
+                &DynamicGasType::SkipFeeMarket
+            }
+        }
     };
 
+    debug!("Querying {dynamic_gas_type} base fee from {rpc_address}");
+
+    let url = dynamic_gas_type.get_url(rpc_address, gas_price_denom);
     let response = reqwest::get(&url).await.map_err(Error::http_request)?;
 
     if !response.status().is_success() {
@@ -58,11 +56,7 @@ pub async fn query_eip_base_fee(
 
     let result: EipBaseFeeHTTPResult = response.json().await.map_err(Error::http_response_body)?;
 
-    let amount = if is_osmosis {
-        extract_dynamic_gas_price_osmosis(result.result.response.value)?
-    } else {
-        extract_dynamic_gas_price(result.result.response.value)?
-    };
+    let amount = dynamic_gas_type.extract_dynamic_gas_price(result.result.response.value)?;
 
     trace!("EIP-1559 base fee: {amount}");
 
@@ -70,7 +64,7 @@ pub async fn query_eip_base_fee(
 }
 
 /// This method extracts the gas base fee from Skip's feemarket
-fn extract_dynamic_gas_price(encoded: String) -> Result<f64, Error> {
+fn extract_dynamic_gas_price_fee_market(encoded: String) -> Result<f64, Error> {
     let decoded = base64::decode(encoded).map_err(Error::base64_decode)?;
 
     let gas_price_response: GasPriceResponse =
@@ -84,8 +78,8 @@ fn extract_dynamic_gas_price(encoded: String) -> Result<f64, Error> {
     f64::from_str(dec.to_string().as_str()).map_err(Error::parse_float)
 }
 
-/// This method extracts the gas base fee from Osmosis EIP-1559
-fn extract_dynamic_gas_price_osmosis(encoded: String) -> Result<f64, Error> {
+/// This method extracts the gas base fee from Osmosis EIP-1559 and Cosmos EVM EIP-1559
+fn extract_dynamic_gas_price(encoded: String) -> Result<f64, Error> {
     let decoded = base64::decode(encoded).map_err(Error::base64_decode)?;
 
     let dec_proto: DecProto = prost::Message::decode(decoded.as_ref())
@@ -187,5 +181,76 @@ impl fmt::Display for Decimal {
             f.write_str(fractional_string.trim_end_matches('0'))?;
             Ok(())
         }
+    }
+}
+
+impl DynamicGasType {
+    fn get_url(&self, rpc_address: &Url, gas_price_denom: &str) -> String {
+        match self {
+            DynamicGasType::SkipFeeMarket => format!(
+                "{}abci_query?path=\"/feemarket.feemarket.v1.Query/GasPrices\"&denom={}",
+                rpc_address, gas_price_denom
+            ),
+            DynamicGasType::Osmosis => format!(
+                "{}abci_query?path=\"/osmosis.txfees.v1beta1.Query/GetEipBaseFee\"",
+                rpc_address
+            ),
+            DynamicGasType::CosmosEvm => format!(
+                "{}abci_query?path=\"/cosmos.evm.feemarket.v1.Query/BaseFee\"",
+                rpc_address
+            ),
+        }
+    }
+
+    fn extract_dynamic_gas_price(&self, encoded: String) -> Result<f64, Error> {
+        match self {
+            DynamicGasType::SkipFeeMarket => extract_dynamic_gas_price_fee_market(encoded),
+            DynamicGasType::Osmosis => extract_dynamic_gas_price(encoded),
+            DynamicGasType::CosmosEvm => extract_dynamic_gas_price(encoded),
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_extract_dynamic_gas_price_fee_market() {
+        // Test with the provided encoded value
+        let encoded = "ChgKA3VvbRIRMTAwMDAwMDAwMDAwMDAwMDA".to_string();
+
+        let result = extract_dynamic_gas_price_fee_market(encoded);
+
+        assert!(result.is_ok());
+        let gas_price = result.unwrap();
+
+        assert_eq!(gas_price, 0.01);
+    }
+
+    #[test]
+    fn test_extract_dynamic_gas_price_osmosis() {
+        // Test with the provided encoded value
+        let encoded = "ChAyNTAwMDAwMDAwMDAwMDAw".to_string();
+
+        let result = extract_dynamic_gas_price(encoded);
+
+        assert!(result.is_ok());
+        let gas_price = result.unwrap();
+
+        assert_eq!(gas_price, 0.0025);
+    }
+
+    #[test]
+    fn test_extract_dynamic_gas_price_cosmos_evm() {
+        // Test with the provided encoded value
+        let encoded = "ChExMDAwMDAwMDAwMDAwMDAwMA==".to_string();
+
+        let result = extract_dynamic_gas_price(encoded);
+
+        assert!(result.is_ok());
+        let gas_price = result.unwrap();
+
+        assert_eq!(gas_price, 0.01);
     }
 }
