@@ -6,6 +6,8 @@
     rust_2018_idioms
 )]
 #![allow(clippy::too_many_arguments)]
+// TODO: fix error variants too long
+#![allow(clippy::result_large_err)]
 // TODO: disable unwraps:
 //  https://github.com/informalsystems/hermes/issues/987
 // #![cfg_attr(not(test), deny(clippy::unwrap_used))]
@@ -14,7 +16,7 @@
 //!
 //! For the IBC relayer binary, please see [Hermes] (`ibc-relayer-cli` crate).
 //!
-//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.13.0/
+//! [Hermes]: https://docs.rs/ibc-relayer-cli/1.13.1/
 
 extern crate alloc;
 
@@ -48,4 +50,4 @@ pub mod upgrade_chain;
 pub mod util;
 pub mod worker;
 
-pub const HERMES_VERSION: &str = "1.13.0";
+pub const HERMES_VERSION: &str = "1.13.1";

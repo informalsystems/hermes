@@ -1,6 +1,6 @@
 [package]
 name         = "ibc-relayer-types"
-version      = "0.32.0"
+version      = "0.32.1"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"

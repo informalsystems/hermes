@@ -15,6 +15,8 @@
 #![forbid(unsafe_code)]
 #![deny(rust_2018_idioms, trivial_casts, unused_lifetimes)]
 #![allow(deprecated, unknown_lints, non_local_definitions)]
+// TODO: fix error variants too long
+#![allow(clippy::result_large_err)]
 
 extern crate alloc;
 

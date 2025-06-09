@@ -42,14 +42,14 @@ pub enum TaskError<E> {
        and the background task runner should log the error and then continue
        execution.
     */
-    Ignore(E),
+    Ignore(Box<E>),
 
     /**
        Inform the background task runner that a fatal error has occurred,
        and the background task runner should log the error and then abort
        execution.
     */
-    Fatal(E),
+    Fatal(Box<E>),
 }
 
 pub enum Next {

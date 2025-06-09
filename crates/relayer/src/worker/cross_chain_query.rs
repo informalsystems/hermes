@@ -94,7 +94,7 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                         },
                         IncludeProof::No,
                     )
-                    .map_err(|e| TaskError::Fatal(RunError::relayer(e)))?
+                    .map_err(|e| TaskError::Fatal(RunError::relayer(e).into()))?
                     .0;
 
                 // Retrieve client based on client id
@@ -103,19 +103,19 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                     chain_a_handle.clone(),
                     connection_end.client_id(),
                 )
-                .map_err(|e| TaskError::Fatal(RunError::foreign_client(e)))?;
+                .map_err(|e| TaskError::Fatal(RunError::foreign_client(e).into()))?;
 
                 let target_height = Height::new(
                     chain_b_handle.id().version(),
                     cross_chain_query_responses.first().unwrap().height as u64,
                 )
-                .map_err(|e| TaskError::Fatal(RunError::ics02(e)))?
+                .map_err(|e| TaskError::Fatal(RunError::ics02(e).into()))?
                 .increment();
 
                 // Push update client msg
                 let mut chain_a_msgs = client_a
                     .wait_and_build_update_client(target_height)
-                    .map_err(|e| TaskError::Fatal(RunError::foreign_client(e)))?;
+                    .map_err(|e| TaskError::Fatal(RunError::foreign_client(e).into()))?;
 
                 let num_cross_chain_query_responses = cross_chain_query_responses.len();
 
@@ -127,9 +127,9 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                             .try_to_any(
                                 chain_a_handle
                                     .get_signer()
-                                    .map_err(|e| TaskError::Fatal(RunError::relayer(e)))?,
+                                    .map_err(|e| TaskError::Fatal(RunError::relayer(e).into()))?,
                             )
-                            .map_err(|e| TaskError::Fatal(RunError::ics31(e)))?,
+                            .map_err(|e| TaskError::Fatal(RunError::ics31(e).into()))?,
                     );
                 }
 
@@ -149,7 +149,7 @@ fn handle_cross_chain_query<ChainA: ChainHandle, ChainB: ChainHandle>(
                             failed_codes
                         );
 
-                        TaskError::Ignore(RunError::relayer(e))
+                        TaskError::Ignore(RunError::relayer(e).into())
                     })?;
 
                 telemetry!(

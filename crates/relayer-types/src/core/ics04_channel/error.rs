@@ -1,14 +1,11 @@
 use super::packet::Sequence;
-use super::timeout::TimeoutHeight;
 use crate::core::ics02_client::error as client_error;
 use crate::core::ics03_connection::error as connection_error;
-use crate::core::ics04_channel::channel::State;
 use crate::core::ics24_host::error::ValidationError;
 use crate::core::ics24_host::identifier::{ChannelId, ClientId, ConnectionId, PortId};
 
 use crate::proofs::ProofError;
 use crate::signer::SignerError;
-use crate::timestamp::Timestamp;
 use crate::Height;
 
 use flex_error::{define_error, TraceError};
@@ -246,39 +243,6 @@ define_error! {
                 format_args!("Invalid packet ack, not a valid hex-encoded string: {}", e.ack)
             },
 
-        LowPacketHeight
-            {
-                chain_height: Height,
-                timeout_height: TimeoutHeight
-            }
-            | e | {
-                format_args!(
-                    "Receiving chain block height {0} >= packet timeout height {1}",
-                    e.chain_height, e.timeout_height)
-            },
-
-        PacketTimeoutHeightNotReached
-            {
-                timeout_height: TimeoutHeight,
-                chain_height: Height,
-            }
-            | e | {
-                format_args!(
-                    "Packet timeout height {0} > chain height {1}",
-                     e.timeout_height, e.chain_height)
-            },
-
-        PacketTimeoutTimestampNotReached
-            {
-                timeout_timestamp: Timestamp,
-                chain_timestamp: Timestamp,
-            }
-            | e | {
-                format_args!(
-                    "Packet timeout timestamp {0} > chain timestamp {1}",
-                     e.timeout_timestamp, e.chain_timestamp)
-            },
-
         LowPacketTimestamp
             | _ | { "Receiving chain block timestamp >= packet timeout timestamp" },
 
@@ -300,14 +264,6 @@ define_error! {
         InvalidCounterpartyChannelId
             [ ValidationError ]
             | _ | { "Invalid channel id in counterparty" },
-
-        InvalidChannelState
-            { channel_id: ChannelId, state: State }
-            | e | {
-                format_args!(
-                    "Channel {0} should not be state {1}",
-                    e.channel_id, e.state)
-            },
 
         ChannelClosed
             { channel_id: ChannelId }

@@ -9,7 +9,6 @@ use crate::Height;
 use tendermint::account::Id;
 use tendermint::hash::Hash;
 use tendermint::Error as TendermintError;
-use tendermint_light_client_verifier::errors::VerificationErrorDetail as LightClientErrorDetail;
 
 define_error! {
     #[derive(Debug, PartialEq, Eq)]
@@ -220,12 +219,6 @@ define_error! {
             { reason: String }
             | e | {
                 format_args!("not enough trust because insufficient validators overlap: {}", e.reason)
-            },
-
-        VerificationError
-            { detail: LightClientErrorDetail }
-            | e | {
-                format_args!("verification failed: {}", e.detail)
             },
 
         ProcessedTimeNotFound
