@@ -1,6 +1,6 @@
 /*!
    The Topology defines how chains are interconnected when more than two are used in tests.
-   This setup is managed by the [`crate::bootstrap::nary::chain::boostrap_chains_with_any_nodes`]
+   This setup is managed by the [`crate::bootstrap::nary::chain::bootstrap_chains_with_any_nodes`]
    function.
 
    Connections are established by examining the existing clients, and channels are created based
