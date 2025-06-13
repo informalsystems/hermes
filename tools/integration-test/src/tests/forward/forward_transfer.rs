@@ -124,7 +124,7 @@ impl NaryChannelTest<3> for IbcForwardTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
@@ -236,7 +236,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo1 = serde_json::to_string(&memo_invalid_field).unwrap();
 
@@ -245,7 +245,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo2 = serde_json::to_string(&memo_invalid_field).unwrap();
 
@@ -254,7 +254,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo3 = serde_json::to_string(&memo_invalid_field).unwrap();
 
@@ -263,7 +263,7 @@ impl NaryChannelTest<3> for MisspelledMemoFieldsIbcForwardTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo4 = serde_json::to_string(&memo_invalid_field).unwrap();
 
@@ -485,7 +485,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
             wallet_c.address().value().to_string(),
             "misspelledPort".to_owned(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo1 = serde_json::to_string(&memo_misspelled_port).unwrap();
 
@@ -494,7 +494,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             "misspelledChannel".to_owned(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo2 = serde_json::to_string(&memo_misspelled_channel).unwrap();
 
@@ -503,7 +503,7 @@ impl NaryChannelTest<3> for MisspelledMemoContentIbcForwardTransferTest {
             "misspelledReceiver".to_owned(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "60m".to_owned(),
+            6000000000,
         );
         let memo3 = serde_json::to_string(&memo_misspelled_receiver).unwrap();
 

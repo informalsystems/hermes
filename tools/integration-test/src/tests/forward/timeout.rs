@@ -11,6 +11,7 @@ use ibc_relayer::chain::requests::Paginate;
 use ibc_relayer::config::{self, ModeConfig};
 use ibc_relayer::link::Link;
 use ibc_relayer::link::LinkParameters;
+use ibc_relayer_types::events::IbcEventType;
 use ibc_test_framework::prelude::*;
 use ibc_test_framework::relayer::channel::query_identified_channel_end;
 
@@ -18,7 +19,18 @@ use crate::tests::forward::memo::{HopMemoField, MemoField, MemoInfo};
 
 #[test]
 fn test_ibc_forward_timeout_transfer() -> Result<(), Error> {
-    run_nary_channel_test(&IbcForwardTimeoutTransferTest)
+    run_nary_channel_test(&IbcForwardTimeoutTransferTest {
+        timeout_in_ns: 30000000000, // 30 seconds
+        should_timeout: true,
+    })
+}
+
+#[test]
+fn test_ibc_forward_no_timeout_transfer() -> Result<(), Error> {
+    run_nary_channel_test(&IbcForwardTimeoutTransferTest {
+        timeout_in_ns: 90000000000, // 90 seconds
+        should_timeout: false,
+    })
 }
 
 #[test]
@@ -74,7 +86,10 @@ impl TestOverrides for IbcForwardHopTimeoutTransferTestOverrides {
 
 impl PortsOverride<4> for IbcForwardHopTimeoutTransferTestOverrides {}
 
-struct IbcForwardTimeoutTransferTest;
+struct IbcForwardTimeoutTransferTest {
+    pub timeout_in_ns: u64,
+    pub should_timeout: bool,
+}
 
 impl NaryChannelTest<3> for IbcForwardTimeoutTransferTest {
     fn run<Handle: ChainHandle>(
@@ -94,6 +109,7 @@ impl NaryChannelTest<3> for IbcForwardTimeoutTransferTest {
 
         let handle_a = chains.chain_handle_at::<0>()?;
         let handle_b = chains.chain_handle_at::<1>()?;
+        let handle_c = chains.chain_handle_at::<2>()?;
 
         let channel_a_to_b = channels.channel_at::<0, 1>()?;
         let channel_b_to_c = channels.channel_at::<1, 2>()?;
@@ -140,7 +156,7 @@ impl NaryChannelTest<3> for IbcForwardTimeoutTransferTest {
             wallet_c.address().value().to_string(),
             channel_b_to_c.port_a.to_string(),
             channel_b_to_c.channel.a_channel_id().unwrap().to_string(),
-            "1m".to_owned(),
+            self.timeout_in_ns,
         );
         let memo = serde_json::to_string(&memo_field).unwrap();
 
@@ -153,7 +169,7 @@ impl NaryChannelTest<3> for IbcForwardTimeoutTransferTest {
                 &wallet_b.address(),
                 &denom_a.with_amount(a_to_c_amount).as_ref(),
                 Some(memo),
-                Some(Duration::from_secs(30)),
+                Some(Duration::from_secs(50)),
             )?;
 
         node_a.chain_driver().assert_eventual_wallet_amount(
@@ -187,36 +203,103 @@ impl NaryChannelTest<3> for IbcForwardTimeoutTransferTest {
             exclude_src_sequences: vec![],
         };
 
-        let link = Link::new_from_opts(handle_a, handle_b, opts, false, false)?;
+        let link = Link::new_from_opts(handle_a, handle_b.clone(), opts, false, false)?;
 
-        info!("Clearing all packets ({})", to_clear.len());
+        assert!(
+            to_clear.len() == 1,
+            "expected exactly one packet to clear from A to B"
+        );
 
-        link.relay_recv_packet_and_timeout_messages(to_clear)
+        let result = link
+            .relay_recv_packet_and_timeout_messages(to_clear)
             .unwrap();
+
+        assert!(
+            result
+                .iter()
+                .any(|event| event.event_type() == IbcEventType::SendPacket),
+            "expected to relay send packet from A to B"
+        );
+
+        // Wait for packet to timeout
+        std::thread::sleep(Duration::from_secs(35));
+
+        let channel_end_b = query_identified_channel_end(
+            &handle_b,
+            channel_b_to_c.channel_id_a.as_ref(),
+            channel_b_to_c.port_a.as_ref(),
+        )?;
+
+        let pending_packets_b =
+            pending_packet_summary(&handle_b, &handle_c, channel_end_b.value(), Paginate::All)?;
+
+        let to_clear = pending_packets_b
+            .unreceived_packets
+            .iter()
+            .map(|&seq| seq..=seq)
+            .collect::<Vec<_>>();
+
+        assert!(
+            to_clear.len() == 1,
+            "expected exactly one packet to clear from B to C"
+        );
+
+        node_a
+            .chain_driver()
+            .assert_eventual_wallet_amount(&wallet_a.address(), &(balance_a.clone() - a_to_c_amount).as_ref())?;
 
         info!(
             "waiting for user on chain A to be refunded the amount of {}",
             a_to_c_amount
         );
 
-        node_a
-            .chain_driver()
-            .assert_eventual_wallet_amount(&wallet_a.address(), &balance_a.as_ref())?;
+        relayer.with_supervisor(||{
+            if self.should_timeout{
+                node_a
+                    .chain_driver()
+                    .assert_eventual_wallet_amount(&wallet_a.address(), &balance_a.as_ref())?;
 
-        node_c.chain_driver().assert_eventual_wallet_amount(
-            &wallet_c.address(),
-            &denom_a_to_c.with_amount(0u128).as_ref(),
-        )?;
+                node_c.chain_driver().assert_eventual_wallet_amount(
+                    &wallet_c.address(),
+                    &denom_a_to_c.with_amount(0u128).as_ref(),
+                )?;
+            } else {
+                node_a
+                    .chain_driver()
+                    .assert_eventual_wallet_amount(&wallet_a.address(), &(balance_a.clone() - a_to_c_amount).as_ref())?;
 
-        node_b.chain_driver().assert_eventual_wallet_amount(
-            &wallet_b.address(),
-            &denom_a_to_b.with_amount(0_u128).as_ref(),
-        )?;
+                node_c.chain_driver().assert_eventual_wallet_amount(
+                    &wallet_c.address(),
+                    &denom_a_to_c.with_amount(a_to_c_amount).as_ref(),
+                )?;
+            }
 
-        info!(
-            "successfully performed IBC timeout transfer for PRM transfer from chain {} to chain {}",
-            chains.chain_handle_at::<0>().unwrap().value(),
-            chains.chain_handle_at::<2>().unwrap().value(),
+            node_b.chain_driver().assert_eventual_wallet_amount(
+                &wallet_b.address(),
+                &denom_a_to_b.with_amount(0_u128).as_ref(),
+            )?;
+
+            info!(
+                "successfully performed IBC timeout transfer for PFM transfer from chain {} to chain {}",
+                chains.chain_handle_at::<0>().unwrap().value(),
+                chains.chain_handle_at::<2>().unwrap().value(),
+            );
+
+            Ok(())
+        })?;
+
+        let pending_packets_b =
+            pending_packet_summary(&handle_b, &handle_c, channel_end_b.value(), Paginate::All)?;
+
+        let to_clear = pending_packets_b
+            .unreceived_packets
+            .iter()
+            .map(|&seq| seq..=seq)
+            .collect::<Vec<_>>();
+
+        assert!(
+            to_clear.len() == 0,
+            "expected all packets to have been cleared from B to C"
         );
 
         Ok(())
@@ -412,7 +495,7 @@ impl NaryChannelTest<4> for IbcForwardHopTimeoutTransferTest {
             )?;
 
             info!(
-                "successfully performed IBC timeout transfer for PRM transfer from chain {} to chain {}",
+                "successfully performed IBC timeout transfer for PFM transfer from chain {} to chain {}",
                 chains.chain_handle_at::<0>().unwrap().value(),
                 chains.chain_handle_at::<3>().unwrap().value(),
             );

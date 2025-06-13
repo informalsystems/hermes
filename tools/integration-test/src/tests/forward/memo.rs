@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 pub trait HasForwardMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String, timeout: String) -> Self;
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -14,7 +14,7 @@ pub struct MemoField<M: HasForwardMemoInfo> {
 }
 
 impl<M: HasForwardMemoInfo> MemoField<M> {
-    pub fn new(receiver: String, port: String, channel: String, timeout: String) -> Self {
+    pub fn new(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         let forward = M::new_memo(receiver, port, channel, timeout);
         MemoField { forward }
     }
@@ -26,7 +26,7 @@ pub struct MemoMisspelledField<M: HasForwardMemoInfo> {
 }
 
 impl<M: HasForwardMemoInfo> MemoMisspelledField<M> {
-    pub fn new(receiver: String, port: String, channel: String, timeout: String) -> Self {
+    pub fn new(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         let fwd = M::new_memo(receiver, port, channel, timeout);
         MemoMisspelledField { fwd }
     }
@@ -37,11 +37,11 @@ pub struct MemoInfo {
     receiver: String,
     port: String,
     channel: String,
-    timeout: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String, timeout: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             receiver,
             port,
@@ -56,11 +56,11 @@ pub struct MisspelledReceiverMemoInfo {
     recv: String,
     port: String,
     channel: String,
-    timeout: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MisspelledReceiverMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String, timeout: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             recv: receiver,
             port,
@@ -75,11 +75,11 @@ pub struct MisspelledPortMemoInfo {
     receiver: String,
     fort: String,
     channel: String,
-    timeout: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MisspelledPortMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String, timeout: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             receiver,
             fort: port,
@@ -94,11 +94,11 @@ pub struct MisspelledChannelMemoInfo {
     receiver: String,
     port: String,
     xhannel: String,
-    timeout: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MisspelledChannelMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String, timeout: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             receiver,
             port,
