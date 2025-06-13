@@ -5,7 +5,7 @@
 use serde::{Deserialize, Serialize};
 
 pub trait HasForwardMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String) -> Self;
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -14,8 +14,8 @@ pub struct MemoField<M: HasForwardMemoInfo> {
 }
 
 impl<M: HasForwardMemoInfo> MemoField<M> {
-    pub fn new(receiver: String, port: String, channel: String) -> Self {
-        let forward = M::new_memo(receiver, port, channel);
+    pub fn new(receiver: String, port: String, channel: String, timeout: u64) -> Self {
+        let forward = M::new_memo(receiver, port, channel, timeout);
         MemoField { forward }
     }
 }
@@ -26,8 +26,8 @@ pub struct MemoMisspelledField<M: HasForwardMemoInfo> {
 }
 
 impl<M: HasForwardMemoInfo> MemoMisspelledField<M> {
-    pub fn new(receiver: String, port: String, channel: String) -> Self {
-        let fwd = M::new_memo(receiver, port, channel);
+    pub fn new(receiver: String, port: String, channel: String, timeout: u64) -> Self {
+        let fwd = M::new_memo(receiver, port, channel, timeout);
         MemoMisspelledField { fwd }
     }
 }
@@ -37,14 +37,16 @@ pub struct MemoInfo {
     receiver: String,
     port: String,
     channel: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             receiver,
             port,
             channel,
+            timeout,
         }
     }
 }
@@ -54,14 +56,16 @@ pub struct MisspelledReceiverMemoInfo {
     recv: String,
     port: String,
     channel: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MisspelledReceiverMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             recv: receiver,
             port,
             channel,
+            timeout,
         }
     }
 }
@@ -71,14 +75,16 @@ pub struct MisspelledPortMemoInfo {
     receiver: String,
     fort: String,
     channel: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MisspelledPortMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             receiver,
             fort: port,
             channel,
+            timeout,
         }
     }
 }
@@ -88,14 +94,16 @@ pub struct MisspelledChannelMemoInfo {
     receiver: String,
     port: String,
     xhannel: String,
+    timeout: u64,
 }
 
 impl HasForwardMemoInfo for MisspelledChannelMemoInfo {
-    fn new_memo(receiver: String, port: String, channel: String) -> Self {
+    fn new_memo(receiver: String, port: String, channel: String, timeout: u64) -> Self {
         Self {
             receiver,
             port,
             xhannel: channel,
+            timeout,
         }
     }
 }
@@ -110,16 +118,19 @@ impl HopMemoField {
         intermediary_receiver: String,
         intermediary_port: String,
         intermediary_channel: String,
+        intermediary_timeout: String,
         final_receiver: String,
         final_port: String,
         final_channel: String,
+        final_timeout: String,
     ) -> Self {
-        let hop_field = HopField::new(final_receiver, final_port, final_channel);
+        let hop_field = HopField::new(final_receiver, final_port, final_channel, final_timeout);
         let hop_field_string = serde_json::to_string(&hop_field).unwrap();
         let memo_content = HopMemoInfo::new(
             intermediary_receiver,
             intermediary_port,
             intermediary_channel,
+            intermediary_timeout,
             hop_field_string,
         );
         Self {
@@ -133,15 +144,23 @@ pub struct HopMemoInfo {
     receiver: String,
     port: String,
     channel: String,
+    timeout: String,
     next: String,
 }
 
 impl HopMemoInfo {
-    pub fn new(receiver: String, port: String, channel: String, next: String) -> Self {
+    pub fn new(
+        receiver: String,
+        port: String,
+        channel: String,
+        timeout: String,
+        next: String,
+    ) -> Self {
         Self {
             receiver,
             port,
             channel,
+            timeout,
             next,
         }
     }
@@ -153,8 +172,8 @@ pub struct HopField {
 }
 
 impl HopField {
-    pub fn new(receiver: String, port: String, channel: String) -> Self {
-        let hop = Hop::new(receiver, port, channel);
+    pub fn new(receiver: String, port: String, channel: String, timeout: String) -> Self {
+        let hop = Hop::new(receiver, port, channel, timeout);
         Self { forward: hop }
     }
 }
@@ -164,14 +183,16 @@ pub struct Hop {
     receiver: String,
     port: String,
     channel: String,
+    timeout: String,
 }
 
 impl Hop {
-    pub fn new(receiver: String, port: String, channel: String) -> Self {
+    pub fn new(receiver: String, port: String, channel: String, timeout: String) -> Self {
         Self {
             receiver,
             port,
             channel,
+            timeout,
         }
     }
 }
