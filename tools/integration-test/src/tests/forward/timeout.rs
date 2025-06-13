@@ -244,9 +244,10 @@ impl NaryChannelTest<3> for IbcForwardTimeoutTransferTest {
             "expected exactly one packet to clear from B to C"
         );
 
-        node_a
-            .chain_driver()
-            .assert_eventual_wallet_amount(&wallet_a.address(), &(balance_a.clone() - a_to_c_amount).as_ref())?;
+        node_a.chain_driver().assert_eventual_wallet_amount(
+            &wallet_a.address(),
+            &(balance_a.clone() - a_to_c_amount).as_ref(),
+        )?;
 
         info!(
             "waiting for user on chain A to be refunded the amount of {}",
@@ -298,7 +299,7 @@ impl NaryChannelTest<3> for IbcForwardTimeoutTransferTest {
             .collect::<Vec<_>>();
 
         assert!(
-            to_clear.len() == 0,
+            to_clear.is_empty(),
             "expected all packets to have been cleared from B to C"
         );
 
