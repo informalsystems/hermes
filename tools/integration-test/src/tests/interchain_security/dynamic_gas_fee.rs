@@ -84,7 +84,8 @@ impl TestOverrides for DynamicGasTest {
                 chain_config_a.gas_price =
                     GasPrice::new(0.3, chain_config_a.gas_price.denom.clone());
 
-                chain_config_a.dynamic_gas_price = DynamicGasPrice::unsafe_new(false, 1.1, 0.6);
+                chain_config_a.dynamic_gas_price =
+                    DynamicGasPrice::unsafe_new(false, 1.1, 0.6, None);
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         }
@@ -97,7 +98,7 @@ impl TestOverrides for DynamicGasTest {
                 chain_config_b.gas_multiplier = Some(GasMultiplier::unsafe_new(1.8));
 
                 chain_config_b.dynamic_gas_price =
-                    DynamicGasPrice::unsafe_new(self.dynamic_gas_enabled, 1.1, 0.6);
+                    DynamicGasPrice::unsafe_new(self.dynamic_gas_enabled, 1.1, 0.6, None);
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
         }
