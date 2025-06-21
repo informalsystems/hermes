@@ -120,7 +120,7 @@ You can update the tracing filter without restarting your instance. There are tw
 
 ### Limited command
 
-If possible use the [log-level](../../../documentation/commands/logs/index.md#log-level) command as the results are guaranteed.
+If possible use the [log level](../../../commands/logs/index.md#log-level) command as the results are guaranteed.
 
 __Examples__
 
