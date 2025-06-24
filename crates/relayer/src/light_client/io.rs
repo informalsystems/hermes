@@ -28,6 +28,16 @@ impl AnyIo {
             AnyIo::RestartAware(io) => io.fetch_validator_set(height, proposer_address),
         }
     }
+
+    pub fn fetch_signed_header(
+        &self,
+        height: AtHeight,
+    ) -> Result<tendermint::block::signed_header::SignedHeader, IoError> {
+        match self {
+            AnyIo::Prod(io) => io.fetch_signed_header(height),
+            AnyIo::RestartAware(io) => io.fetch_signed_header(height),
+        }
+    }
 }
 
 impl Io for AnyIo {
@@ -70,6 +80,18 @@ impl RestartAwareIo {
         };
 
         io.fetch_validator_set(height, proposer_address)
+    }
+
+    pub fn fetch_signed_header(
+        &self,
+        height: AtHeight,
+    ) -> Result<tendermint::block::signed_header::SignedHeader, IoError> {
+        let io = match height {
+            AtHeight::At(height) if height <= self.restart_height => &self.archive_io,
+            _ => &self.live_io,
+        };
+
+        io.fetch_signed_header(height)
     }
 }
 
