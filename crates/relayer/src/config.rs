@@ -498,6 +498,8 @@ pub struct TelemetryConfig {
     pub port: u16,
     #[serde(default = "HistogramBuckets::default")]
     pub buckets: HistogramBuckets,
+    #[serde(default)]
+    pub prefix: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -562,6 +564,7 @@ impl Default for TelemetryConfig {
             host: "127.0.0.1".to_string(),
             port: 3001,
             buckets: HistogramBuckets::default(),
+            prefix: Default::default(),
         }
     }
 }
