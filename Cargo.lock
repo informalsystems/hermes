@@ -4546,7 +4546,7 @@ dependencies = [
  "tendermint-testgen",
  "test-log",
  "thiserror 1.0.69",
- "tiny-bip39 1.0.0",
+ "tiny-bip39",
  "tiny-keccak",
  "tokio",
  "tokio-stream",
@@ -6287,7 +6287,7 @@ dependencies = [
  "tempfile",
  "tendermint-rpc",
  "thiserror 2.0.12",
- "tiny-bip39 2.0.0",
+ "tiny-bip39",
  "tokio",
  "toml 0.8.22",
  "tracing",
@@ -6563,7 +6563,7 @@ dependencies = [
  "slip10_ed25519",
  "smooth-operator",
  "thiserror 2.0.12",
- "tiny-bip39 2.0.0",
+ "tiny-bip39",
  "toml 0.8.22",
  "zeroize",
 ]
@@ -10601,25 +10601,6 @@ checksum = "2834e6017e3e5e4b9834939793b282bc03b37a3336245fa820e35e233e2a85de"
 dependencies = [
  "num-conv",
  "time-core",
-]
-
-[[package]]
-name = "tiny-bip39"
-version = "1.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "62cc94d358b5a1e84a5cb9109f559aa3c4d634d2b1b4de3d0fa4adc7c78e2861"
-dependencies = [
- "anyhow",
- "hmac",
- "once_cell",
- "pbkdf2 0.11.0",
- "rand 0.8.5",
- "rustc-hash 1.1.0",
- "sha2 0.10.9",
- "thiserror 1.0.69",
- "unicode-normalization",
- "wasm-bindgen",
- "zeroize",
 ]
 
 [[package]]
