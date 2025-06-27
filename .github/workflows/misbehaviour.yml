@@ -78,8 +78,6 @@ jobs:
           chmod: 0755
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.85.0
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -134,8 +132,6 @@ jobs:
           chmod: 0755
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.85.0
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -190,8 +186,6 @@ jobs:
           chmod: 0755
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.85.0
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
@@ -246,8 +240,6 @@ jobs:
           chmod: 0755
       - name: Install Rust
         uses: actions-rust-lang/setup-rust-toolchain@v1
-        with:
-          toolchain: 1.85.0
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:
