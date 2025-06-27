@@ -95,7 +95,7 @@ jobs:
           name: cosmos-nix
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
-          toolchain: stable
+          toolchain: 1.85.0
       - name: Install Protoc
         uses: arduino/setup-protoc@v3
         with:

@@ -8,7 +8,7 @@
 [![Integration tests][test-image]][test-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.84+][rustc-version]
+![Rust 1.85+][rustc-version]
 
 Rust implementation of an Inter-Blockchain Communication (IBC) relayer.
 
