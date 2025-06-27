@@ -42,6 +42,17 @@
         <script src="toc.js"></script>
     </head>
     <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
     <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
@@ -119,7 +130,7 @@
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
                         </ul>
-                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
                             <i class="fa fa-search"></i>
                         </button>
                     </div>
@@ -156,7 +167,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="hermes-guide-v1131"><a class="header" href="#hermes-guide-v1131">Hermes Guide (v1.13.1)</a></h1>
+                        <h1 id="hermes-guide-v1132"><a class="header" href="#hermes-guide-v1132">Hermes Guide (v1.13.2)</a></h1>
 <h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
 <p>Hermes is an open-source Rust implementation of a relayer for the
 <a href="https://ibc.cosmos.network">Inter-Blockchain Communication protocol</a> (<strong>IBC</strong>) released under the <a href="https://crates.io/crates/ibc-relayer-cli">ibc-relayer-cli</a> crate. It provides a CLI to relay packets between Cosmos SDK chains, exposes <a href="https://prometheus.io/">Prometheus</a> metrics and offers a REST API.</p>
@@ -372,8 +383,8 @@ option is to <a href="quick-start/installation.html#install-by-downloading">down
 <p>Simply head to the GitHub <a href="https://github.com/informalsystems/hermes/releases">Releases</a> page and download the latest
 version of Hermes binary matching your platform:</p>
 <ul>
-<li>macOS: <code>hermes-v1.13.1-x86_64-apple-darwin.tar.gz</code> (or .zip),</li>
-<li>Linux: <code>hermes-v1.13.1-x86_64-unknown-linux-gnu.tar.gz</code> (or .zip).</li>
+<li>macOS: <code>hermes-v1.13.2-x86_64-apple-darwin.tar.gz</code> (or .zip),</li>
+<li>Linux: <code>hermes-v1.13.2-x86_64-unknown-linux-gnu.tar.gz</code> (or .zip).</li>
 </ul>
 <p>The step-by-step instruction below should carry you through the whole process:</p>
 <ol>
@@ -405,7 +416,7 @@ if that is the case.</p>
 
 </code></pre>
 <p>Which should be:</p>
-<pre><code>hermes v1.13.1
+<pre><code>hermes v1.13.2
 </code></pre>
 <h2 id="install-via-cargo"><a class="header" href="#install-via-cargo">Install via Cargo</a></h2>
 <blockquote>
@@ -431,7 +442,7 @@ For most shells, this can be done by adding the following line to your
 
 </code></pre>
 <p>Which should be:</p>
-<pre><code>hermes v1.13.1
+<pre><code>hermes v1.13.2
 </code></pre>
 <h2 id="build-from-source"><a class="header" href="#build-from-source">Build from source</a></h2>
 <h3 id="clone-the-repository"><a class="header" href="#clone-the-repository">Clone the repository</a></h3>
@@ -444,8 +455,8 @@ For most shells, this can be done by adding the following line to your
 </code></pre>
 <h3 id="checkout-the-latest-release"><a class="header" href="#checkout-the-latest-release">Checkout the latest release</a></h3>
 <p>Go to the <a href="https://github.com/informalsystems/hermes/releases">hermes releases</a> page to see what is the most recent release.</p>
-<p>Then checkout the release, for example if the most recent release is <code>v1.13.1 </code> then execute the command:</p>
-<pre><code class="language-shell">git checkout v1.13.1
+<p>Then checkout the release, for example if the most recent release is <code>v1.13.2 </code> then execute the command:</p>
+<pre><code class="language-shell">git checkout v1.13.2
 </code></pre>
 <h3 id="building-with-cargo-build"><a class="header" href="#building-with-cargo-build">Building with <code>cargo build</code></a></h3>
 <p>This command builds all the crates from the <a href="https://github.com/informalsystems/hermes"><strong><code>hermes</code></strong></a> repository, namely: the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer"><strong><code>ibc-relayer</code></strong></a> crate, and the <a href="https://github.com/informalsystems/hermes/tree/master/crates/relayer-cli"><strong><code>ibc-relayer-cli</code></strong></a> crate.
@@ -3563,7 +3574,7 @@ compat_mode = '0.34'
 <li><code>compat_mode</code> is not specified but /status returns a correct version: The compatibility mode  retrieved from the endpoint is used</li>
 <li><code>compat_mode</code> is not specified and /status does not return a valid version: Hermes stops and outputs an error informing the user that the <code>compat_mode</code> needs to be configured</li>
 </ul>
-<p>The configuration can also be found in the example <a href="https://github.com/informalsystems/hermes/blob/v1.13.1/config.toml#382">config.toml</a></p>
+<p>The configuration can also be found in the example <a href="https://github.com/informalsystems/hermes/blob/v1.13.2/config.toml#382">config.toml</a></p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configure-hermes"><a class="header" href="#configure-hermes">Configure Hermes</a></h1>
 <p>In order to run Hermes, you will need to have a configuration file.</p>
 <p>The format supported for the configuration file is <a href="https://toml.io/en/">TOML</a>.</p>
@@ -3604,7 +3615,7 @@ You will need to use a text editor to create the file and add content to it.</p>
 <!-- markdown-link-check-disable -->
 <blockquote>
 <p><strong>Note:</strong> As of 0.6.0, the Hermes configuration file is self-documented.
-Please read the configuration file <a href="https://github.com/informalsystems/hermes/blob/v1.13.1/config.toml"><code>config.toml</code></a>
+Please read the configuration file <a href="https://github.com/informalsystems/hermes/blob/v1.13.2/config.toml"><code>config.toml</code></a>
 itself for the most up-to-date documentation of parameters.</p>
 </blockquote>
 <p>By default, Hermes will relay on all channels available between all the configured chains.
@@ -3613,7 +3624,7 @@ and as a destination (to relay packets that others chains have sent).</p>
 <p>For example, if there are only two chains configured, then Hermes will only relay packets between those two,
 i.e. the two chains will serve as a source for each other, and likewise as a destination for each other's relevant events.
 Hermes will ignore all events that pertain to chains which are unknown (i.e. not present in config.toml).</p>
-<p>To restrict relaying on specific channels, or uni-directionally, you can use <a href="https://github.com/informalsystems/hermes/blob/v1.13.1/config.toml#L209-L231">packet filtering policies</a>.</p>
+<p>To restrict relaying on specific channels, or uni-directionally, you can use <a href="https://github.com/informalsystems/hermes/blob/v1.13.2/config.toml#L209-L231">packet filtering policies</a>.</p>
 <p>Check out the example <a href="https://github.com/informalsystems/hermes/blob/master/config.toml">config.toml</a> file in the Hermes repo to see how the different parameters can be configured.</p>
 <!-- markdown-link-check-enabled -->
 <h2 id="adding-private-keys"><a class="header" href="#adding-private-keys">Adding Private Keys</a></h2>
@@ -3849,6 +3860,18 @@ host = '127.0.0.1'
 # Specify the port over which the built-in HTTP server will serve the metrics gathered
 # by the telemetry service. Default: 3001
 port = 3001
+
+# Specify the prefix used for Prometheus metrics. This configuration is optional, if
+# it is missing the result is equivalent to setting it to empty string: `prefix = ""`
+# For example setting `prefix = "hermes"` will result in:
+#   * `hermes_acknowledgement_events_total`
+#   * `hermes_wallet_balance`
+#   * etc...
+# The default is no prefix, which results in:
+#   * `acknowledgement_events_total`
+#   * `wallet_balance`
+#   * etc...
+# prefix = ""
 
 [telemetry.buckets]
 # Specify the range of the 10 histogram buckets in ms for the `tx_latency_submitted` metric.
@@ -4400,6 +4423,7 @@ See the <a href="documentation/telemetry/../../quick-start/installation.html#ins
 enabled = true                                                  # default = false
 host    = '127.0.0.1'                                           # default value
 port    = 3001                                                  # default value
+prefix  = ""                                                    # default value
 [telemetry.buckets]                                             # default value
 latency_submitted = { start = 5000, end = 10000, buckets = 10 } # default value
 latency_confirmed = { start = 5000, end = 10000, buckets = 10 } # default value
@@ -4869,7 +4893,7 @@ as the version of the REST server itself (under the <code>ibc-relayer-rest</code
 <pre><code class="language-json">[
   {
     "name": "ibc-relayer",
-    "version": "v1.13.1"
+    "version": "v1.13.2"
   },
   {
     "name": "ibc-relayer-rest",
@@ -6124,7 +6148,7 @@ But there can also be a case similar to the one explained in the previous sectio
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="global-options"><a class="header" href="#global-options">Global options</a></h1>
 <p>Hermes accepts <em>global</em> options which affect all commands.</p>
-<pre><code class="language-shell">hermes v1.13.1
+<pre><code class="language-shell">hermes v1.13.2
 Informal Systems &lt;hello@informal.systems&gt;
 Implementation of `hermes`, an IBC Relayer developed in Rust.
 
