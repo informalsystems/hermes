@@ -8,7 +8,7 @@
 [![Integration tests][test-image]][test-link]
 [![Apache 2.0 Licensed][license-image]][license-link]
 ![Rust Stable][rustc-image]
-![Rust 1.76+][rustc-version]
+![Rust 1.84+][rustc-version]
 
 Rust implementation of an Inter-Blockchain Communication (IBC) relayer.
 
@@ -48,7 +48,7 @@ The repository also includes [TLA+ specifications](docs/spec).
 
 ## Requirements
 
-The crates in this project require Rust `1.76.0`.
+The crates in this project require Rust `1.85.0`.
 
 ## Hermes Guide
 

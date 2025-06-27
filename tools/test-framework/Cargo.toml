@@ -2,6 +2,7 @@
 name       = "ibc-test-framework"
 version    = "0.32.2"
 edition    = "2021"
+rust-version = "1.85.0"
 license    = "Apache-2.0"
 readme     = "README.md"
 keywords   = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
