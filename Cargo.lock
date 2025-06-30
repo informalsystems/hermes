@@ -4559,7 +4559,7 @@ dependencies = [
  "tendermint-rpc",
  "tendermint-testgen",
  "test-log",
- "thiserror 1.0.69",
+ "thiserror 2.0.12",
  "tiny-bip39 1.0.0",
  "tiny-keccak",
  "tokio",
