@@ -777,12 +777,12 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                     elapsed = ?elapsed,
                     "client state is not valid: latest height is outside of trusting period!",
                 );
-                return Err(ForeignClientError::expired_or_frozen(
+                Err(ForeignClientError::expired_or_frozen(
                     ExpiredOrFrozen::Expired,
                     self.id().clone(),
                     self.dst_chain.id(),
                     format!("time elapsed since last client update: {elapsed:?}"),
-                ));
+                ))
             }
             ConsensusStateTrusted::Trusted { elapsed } => Ok((client_state, Some(elapsed))),
         }

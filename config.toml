@@ -128,6 +128,18 @@ host = '127.0.0.1'
 # by the telemetry service. Default: 3001
 port = 3001
 
+# Specify the prefix used for Prometheus metrics. This configuration is optional, if
+# it is missing the result is equivalent to setting it to empty string: `prefix = ""`
+# For example setting `prefix = "hermes"` will result in:
+#   * `hermes_acknowledgement_events_total`
+#   * `hermes_wallet_balance`
+#   * etc...
+# The default is no prefix, which results in:
+#   * `acknowledgement_events_total`
+#   * `wallet_balance`
+#   * etc...
+# prefix = ""
+
 [telemetry.buckets]
 # Specify the range of the 10 histogram buckets in ms for the `tx_latency_submitted` metric.
 # Default: { start = 500, end = 10000, buckets = 10 }
