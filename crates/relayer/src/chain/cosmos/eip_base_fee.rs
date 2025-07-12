@@ -17,7 +17,7 @@ pub async fn query_eip_base_fee(
     gas_price_denom: &str,
     chain_id: &ChainId,
 ) -> Result<f64, Error> {
-    debug!("Querying Omosis EIP-1559 base fee from {rpc_address}");
+    debug!("Querying Osmosis EIP-1559 base fee from {rpc_address}");
 
     let chain_name = chain_id.name();
 
