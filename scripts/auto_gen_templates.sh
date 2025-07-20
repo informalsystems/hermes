@@ -103,9 +103,9 @@ function generate_commands_rec(){
                 print_array_with_prefix $new_cmd_prefix $new_commands
                 generate_commands_rec $new_cmd_prefix $new_commands &
             fi
-            wait
         fi
     done
+    wait
 }
 
 function generate_commands(){
