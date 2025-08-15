@@ -28,6 +28,7 @@ penumbra-sdk-fee         = "2.0.0"
 penumbra-sdk-view        = "2.0.0"
 penumbra-sdk-transaction = { version = "2.0.0", features = ["download-proving-keys"] }
 pbjson-types = "0.7"
+shellexpand  = "3.1.1"
 
 ibc-proto         = { workspace = true, features = ["serde"] }
 ibc-telemetry     = { workspace = true }
