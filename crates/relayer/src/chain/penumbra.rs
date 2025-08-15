@@ -505,7 +505,7 @@ impl ChainEndpoint for PenumbraChain {
         // which causes the ViewServiceClient to use an in-memory database.
         let view_file: Option<String> = match config.view_service_storage_dir {
             Some(ref dir_string) => {
-                let p = PathBuf::from(shellexpand::tilde(dir_string))
+                let p = PathBuf::from(shellexpand::tilde(dir_string).to_string())
                     .join("relayer-view.sqlite")
                     .to_str()
                     .ok_or_else(|| Error::temp_penumbra_error("Non-UTF8 view path".to_owned()))?
