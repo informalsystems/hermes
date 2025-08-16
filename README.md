@@ -1,6 +1,6 @@
 # Hermes IBC relayer
 
-![hermes-banner](https://github.com/informalsystems/hermes/assets/1757002/0878ab2a-1c6f-4137-a089-66352f948407)
+![hermes-banner](https://docs.rs/ibc-telemetry/badge.svg/assets/1757002/0878ab2a-1c6f-4137-a089-66352f948407)
 
 [![Cosmos ecosystem][cosmos-shield]][cosmos-link]
 
