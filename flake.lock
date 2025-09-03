@@ -144,6 +144,7 @@
         "gaia18-src": "gaia18-src",
         "gaia19-src": "gaia19-src",
         "gaia20-src": "gaia20-src",
+        "gaia23-src": "gaia23-src",
         "gaia5-src": "gaia5-src",
         "gaia6-ordered-src": "gaia6-ordered-src",
         "gaia6-src": "gaia6-src",
@@ -212,14 +213,15 @@
         "wasmvm_2_1_0-src": "wasmvm_2_1_0-src",
         "wasmvm_2_1_2-src": "wasmvm_2_1_2-src",
         "wasmvm_2_1_3-src": "wasmvm_2_1_3-src",
-        "wasmvm_2_1_4-src": "wasmvm_2_1_4-src"
+        "wasmvm_2_1_4-src": "wasmvm_2_1_4-src",
+        "wasmvm_2_2_3-src": "wasmvm_2_2_3-src"
       },
       "locked": {
-        "lastModified": 1747387017,
-        "narHash": "sha256-hgZvWvXG57RaDjDkTNVRJ9t1S49s2IbLPhC3pmnzNPY=",
+        "lastModified": 1747829676,
+        "narHash": "sha256-zxAPAfFjDT0bJFtuRuJ7mJd+wXN83tUqrQrb44GIih8=",
         "owner": "informalsystems",
         "repo": "cosmos.nix",
-        "rev": "58f8b59ec52fa69a82349d40597fa2bfa601ec3a",
+        "rev": "f027e5b304e8a1593a0da8677dfea5bef1a95f02",
         "type": "github"
       },
       "original": {
@@ -676,6 +678,23 @@
       "original": {
         "owner": "cosmos",
         "ref": "v20.0.0",
+        "repo": "gaia",
+        "type": "github"
+      }
+    },
+    "gaia23-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1746478993,
+        "narHash": "sha256-mO4rCiSqFZZiDYvHEby083viOvJVjefqjz38Pt/xJ20=",
+        "owner": "cosmos",
+        "repo": "gaia",
+        "rev": "875b68be0df1e9e8940c568e93e7478edc55a27f",
+        "type": "github"
+      },
+      "original": {
+        "owner": "cosmos",
+        "ref": "v23.3.0",
         "repo": "gaia",
         "type": "github"
       }
@@ -1486,11 +1505,11 @@
     },
     "nixpkgs_5": {
       "locked": {
-        "lastModified": 1747312588,
-        "narHash": "sha256-MmJvj6mlWzeRwKGLcwmZpKaOPZ5nJb/6al5CXqJsgjo=",
+        "lastModified": 1747728033,
+        "narHash": "sha256-NnXFQu7g4LnvPIPfJmBuZF7LFy/fey2g2+LCzjQhTUk=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "b1bebd0fe266bbd1820019612ead889e96a8fa2d",
+        "rev": "2f9173bde1d3fbf1ad26ff6d52f952f9e9da52ea",
         "type": "github"
       },
       "original": {
@@ -2167,6 +2186,23 @@
       "original": {
         "owner": "CosmWasm",
         "ref": "v2.1.4",
+        "repo": "wasmvm",
+        "type": "github"
+      }
+    },
+    "wasmvm_2_2_3-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1741173688,
+        "narHash": "sha256-pCmKTnYtPBlSBMC8EpfDww2JTBwAWRQ6uMEdLKP+TM0=",
+        "owner": "CosmWasm",
+        "repo": "wasmvm",
+        "rev": "215b331a6ec8041e8b421afbc9eaa0a6182cfae3",
+        "type": "github"
+      },
+      "original": {
+        "owner": "CosmWasm",
+        "ref": "v2.2.3",
         "repo": "wasmvm",
         "type": "github"
       }
