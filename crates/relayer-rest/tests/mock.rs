@@ -67,7 +67,7 @@ async fn version() {
 
     let rest_api_version = VersionInfo {
         name: "ibc-relayer-rest".to_string(),
-        version: "0.32.1".to_string(),
+        version: "0.32.2".to_string(),
     };
 
     let result: JsonResult<_, ()> = JsonResult::Success(vec![version.clone(), rest_api_version]);

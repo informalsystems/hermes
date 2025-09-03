@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-relayer"
-version      = "0.32.1"
+version      = "0.32.2"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["blockchain", "consensus", "cosmos", "ibc", "tendermint"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.83.0"
+rust-version = "1.85.0"
 description  = """
     Implementation of an IBC Relayer in Rust, as a library
 """
@@ -19,14 +19,14 @@ all-features = true
 default   = ["flex-error/std", "flex-error/eyre_tracer"]
 
 [dependencies]
-penumbra-sdk-proto       = { version = "1.0.0", features = ["box-grpc", "rpc"] }
-penumbra-sdk-wallet      = "1.0.0"
-penumbra-sdk-keys        = "1.0.0"
-penumbra-sdk-ibc         = "1.0.0"
-penumbra-sdk-custody     = "1.0.0"
-penumbra-sdk-fee         = "1.0.0"
-penumbra-sdk-view        = "1.0.0"
-penumbra-sdk-transaction = { version = "1.0.0", features = ["download-proving-keys"] }
+penumbra-sdk-proto       = { version = "2.0.0", features = ["box-grpc", "rpc"] }
+penumbra-sdk-wallet      = "2.0.0"
+penumbra-sdk-keys        = "2.0.0"
+penumbra-sdk-ibc         = "2.0.0"
+penumbra-sdk-custody     = "2.0.0"
+penumbra-sdk-fee         = "2.0.0"
+penumbra-sdk-view        = "2.0.0"
+penumbra-sdk-transaction = { version = "2.0.0", features = ["download-proving-keys"] }
 pbjson-types = "0.7"
 
 ibc-proto         = { workspace = true, features = ["serde"] }

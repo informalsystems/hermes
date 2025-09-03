@@ -1,13 +1,13 @@
 [package]
 name         = "ibc-telemetry"
-version      = "0.32.1"
+version      = "0.32.2"
 edition      = "2021"
 license      = "Apache-2.0"
 readme       = "README.md"
 keywords     = ["cosmos", "ibc", "relayer", "telemetry"]
 repository   = "https://github.com/informalsystems/hermes"
 authors      = ["Informal Systems <hello@informal.systems>"]
-rust-version = "1.83.0"
+rust-version = "1.85.0"
 description  = """
     Telemetry service for the Hermes IBC relayer
 """
@@ -19,7 +19,8 @@ axum                     = { workspace = true }
 dashmap                  = { workspace = true }
 moka                     = { workspace = true, features = ["sync"] }
 once_cell                = { workspace = true }
-opentelemetry            = { workspace = true, features = ["metrics"] }
+opentelemetry            = { workspace = true }
+opentelemetry_sdk        = { workspace = true, features = ["metrics"] }
 opentelemetry-prometheus = { workspace = true }
 prometheus               = { workspace = true }
 serde                    = { workspace = true }

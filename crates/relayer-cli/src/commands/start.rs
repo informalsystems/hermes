@@ -178,6 +178,7 @@ fn spawn_telemetry_server(config: &Config) {
         config.telemetry.buckets.latency_submitted.buckets,
         config.telemetry.buckets.latency_confirmed.range.clone(),
         config.telemetry.buckets.latency_confirmed.buckets,
+        config.telemetry.prefix.as_str(),
     );
     let telemetry = config.telemetry.clone();
 

@@ -16,6 +16,7 @@ The telemetry service is not active by default, and must be enabled in Hermes' c
 enabled = true                                                  # default = false
 host    = '127.0.0.1'                                           # default value
 port    = 3001                                                  # default value
+prefix  = ""                                                    # default value
 [telemetry.buckets]                                             # default value
 latency_submitted = { start = 5000, end = 10000, buckets = 10 } # default value
 latency_confirmed = { start = 5000, end = 10000, buckets = 10 } # default value
