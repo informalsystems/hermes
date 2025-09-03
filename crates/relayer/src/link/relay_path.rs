@@ -449,10 +449,11 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
                 chunk_size,
                 clear_limit,
                 tracking_id,
+                &crate::telemetry::TelemetryState::default(),
             );
 
             let cleared_ack =
-                self.schedule_packet_ack_msgs(height, chunk_size, clear_limit, tracking_id);
+                self.schedule_packet_ack_msgs(height, chunk_size, clear_limit, tracking_id, &crate::telemetry::TelemetryState::default());
 
             match cleared_recv.and(cleared_ack) {
                 Ok(()) => return Ok(()),
@@ -1155,6 +1156,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         chunk_size: usize,
         clear_limit: usize,
         tracking_id: TrackingId,
+        telemetry_state: &crate::telemetry::TelemetryState,
     ) -> Result<(), LinkError> {
         let _span = span!(
             Level::ERROR,
@@ -1204,6 +1206,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             chunk_size,
             query_send_packet_events,
+            telemetry_state,
         ) {
             // Update telemetry info
             telemetry!({
@@ -1229,6 +1232,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
         chunk_size: usize,
         clear_limit: usize,
         tracking_id: TrackingId,
+        telemetry_state: &crate::telemetry::TelemetryState,
     ) -> Result<(), LinkError> {
         let _span = span!(
             Level::ERROR,
@@ -1280,6 +1284,7 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> RelayPath<ChainA, ChainB> {
             &self.path_id,
             chunk_size,
             query_write_ack_events,
+            telemetry_state,
         ) {
             telemetry!(self.record_cleared_acknowledgments(events_chunk.iter()));
             self.events_to_operational_data(TrackedEvents::new(events_chunk, tracking_id))?;
