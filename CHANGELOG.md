@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## v1.13.3
+
+*Sep 4th, 2025*
+
+This release fixes the Linxu ARM image that was broken in v1.13.2.
+The release has no code changes beyond this.
+
+### BUG FIXES
+
+- [\#4394](https://github.com/informalsystems/hermes/issues/4372) Fix: Linux Arm releases
+
 ## v1.13.2
 
 *June 27th, 2025*
