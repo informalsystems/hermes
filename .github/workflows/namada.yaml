@@ -43,9 +43,9 @@ jobs:
             account_prefix: osmo,''
             native_token: stake,nam
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Clone Namada
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: anoma/namada
           ref: v101.0.0
@@ -138,9 +138,9 @@ jobs:
             clang \
             llvm-dev \
             libclang-dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Clone Namada
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: anoma/namada
           ref: v101.0.0
