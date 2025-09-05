@@ -15,6 +15,7 @@ on:
       - tools/**
 
 env:
+  NAMADA_RELEASE_URL: "https://api.github.com/repositories/510559980/releases/212279570"
   CARGO_INCREMENTAL: 0
   CARGO_PROFILE_DEV_DEBUG: 1
   CARGO_PROFILE_RELEASE_DEBUG: 1
@@ -88,7 +89,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/212279570" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "$NAMADA_RELEASE_URL" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
@@ -173,7 +174,7 @@ jobs:
         env:
           OPERATING_SYSTEM: Linux
         run: |
-          release_url=$(curl -s "https://api.github.com/repos/anoma/namada/releases/212279570" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
+          release_url=$(curl -s "$NAMADA_RELEASE_URL" | grep "browser_download_url" | cut -d '"' -f 4 | grep "$OPERATING_SYSTEM")
           wget "$release_url"
           tar -xzvf namada*.tar.gz
           cp ./namada*/namadac ~/local/bin/namadac
