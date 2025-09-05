@@ -4,15 +4,26 @@ name: Docker
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'The tag of the image to build'
+        required: true
+        type: string
+
   push:
     tags:
       - v[0-9]+.*
 
 env:
   REGISTRY_IMAGE: informalsystems/hermes
+  GIT_TAG: "${{ inputs.tag || github.ref_name }}"
+
 
 jobs:
   docker-build:
+    permissions:
+      packages: write
+      contents: read
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -20,11 +31,16 @@ jobs:
         platform:
           - id: linux/amd64
             name: amd64
+            runner: ubuntu-24.04
           - id: linux/arm64
             name: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          ref: "${{ env.GIT_TAG }}"
+          fetch-depth: 0
 
       - name: Docker meta
         id: meta
@@ -35,9 +51,6 @@ jobs:
             type=ref,event=tag
             type=ref,event=branch
             type=semver,pattern={{version}}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         id: buildx
