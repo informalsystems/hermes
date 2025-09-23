@@ -13,6 +13,7 @@ use crate::error::Error;
 use crate::event::IbcEventWithHeight;
 use crate::path::PathIdentifiers;
 use crate::util::collate::CollatedIterExt;
+use crate::telemetry::TelemetryState;
 
 /// Returns an iterator on batches of packet events.
 pub fn query_packet_events_with<'a, ChainA, QueryFn>(
@@ -22,6 +23,7 @@ pub fn query_packet_events_with<'a, ChainA, QueryFn>(
     path: &'a PathIdentifiers,
     chunk_size: usize,
     query_fn: QueryFn,
+    telemetry_state: &'a crate::telemetry::TelemetryState,
 ) -> impl Iterator<Item = Vec<IbcEventWithHeight>> + 'a
 where
     ChainA: ChainHandle,
@@ -45,6 +47,15 @@ where
                     warn!("no packet data was pulled at height {query_height} for sequences {}, this might be due to the data not being available on the configured endpoint. \
                     Please verify that the RPC endpoint has the required packet data, for more details see https://hermes.informal.systems/advanced/troubleshooting/cross-comp-config.html#uncleared-pending-packets",
                     chunk.iter().copied().collated().format(", "));
+                    telemetry_state.persistent_packet_data_query_failures(
+                        &src_chain.id(),
+                        &src_chain.id(),
+                        &path.counterparty_channel_id,
+                        &path.channel_id,
+                        &path.counterparty_port_id,
+                        &path.port_id,
+                        chunk.len() as u64,
+                    );
                 } else {
                     info!(
                         events.total = %events_total,
