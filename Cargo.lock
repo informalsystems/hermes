@@ -4656,7 +4656,7 @@ dependencies = [
  "time",
  "tracing",
  "tracing-subscriber 0.3.19",
- "uint 0.9.5",
+ "uint 0.10.0",
 ]
 
 [[package]]
