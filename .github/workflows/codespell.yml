@@ -14,7 +14,7 @@ jobs:
     name: Check spelling
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: codespell-project/actions-codespell@v2
         with:
           skip: '*.js,*.ts,*.css,*.svg,*.html,*.json,./target,./tools/integration-test/data,./tools/check-guide/target,./ci/misbehaviour/data,./.git'

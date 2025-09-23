@@ -104,7 +104,7 @@ jobs:
           #  features: forward-packet,fee-grant
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with: 
@@ -144,7 +144,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with: 
@@ -189,7 +189,7 @@ jobs:
             command: gaiad,neutrond
             account_prefix: cosmos,neutron
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with: 
@@ -234,7 +234,7 @@ jobs:
             command: gaiad,strided
             account_prefix: cosmos,stride
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with: 
@@ -278,7 +278,7 @@ jobs:
             account_prefix: celestia,cosmos
             native_token: utia,stake
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with: 
@@ -324,7 +324,7 @@ jobs:
             command: gaiad
             account_prefix: cosmos
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@main
         with:
