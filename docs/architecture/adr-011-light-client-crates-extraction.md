@@ -28,7 +28,7 @@ in [ADR003 - Dealing with chain-specific datatypes](https://github.com/informals
 ->
 > We could alternatively model all chain-specific datatypes as boxed trait objects (`Box<dyn Trait>`), but this approach
 > runs into a lot of limitations of trait objects, such as the inability to easily require such trait objects to be
-> Clonable, or Serializable, or to define an equality relation on them. Some support for such functionality can be found
+> Cloneable, or Serializable, or to define an equality relation on them. Some support for such functionality can be found
 > in third-party libraries, but the overall experience for the developer is too subpar.
 >
 > We thus settle on a different strategy: lifting chain-specific data into an enum over all possible chain types.

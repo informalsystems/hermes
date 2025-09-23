@@ -211,7 +211,7 @@ impl Link {
                 let signed_headers = self.src_chain.get_minimal_set(current_height, target_height)?;
 
                 let mut attempt_datagrams = datagrams.clone();
-                attempt_datagrams.push(Datagram::ClientUpdat(ClientUpdate::new(signed_headers)));
+                attempt_datagrams.push(Datagram::ClientUpdate(ClientUpdate::new(signed_headers)));
 				
                 let transaction = Transaction::new(datagram);
                 self.dst_chain.submit(transaction.sign().encode())?;
