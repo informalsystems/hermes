@@ -3,7 +3,7 @@ mod detector;
 use std::time::Duration;
 
 use itertools::Itertools;
-use tendermint::Time;
+use tendermint::{validator, Time};
 use tracing::{debug, error, trace, warn};
 
 use tendermint_light_client::{
@@ -18,7 +18,7 @@ use tendermint_light_client::{
     verifier::ProdVerifier,
 };
 use tendermint_light_client_detector::Divergence;
-use tendermint_rpc as rpc;
+use tendermint_rpc::{self as rpc, Client, Paging};
 
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
 use ibc_relayer_types::clients::ics07_tendermint::misbehaviour::Misbehaviour as TmMisbehaviour;
@@ -28,11 +28,14 @@ use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use ibc_relayer_types::Height as ICSHeight;
 
 use crate::{
-    chain::cosmos::{config::CosmosSdkConfig, CosmosSdkChain},
-    chain::penumbra::config::PenumbraConfig,
+    chain::{
+        cosmos::{config::CosmosSdkConfig, CosmosSdkChain},
+        penumbra::config::PenumbraConfig,
+    },
     client_state::AnyClientState,
     error::Error,
     misbehaviour::{AnyMisbehaviour, MisbehaviourEvidence},
+    util::block_on,
     HERMES_VERSION,
 };
 
@@ -147,12 +150,62 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
             }
         );
 
-        let any_header = update.header.as_ref().ok_or_else(|| {
+        let any_header = match update.header.as_ref() {
+            Some(header) => header.clone(),
+            None => {
+                let rpc_client = self.io.rpc_client();
+
+                let height = update.consensus_height();
+
+                // Doesn't work
+                let signed_header = self
+                    .io
+                    .fetch_signed_header(AtHeight::At(height.into()))
+                    .unwrap();
+
+                // Doesn't work either
+                /*let signed_header = block_on(rpc_client.commit(update.consensus_height()))
+                .unwrap()
+                .signed_header;*/
+
+                let validators = block_on(rpc_client.validators(height, Paging::All))
+                    .unwrap()
+                    .validators;
+
+                let validator_set = validator::Set::with_proposer(
+                    validators,
+                    signed_header.header.proposer_address,
+                )
+                .unwrap();
+
+                let trusted_header = block_on(rpc_client.commit(height)).unwrap().signed_header;
+
+                let trusted_validators = block_on(rpc_client.validators(height, Paging::All))
+                    .unwrap()
+                    .validators;
+
+                let trusted_validator_set = validator::Set::with_proposer(
+                    trusted_validators,
+                    trusted_header.header.proposer_address,
+                )
+                .unwrap();
+
+                let tm_header = TmHeader {
+                    signed_header,
+                    validator_set,
+                    trusted_height: height,
+                    trusted_validator_set,
+                };
+                tm_header.into()
+            }
+        };
+
+        /*let any_header = update.header.as_ref().ok_or_else(|| {
             Error::misbehaviour(format!(
                 "missing header in update client event {}",
                 self.chain_id
             ))
-        })?;
+        })?;*/
 
         let update_header = match any_header {
             AnyHeader::Tendermint(header) => Ok::<_, Error>(header),

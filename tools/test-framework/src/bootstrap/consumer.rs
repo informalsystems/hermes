@@ -90,6 +90,22 @@ pub fn bootstrap_consumer_node(
         config::cosmos::consensus_params_max_gas(genesis, "3000000")?;
         config::cosmos::globalfee_minimum_gas_prices(genesis, globalfee_minimum_gas)?;
         config::cosmos::set_retry_delay_period(genesis, "100s")?;
+
+        // TODO: This is a temporary solution to be compatible with current Stride and Neutron versions used.
+        // Both panic due to unknown fields "consumer_id" and "connection_id".
+        let ccvconsumer = genesis
+            .get_mut("app_state")
+            .and_then(|app_state| app_state.get_mut("ccvconsumer"))
+            .and_then(|ccvconsumer| ccvconsumer.as_object_mut())
+            .ok_or_else(|| eyre!("failed to get ccvconsumer in genesis file"))?;
+        ccvconsumer.remove("connection_id");
+
+        let params = ccvconsumer
+            .get_mut("params")
+            .and_then(|params| params.as_object_mut())
+            .ok_or_else(|| eyre!("failed to get ccvconsumer params in genesis file"))?;
+        params.remove("consumer_id");
+
         Ok(())
     })?;
 
