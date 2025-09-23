@@ -181,8 +181,7 @@ class TxChanCloseInit(Cmd[TxChanCloseInitRes]):
         return args
 
     def process(self, result: Any) -> TxChanCloseInitRes:
-        print(result)
-        return from_dict(TxChanCloseConfirmRes, result['CloseInitChannel'])
+        return from_dict(TxChanCloseInitRes, result['CloseInitChannel'])
 
 # -----------------------------------------------------------------------------
 
