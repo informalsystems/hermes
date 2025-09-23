@@ -578,7 +578,7 @@ where
 ```
 
 With this boilerplate out of way, one can write tests using a mock client, and associated mock datatypes
-in a fairly straightforward way, taking advantage of the `From` instance to lift concerete mock datatypes
+in a fairly straightforward way, taking advantage of the `From` instance to lift concrete mock datatypes
 into the `Any...` enumeration:
 
 ```rust
