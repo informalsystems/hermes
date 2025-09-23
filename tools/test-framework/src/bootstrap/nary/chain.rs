@@ -19,13 +19,13 @@ use crate::types::topology::{bootstrap_topology, TopologyType};
 /**
   Bootstrap a fixed number of chains specified by `SIZE`.
 */
-pub fn boostrap_chains_with_nodes<const SIZE: usize>(
+pub fn bootstrap_chains_with_nodes<const SIZE: usize>(
     test_config: &TestConfig,
     full_nodes: [FullNode; SIZE],
     topology_override: Option<TopologyType>,
     config_modifier: impl FnOnce(&mut Config),
 ) -> Result<(RelayerDriver, NaryConnectedChains<impl ChainHandle, SIZE>), Error> {
-    let (relayer, chains) = boostrap_chains_with_any_nodes(
+    let (relayer, chains) = bootstrap_chains_with_any_nodes(
         test_config,
         full_nodes.into(),
         topology_override,
@@ -39,14 +39,14 @@ pub fn boostrap_chains_with_nodes<const SIZE: usize>(
    Bootstrap a fixed number of chains that are actually
    backed by the same underlying full node.
 */
-pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
+pub fn bootstrap_chains_with_self_connected_node<const SIZE: usize>(
     test_config: &TestConfig,
     full_node: FullNode,
     topology_override: Option<TopologyType>,
     config_modifier: impl FnOnce(&mut Config),
 ) -> Result<(RelayerDriver, NaryConnectedChains<impl ChainHandle, SIZE>), Error> {
     let full_nodes = vec![full_node; SIZE];
-    let (relayer, chains) = boostrap_chains_with_any_nodes(
+    let (relayer, chains) = bootstrap_chains_with_any_nodes(
         test_config,
         full_nodes,
         topology_override,
@@ -62,7 +62,7 @@ pub fn boostrap_chains_with_self_connected_node<const SIZE: usize>(
    The topology will be retrieved and set in this method,
    see [`crate::types::topology`] for more information.
 */
-pub fn boostrap_chains_with_any_nodes(
+pub fn bootstrap_chains_with_any_nodes(
     test_config: &TestConfig,
     full_nodes: Vec<FullNode>,
     topology_override: Option<TopologyType>,
