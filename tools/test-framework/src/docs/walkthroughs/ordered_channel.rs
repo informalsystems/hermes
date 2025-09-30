@@ -118,7 +118,7 @@
 //! ```
 //!
 //! The test is run by calling the `run_binary_channel_test` function, passing it
-//! a struct, `OrderdChannelTest`, upon which we implement the `TestOverrides`
+//! a struct, `OrderedChannelTest`, upon which we implement the `TestOverrides`
 //! trait in order to configure the behavior of the test. We define the
 //! `should_spawn_supervisor` function to have it return false in order to not
 //! automatically spawn a supervisor when the relayer is initialized; this is
