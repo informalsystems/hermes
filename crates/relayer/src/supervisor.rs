@@ -889,7 +889,7 @@ fn process_batch<Chain: ChainHandle>(
 /// The labels `chain_id` represents the chain sending the event, and `counterparty_chain_id` represents
 /// the chain receiving the event.
 /// So successfully sending a packet from chain A to chain B will result in first a SendPacket
-/// event with `chain_id = A` and `counterparty_chain_id = B` and then a WriteAcknowlegment
+/// event with `chain_id = A` and `counterparty_chain_id = B` and then a WriteAcknowledgment
 /// event with `chain_id = B` and `counterparty_chain_id = A`.
 fn send_telemetry<Src, Dst>(
     src: &Src,

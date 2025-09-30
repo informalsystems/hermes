@@ -138,7 +138,7 @@ define_error! {
         InvalidVersionLengthConnection
             | _ | { "single version must be negotiated on connection before opening channel" },
 
-        ChannelFeatureNotSuportedByConnection
+        ChannelFeatureNotSupportedByConnection
             | _ | { "the channel ordering is not supported by connection" },
 
         ChannelNotFound
