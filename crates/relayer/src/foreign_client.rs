@@ -1657,16 +1657,6 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 break;
             }
 
-            // No header in events, cannot run misbehavior.
-            // May happen on chains running older SDKs (e.g., Akash)
-            if update_event.header.is_none() {
-                return Err(ForeignClientError::misbehaviour_exit(format!(
-                    "could not extract header from update client event {:?} emitted by chain {}",
-                    update_event,
-                    self.dst_chain.id()
-                )));
-            }
-
             // Check for misbehaviour according to the specific source chain type.
             // In case of Tendermint client, this will also check the BFT time violation if
             // a header for the event height cannot be retrieved from the witness.
