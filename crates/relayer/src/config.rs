@@ -121,6 +121,8 @@ pub fn parse_gas_prices(prices: String) -> Vec<GasPrice> {
 )]
 pub enum ExtensionOption {
     EthermintDynamicFee(String),
+    CosmosEvmDynamicFee(String),
+    CosmosEvmDynamicFeeV1(String),
 }
 
 impl ExtensionOption {
@@ -129,7 +131,15 @@ impl ExtensionOption {
             Self::EthermintDynamicFee(max_priority_price) => ExtensionOptionDynamicFeeTx {
                 max_priority_price: max_priority_price.into(),
             }
-            .to_any(),
+            .to_any("/ethermint.types.v1.ExtensionOptionDynamicFeeTx"),
+            Self::CosmosEvmDynamicFee(max_priority_price) => ExtensionOptionDynamicFeeTx {
+                max_priority_price: max_priority_price.into(),
+            }
+            .to_any("/cosmos.evm.types.v1.ExtensionOptionDynamicFeeTx"),
+            Self::CosmosEvmDynamicFeeV1(max_priority_price) => ExtensionOptionDynamicFeeTx {
+                max_priority_price: max_priority_price.into(),
+            }
+            .to_any("/cosmos.evm.ante.v1.ExtensionOptionDynamicFeeTx"),
         }
     }
 }
@@ -141,6 +151,18 @@ impl Display for ExtensionOption {
                 write!(
                     f,
                     "EthermintDynamicFee(max_priority_price: {max_priority_price})"
+                )
+            }
+            Self::CosmosEvmDynamicFee(max_priority_price) => {
+                write!(
+                    f,
+                    "CosmosEvmDynamicFee(max_priority_price: {max_priority_price})"
+                )
+            }
+            Self::CosmosEvmDynamicFeeV1(max_priority_price) => {
+                write!(
+                    f,
+                    "CosmosEvmDynamicFeeV1(max_priority_price: {max_priority_price})"
                 )
             }
         }

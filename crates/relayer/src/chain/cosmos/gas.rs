@@ -43,13 +43,18 @@ pub async fn dynamic_gas_price(
     rpc_address: &Url,
 ) -> GasPrice {
     if config.dynamic_gas_price.enabled {
-        let dynamic_gas_price = query_eip_base_fee(rpc_address, &config.gas_price.denom, chain_id)
-            .await
-            .map(|base_fee| base_fee * config.dynamic_gas_price.multiplier)
-            .map(|new_price| GasPrice {
-                price: new_price,
-                denom: config.gas_price.denom.clone(),
-            });
+        let dynamic_gas_price = query_eip_base_fee(
+            rpc_address,
+            &config.gas_price.denom,
+            &config.dynamic_gas_price.r#type,
+            chain_id,
+        )
+        .await
+        .map(|base_fee| base_fee * config.dynamic_gas_price.multiplier)
+        .map(|new_price| GasPrice {
+            price: new_price,
+            denom: config.gas_price.denom.clone(),
+        });
 
         let dynamic_gas_price = match dynamic_gas_price {
             Ok(dynamic_gas_price) => {

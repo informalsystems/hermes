@@ -323,14 +323,24 @@ gas_multiplier = 1.1
 # Query the current gas price from the chain instead of using the static `gas_price` from the config.
 # Useful for chains which have [EIP-1559][eip]-like dynamic gas price. 
 #
-# At the moment, only chains which support the `osmosis.txfees.v1beta1.Query/GetEipBaseFee`
-# query or have enabled Skip's `x/feemarket` module https://github.com/skip-mev/feemarket
+# At the moment, only chains which support the `/cosmos.evm.feemarket.v1.Query/BaseFee` query or
+# `osmosis.txfees.v1beta1.Query/GetEipBaseFee` query or have enabled Skip's `x/feemarket` module https://github.com/skip-mev/feemarket
 # can be used with dynamic gas price enabled.
+#
+# The `type` field allows you to specify which query method to use:
+# - `skip_fee_market`: Use Skip's feemarket module query at `/feemarket.feemarket.v1.Query/GasPrices`
+# - `osmosis`: Use Osmosis EIP-1559 query at `/osmosis.txfees.v1beta1.Query/GetEipBaseFee`
+# - `cosmos_evm`: Use Cosmos EVM query at `/cosmos.evm.feemarket.v1.Query/BaseFee`
+#
+# If `type` is not specified, Hermes will attempt to auto-detect for backwards compatibility:
+# - Chains starting with "osmosis" or "osmo-test" will use `osmosis` type
+# - All other chains will default to `skip_fee_market` type
 #
 # See this page in the Hermes guide for more information:
 # https://hermes.informal.systems/documentation/configuration/dynamic-gas-fees.html
 # 
 # Default: { enabled = false, multiplier = 1.1, max = 0.6 }
+# Example with type specified: { enabled = true, multiplier = 1.1, max = 0.6, type = 'cosmos_evm' }
 dynamic_gas_price = { enabled = false, multiplier = 1.1, max = 0.6 }
 
 # Specify how many IBC messages at most to include in a single transaction.
