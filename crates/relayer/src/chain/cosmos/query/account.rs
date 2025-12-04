@@ -68,9 +68,9 @@ pub async fn query_account(
     grpc_address: &Uri,
     account_address: &str,
 ) -> Result<BaseAccount, Error> {
-    let mut client = create_grpc_client(grpc_address, QueryClient::new).await?;
-
-    client = client.max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
+    let mut client = create_grpc_client(grpc_address, QueryClient::new)
+        .await?
+        .max_decoding_message_size(max_grpc_decoding_size().get_bytes() as usize);
 
     let request = tonic::Request::new(QueryAccountRequest {
         address: account_address.to_string(),
