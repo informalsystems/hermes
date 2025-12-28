@@ -31,9 +31,16 @@ impl<T> EventBus<T> {
     {
         let mut disconnected = Vec::new();
 
+        let last = self.txs.len().saturating_sub(1);
+
         for (idx, tx) in self.txs.iter().enumerate() {
-            // TODO: Avoid cloning when sending to last subscriber
-            if let Err(channel::SendError(_)) = tx.send(value.clone()) {
+            let result = if idx == last {
+                tx.send(value)
+            } else {
+                tx.send(value.clone())
+            };
+
+            if let Err(channel::SendError(_)) = result {
                 disconnected.push(idx);
             }
         }
