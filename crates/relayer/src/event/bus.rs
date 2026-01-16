@@ -29,19 +29,7 @@ impl<T> EventBus<T> {
     where
         T: Clone,
     {
-        let mut disconnected = Vec::new();
-
-        for (idx, tx) in self.txs.iter().enumerate() {
-            // TODO: Avoid cloning when sending to last subscriber
-            if let Err(channel::SendError(_)) = tx.send(value.clone()) {
-                disconnected.push(idx);
-            }
-        }
-
-        // Remove all disconnected subscribers
-        for idx in disconnected {
-            self.txs.remove(idx);
-        }
+        self.txs.retain(|tx| tx.send(value.clone()).is_ok());
     }
 }
 
