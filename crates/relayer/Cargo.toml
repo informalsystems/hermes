@@ -97,6 +97,11 @@ ibc-relayer-types = { workspace = true }
 serial_test       = { workspace = true }
 env_logger        = { workspace = true }
 test-log          = { workspace = true, features = ["trace"] }
+criterion         = "0.5"
 
 # Needed for generating (synthetic) light blocks.
 tendermint-testgen = { workspace = true }
+
+[[bench]]
+name = "vector_ops"
+harness = false
