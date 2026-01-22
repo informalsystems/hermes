@@ -67,8 +67,11 @@ pub async fn query_txs(
                 response.txs.len() <= 1,
                 "packet_from_tx_search_response: unexpected number of txs"
             );
-
-            let tx = response.txs.remove(0);
+            let tx = response
+                .txs
+                .into_iter()
+                .next()
+                .expect("tx_search was constrained to a single result");
             let event = update_client_from_tx_search_response(chain_id, &request, tx)?;
 
             Ok(event.into_iter().collect())
@@ -95,7 +98,11 @@ pub async fn query_txs(
             if response.txs.is_empty() {
                 Ok(vec![])
             } else {
-                let tx = response.txs.remove(0);
+                let tx = response
+                    .txs
+                    .into_iter()
+                    .next()
+                    .expect("tx_search was constrained to a single result");
                 Ok(all_ibc_events_from_tx_search_response(chain_id, tx))
             }
         }
@@ -165,7 +172,10 @@ pub async fn query_packets_from_txs(
         }
 
         // In either case, use the first (latest) event found for this sequence
-        let (first_event, _, _) = tx_events.remove(0);
+        let (first_event, _, _) = tx_events
+            .into_iter()
+            .next()
+            .expect("tx_events is known to contain at least one entry");
         result.push(first_event);
     }
 
