@@ -48,6 +48,16 @@ define_error! {
         Rpc
             [ TraceError<RpcError> ]
             |_| { "RPC error" },
+
+        StreamTerminated
+            |_| { "event stream terminated unexpectedly" },
+
+        WatchdogTimeout
+            { timeout_secs: u64 }
+            |e| { format!("no events received for {} seconds", e.timeout_secs) },
+
+        DriverChannelClosed
+            |_| { "websocket driver channel closed" },
     }
 }
 

@@ -32,6 +32,9 @@ use tx_hashes::TxHashes;
 // Re-export the telemetries summary
 pub use relay_summary::RelaySummary;
 
+/// Timeout duration used for pending operations (5 minutes)
+pub use pending::TIMEOUT;
+
 pub use relay_path::{RelayPath, Resubmit};
 
 #[derive(Clone, Debug)]

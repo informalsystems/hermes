@@ -11,8 +11,9 @@ use futures::{
     Stream, TryStreamExt,
 };
 use tokio::task::JoinHandle;
+use tokio::time::sleep;
 use tokio::{runtime::Runtime as TokioRuntime, sync::mpsc};
-use tracing::{debug, error, info, instrument, trace};
+use tracing::{debug, error, info, instrument, trace, warn};
 
 use tendermint_rpc::{
     client::CompatMode, event::Event as RpcEvent, query::Query, SubscriptionClient,
@@ -24,6 +25,7 @@ use ibc_relayer_types::{core::ics24_host::identifier::ChainId, events::IbcEvent}
 use crate::{
     chain::tracking::TrackingId,
     event::{bus::EventBus, error::*, IbcEventWithHeight},
+    link::TIMEOUT as PENDING_TIMEOUT,
     telemetry,
     util::{
         retry::{retry_with_index, RetryResult},
@@ -312,8 +314,43 @@ impl EventSource {
             }
 
             let result = tokio::select! {
-                Some(batch) = batches.next() => batch,
-                Some(e) = self.rx_err.recv() => Err(Error::web_socket_driver(e)),
+                batch_opt = batches.next() => {
+                    match batch_opt {
+                        Some(batch) => batch,
+                        None => {
+                            // Stream terminated without error - this indicates a silent
+                            // WebSocket failure where the subscription ended unexpectedly.
+                            // Propagate error so supervisor clears pending packets.
+                            warn!("event batch stream terminated unexpectedly, triggering reconnect");
+                            self.propagate_error(Error::stream_terminated());
+                            return Next::Reconnect;
+                        }
+                    }
+                }
+                err_opt = self.rx_err.recv() => {
+                    match err_opt {
+                        Some(e) => Err(Error::web_socket_driver(e)),
+                        None => {
+                            // Error channel closed - driver has terminated.
+                            // Propagate error so supervisor clears pending packets.
+                            warn!("websocket driver channel closed, triggering reconnect");
+                            self.propagate_error(Error::driver_channel_closed());
+                            return Next::Reconnect;
+                        }
+                    }
+                }
+                _ = sleep(PENDING_TIMEOUT) => {
+                    // No events received within the watchdog timeout period.
+                    // This likely indicates a stale connection that is not receiving
+                    // events despite appearing connected. Propagate error so supervisor
+                    // clears pending packets, then trigger reconnection.
+                    warn!(
+                        "no events received for {} seconds, assuming stale connection",
+                        PENDING_TIMEOUT.as_secs()
+                    );
+                    self.propagate_error(Error::watchdog_timeout(PENDING_TIMEOUT.as_secs()));
+                    return Next::Reconnect;
+                }
             };
 
             // Before handling the batch, check if there are any pending shutdown or subscribe commands.

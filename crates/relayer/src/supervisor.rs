@@ -969,6 +969,24 @@ fn handle_batch<Chain: ChainHandle>(
             let _ = clear_pending_packets(workers, &chain_id)
                 .map_err(|e| error!("error during clearing pending packets: {}", e));
         }
+        Err(EventError(EventErrorDetail::StreamTerminated(_), _)) => {
+            warn!("event stream terminated unexpectedly, clearing pending packets");
+
+            let _ = clear_pending_packets(workers, &chain_id)
+                .map_err(|e| error!("error during clearing pending packets: {}", e));
+        }
+        Err(EventError(EventErrorDetail::WatchdogTimeout(_), _)) => {
+            warn!("websocket watchdog timeout, clearing pending packets");
+
+            let _ = clear_pending_packets(workers, &chain_id)
+                .map_err(|e| error!("error during clearing pending packets: {}", e));
+        }
+        Err(EventError(EventErrorDetail::DriverChannelClosed(_), _)) => {
+            warn!("websocket driver channel closed, clearing pending packets");
+
+            let _ = clear_pending_packets(workers, &chain_id)
+                .map_err(|e| error!("error during clearing pending packets: {}", e));
+        }
         Err(e) => {
             error!("error when receiving event batch: {}", e)
         }
