@@ -173,6 +173,13 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
     let workers = Arc::new(RwLock::new(WorkerMap::new()));
     let client_state_filter = Arc::new(RwLock::new(FilterPolicy::default()));
 
+    // Initialize event subscriptions BEFORE scanning chains.
+    // This prevents a race condition where IBC events emitted during or after
+    // the chain scan would be lost because subscriptions weren't active yet.
+    // Events will queue in the subscription buffer and be processed once
+    // batch workers are spawned. See: https://github.com/informalsystems/hermes/issues/2748
+    let subscriptions = init_subscriptions(&config, &mut registry.write())?;
+
     // Only scan when needed
     if should_scan(&config, &options) {
         let scan = chain_scanner(
@@ -193,8 +200,6 @@ pub fn spawn_supervisor_tasks<Chain: ChainHandle>(
         spawn_context(&config, &mut registry.write(), &mut workers.acquire_write())
             .spawn_workers(scan);
     }
-
-    let subscriptions = init_subscriptions(&config, &mut registry.write())?;
 
     let batch_tasks = spawn_batch_workers(
         &config,
