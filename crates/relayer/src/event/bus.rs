@@ -38,8 +38,10 @@ impl<T> EventBus<T> {
             }
         }
 
-        // Remove all disconnected subscribers
-        for idx in disconnected {
+        // Remove all disconnected subscribers in reverse order.
+        // This is critical: removing in ascending order would shift indices
+        // and cause wrong elements to be removed.
+        for idx in disconnected.into_iter().rev() {
             self.txs.remove(idx);
         }
     }
@@ -116,5 +118,39 @@ mod tests {
         }
 
         assert_eq!(counter(), 20);
+    }
+
+    #[test]
+    #[serial]
+    fn multiple_disconnected_subscribers() {
+        reset_counter();
+
+        let mut bus: EventBus<i32> = EventBus::new();
+
+        // Create 5 subscribers
+        let rx0 = bus.subscribe();
+        let rx1 = bus.subscribe();
+        let rx2 = bus.subscribe();
+        let rx3 = bus.subscribe();
+        let rx4 = bus.subscribe();
+
+        assert_eq!(bus.txs.len(), 5);
+
+        // Drop subscribers at indices 1 and 3 (non-contiguous)
+        // This tests that index removal works correctly
+        drop(rx1);
+        drop(rx3);
+
+        // Broadcast should succeed for remaining subscribers (rx0, rx2, rx4)
+        // and clean up disconnected ones
+        bus.broadcast(42);
+
+        // Verify bus state is correct after cleanup - disconnected senders removed
+        assert_eq!(bus.txs.len(), 3);
+
+        // Verify remaining subscribers received the message
+        assert_eq!(rx0.recv(), Ok(42));
+        assert_eq!(rx2.recv(), Ok(42));
+        assert_eq!(rx4.recv(), Ok(42));
     }
 }

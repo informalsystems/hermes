@@ -276,13 +276,24 @@ fn handle_packet_cmd<ChainA: ChainHandle, ChainB: ChainHandle>(
         WorkerCmd::IbcEvents { batch } if link.a_to_b.channel().ordering == Ordering::Ordered => {
             let lowest_sequence = lowest_sequence(&batch.events);
 
-            let next_sequence = query_next_sequence_receive(
+            let next_sequence = match query_next_sequence_receive(
                 link.a_to_b.dst_chain(),
                 link.a_to_b.dst_port_id(),
                 link.a_to_b.dst_channel_id(),
                 QueryHeight::Specific(batch.height),
-            )
-            .ok();
+            ) {
+                Ok(seq) => Some(seq),
+                Err(e) => {
+                    // Log the error but continue - clearing will be triggered due to
+                    // None < Some(x) being true, which is the safe fallback behavior
+                    warn!(
+                        "failed to query next_sequence_receive for ordered channel, \
+                         will trigger clearing as fallback: {}",
+                        e
+                    );
+                    None
+                }
+            };
 
             if *should_clear_on_start || next_sequence < lowest_sequence {
                 handle_clear_packet(link, clear_interval, path, Some(batch.height), clear_limit)?;

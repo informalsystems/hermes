@@ -837,7 +837,7 @@ fn process_batch<Chain: ChainHandle>(
             trace!(
                 "skipping events for '{}': destination chain '{}' is not registered",
                 object.short_name(),
-                object.src_chain_id()
+                object.dst_chain_id()
             );
 
             continue;
