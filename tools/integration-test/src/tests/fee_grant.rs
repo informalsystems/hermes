@@ -89,6 +89,7 @@ impl BinaryChannelTest for FeeGrantTest {
                 chain_config.gas_price.denom.clone()
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         };
 
         let gas_denom: MonoTagged<ChainA, Denom> =
@@ -117,6 +118,9 @@ impl BinaryChannelTest for FeeGrantTest {
                         }
                         ChainConfig::Penumbra(_) => {
                             panic!("running tests with Penumbra chain not supported")
+                        }
+                        ChainConfig::Cardano(_) => {
+                            panic!("running tests with Cardano chain not supported")
                         }
                     }
                 }
@@ -243,6 +247,7 @@ impl BinaryChannelTest for NoFeeGrantTest {
                 chain_config.gas_price.denom.clone()
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         };
 
         let gas_denom: MonoTagged<ChainA, Denom> =

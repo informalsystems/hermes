@@ -48,6 +48,8 @@ use crate::util::pretty::{PrettyDuration, PrettySlice};
 const MAX_MISBEHAVIOUR_CHECK_DURATION: Duration = Duration::from_secs(120);
 
 const MAX_RETRIES: usize = 5;
+const CREATE_CLIENT_DISCOVERY_MAX_RETRIES: usize = 30;
+const CREATE_CLIENT_DISCOVERY_RETRY_DELAY: Duration = Duration::from_secs(1);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum ExpiredOrFrozen {
@@ -699,7 +701,13 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 )
             })?;
 
-        assert!(!res.is_empty());
+        if res.is_empty() {
+            return Err(ForeignClientError::client_create(
+                self.dst_chain.id(),
+                "create client transaction committed but returned no IBC events".to_string(),
+                RelayerError::event(),
+            ));
+        }
         Ok(res[0].clone())
     }
 
@@ -711,19 +719,135 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
         fields(client = %self)
     )]
     fn create(&mut self) -> Result<(), ForeignClientError> {
-        let event_with_height = self
-            .build_create_client_and_send(CreateOptions::default())
+        let existing_client_ids = match self.query_destination_clients_for_source_chain() {
+            Ok(client_ids) => Some(client_ids),
+            Err(error) => {
+                debug!(
+                    "destination client pre-scan unavailable, falling back to event-only client creation path: {}",
+                    error
+                );
+                None
+            }
+        };
+        let new_msg = self.build_create_client(CreateOptions::default())?;
+
+        let res = self
+            .dst_chain
+            .send_messages_and_wait_commit(TrackedMsgs::new_single(
+                new_msg.to_any(),
+                "create client",
+            ))
+            .map_err(|e| {
+                ForeignClientError::client_create(
+                    self.dst_chain.id(),
+                    "failed sending message to dst chain ".to_string(),
+                    e,
+                )
+            })
             .map_err(|e| {
                 error!("failed to create client: {}", e);
                 e
             })?;
 
-        self.id = extract_client_id(&event_with_height.event)?.clone();
+        if let Some(event_with_height) = res.first() {
+            self.id = extract_client_id(&event_with_height.event)?.clone();
+            info!(id = %self.id, "client was created successfully");
+            debug!(id = %self.id, ?event_with_height.event, "event emitted after creation");
+            return Ok(());
+        }
 
-        info!(id = %self.id, "🍭 client was created successfully");
-        debug!(id = %self.id, ?event_with_height.event, "event emitted after creation");
+        let Some(existing_client_ids) = existing_client_ids.as_deref() else {
+            return Err(ForeignClientError::client_create(
+                self.dst_chain.id(),
+                "create client transaction committed but returned no IBC events, and destination chain does not support client discovery fallback".to_string(),
+                RelayerError::event(),
+            ));
+        };
+
+        self.id = self.infer_latest_created_client_id(existing_client_ids)?;
+        warn!(
+            id = %self.id,
+            "create client emitted no parsable IBC event, inferred client id from destination chain state"
+        );
+        info!(id = %self.id, "client was created successfully");
 
         Ok(())
+    }
+
+    fn query_destination_clients_for_source_chain(&self) -> Result<Vec<ClientId>, ForeignClientError> {
+        let src_chain_id = self.src_chain.id();
+        self.dst_chain
+            .query_clients(QueryClientStatesRequest { pagination: None })
+            .map_err(|e| {
+                ForeignClientError::client_create(
+                    self.dst_chain.id(),
+                    "failed to query destination clients after create client".to_string(),
+                    e,
+                )
+            })
+            .map(|clients| {
+                clients
+                    .into_iter()
+                    .filter(|client| client.client_state.chain_id() == src_chain_id)
+                    .map(|client| client.client_id)
+                    .collect()
+            })
+    }
+
+    fn infer_latest_created_client_id(
+        &self,
+        previous_client_ids: &[ClientId],
+    ) -> Result<ClientId, ForeignClientError> {
+        let previous_client_ids: Vec<String> = previous_client_ids
+            .iter()
+            .map(|client_id| client_id.to_string())
+            .collect();
+
+        for attempt in 0..CREATE_CLIENT_DISCOVERY_MAX_RETRIES {
+            let newest_observed = self
+                .query_destination_clients_for_source_chain()?
+                .into_iter()
+                .filter(|client_id| {
+                    !previous_client_ids
+                        .iter()
+                        .any(|previous_id| previous_id == client_id.as_str())
+                })
+                .max_by_key(|client_id| parse_client_counter(client_id.as_str()));
+
+            if let Some(client_id) = newest_observed {
+                return Ok(client_id);
+            }
+
+            if attempt + 1 < CREATE_CLIENT_DISCOVERY_MAX_RETRIES {
+                debug!(
+                    retries_remaining = CREATE_CLIENT_DISCOVERY_MAX_RETRIES - attempt - 1,
+                    "create client emitted no parsable event, waiting for destination chain indexers"
+                );
+                thread::sleep(CREATE_CLIENT_DISCOVERY_RETRY_DELAY);
+            }
+        }
+
+        let latest_known_client = self
+            .query_destination_clients_for_source_chain()?
+            .into_iter()
+            .max_by_key(|client_id| parse_client_counter(client_id.as_str()));
+
+        if let Some(client_id) = latest_known_client {
+            return Err(ForeignClientError::client_create(
+                self.dst_chain.id(),
+                format!(
+                    "create client returned no events and no new matching client id appeared on destination chain (latest observed: {})",
+                    client_id
+                ),
+                RelayerError::event(),
+            ));
+        }
+
+        Err(ForeignClientError::client_create(
+            self.dst_chain.id(),
+            "create client returned no events and no matching client id was found on destination chain".to_string(),
+            RelayerError::event(),
+        ))
     }
 
     #[instrument(
@@ -910,6 +1034,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 config.client_refresh_rate
             }
             ChainConfig::Penumbra(config) => config.client_refresh_rate,
+            ChainConfig::Cardano(config) => config.client_refresh_rate,
         };
 
         let refresh_period = client_state
@@ -1765,6 +1890,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 config.ccv_consumer_chain
             }
             ChainConfig::Penumbra(_) => false,
+            ChainConfig::Cardano(_) => false,
         };
 
         let mut msgs = vec![];
@@ -1948,6 +2074,14 @@ pub fn extract_client_id(event: &IbcEvent) -> Result<&ClientId, ForeignClientErr
             event.clone(),
         )),
     }
+}
+
+fn parse_client_counter(client_id: &str) -> u64 {
+    client_id
+        .rsplit('-')
+        .next()
+        .and_then(|raw| raw.parse::<u64>().ok())
+        .unwrap_or_default()
 }
 
 pub fn fetch_ccv_consumer_id(

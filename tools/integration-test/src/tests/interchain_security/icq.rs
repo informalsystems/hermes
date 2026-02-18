@@ -98,6 +98,9 @@ impl TestOverrides for InterchainSecurityIcqTest {
                 ChainConfig::Penumbra(_) => {
                     panic!("running tests with Penumbra chain not supported")
                 }
+                ChainConfig::Cardano(_) => {
+                    panic!("running tests with Cardano chain not supported")
+                }
             }
         }
     }

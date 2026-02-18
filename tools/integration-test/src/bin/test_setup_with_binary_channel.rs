@@ -52,6 +52,7 @@ impl TestOverrides for Test {
                     // with external relayer commands.
                     chain_config.key_store_type = Store::Test;
                 }
+                ChainConfig::Cardano(_) => { /* no-op */ }
                 ChainConfig::Penumbra(_) => { /* no-op */ }
             }
         }

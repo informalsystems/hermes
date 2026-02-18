@@ -25,6 +25,7 @@ use crate::chain::requests::{
     IncludeProof, PageRequest, QueryConnectionRequest, QueryConnectionsRequest, QueryHeight,
 };
 use crate::chain::tracking::TrackedMsgs;
+use crate::config::ChainConfig;
 use crate::foreign_client::{ForeignClient, HasExpiredOrFrozenError};
 use crate::object::Connection as WorkerConnectionObject;
 use crate::util::pretty::{PrettyDuration, PrettyOption};
@@ -937,6 +938,24 @@ impl<ChainA: ChainHandle, ChainB: ChainHandle> Connection<ChainA, ChainB> {
                 "dst_chain": self.dst_chain().id(),
             }
         );
+        let dst_chain_is_cardano = matches!(
+            self.dst_chain()
+                .config()
+                .map_err(ConnectionError::relayer)?,
+            ChainConfig::Cardano(_)
+        );
+
+        // Cardano query_latest_height is Mithril-certified snapshot height, not raw tip.
+        // A strict pre-wait on this value can deadlock the handshake before we submit the tx
+        // that would advance certified state.
+        if dst_chain_is_cardano {
+            debug!(
+                "skipping destination-height pre-wait for Cardano (required consensus proof height: {})",
+                consensus_height
+            );
+            return Ok(());
+        }
+
         let dst_application_latest_height = || {
             self.dst_chain()
                 .query_latest_height()

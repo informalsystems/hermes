@@ -40,6 +40,7 @@ impl TestOverrides for MemoTest {
                     chain_config.memo_prefix = self.memo.clone();
                 }
                 ChainConfig::Penumbra(_) => { /* no-op */ }
+                ChainConfig::Cardano(_) => { /* no-op */ }
             }
         }
     }
@@ -101,6 +102,7 @@ impl TestOverrides for MemoOverwriteTest {
                     chain_config.memo_overwrite = Some(Memo::new(OVERWRITE_MEMO).unwrap())
                 }
                 ChainConfig::Penumbra(_) => { /* no-op */ }
+                ChainConfig::Cardano(_) => { /* no-op */ }
             }
         }
     }

@@ -35,6 +35,9 @@ impl TestOverrides for SimulationTest {
                 ChainConfig::Penumbra(_) => {
                     panic!("running tests with Penumbra chain not supported")
                 }
+                ChainConfig::Cardano(_) => {
+                    panic!("running tests with Cardano chain not supported")
+                }
             }
         }
     }

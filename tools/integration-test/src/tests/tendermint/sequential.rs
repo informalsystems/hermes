@@ -49,6 +49,7 @@ impl TestOverrides for SequentialCommitTest {
                 chain_config_a.sequential_batch_tx = true;
             }
             ChainConfig::Penumbra(_) => { /* no-op */ }
+            ChainConfig::Cardano(_) => { /* no-op */ }
         };
 
         match &mut config.chains[1] {
@@ -57,6 +58,7 @@ impl TestOverrides for SequentialCommitTest {
                 chain_config_b.sequential_batch_tx = false;
             }
             ChainConfig::Penumbra(_) => { /* no-op */ }
+            ChainConfig::Cardano(_) => { /* no-op */ }
         };
     }
 

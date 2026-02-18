@@ -57,6 +57,9 @@ impl TestOverrides for OrderedChannelClearTest {
                 ChainConfig::Penumbra(_) => {
                     panic!("running tests with Penumbra chain not supported")
                 }
+                ChainConfig::Cardano(_) => {
+                    panic!("running tests with Cardano chain not supported")
+                }
             }
         }
 
@@ -66,6 +69,7 @@ impl TestOverrides for OrderedChannelClearTest {
                 chain_config.sequential_batch_tx = self.sequential_batch_tx;
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         }
     }
 
@@ -208,6 +212,9 @@ impl TestOverrides for OrderedChannelClearEqualCLITest {
                 ChainConfig::Penumbra(_) => {
                     panic!("running tests with Penumbra chain not supported")
                 }
+                ChainConfig::Cardano(_) => {
+                    panic!("running tests with Cardano chain not supported")
+                }
             }
         }
 
@@ -218,6 +225,7 @@ impl TestOverrides for OrderedChannelClearEqualCLITest {
                 chain_config.max_msg_num = MaxMsgNum::new(3).unwrap();
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         }
     }
 

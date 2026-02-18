@@ -10,7 +10,7 @@ use abscissa_core::{Command, Runnable};
 use eyre::eyre;
 use hdpath::StandardHDPath;
 use ibc_relayer::{
-    chain::namada::wallet::CliWalletUtils,
+    chain::{cardano::signing_key_pair::CardanoSigningKeyPair, namada::wallet::CliWalletUtils},
     config::{ChainConfig, Config},
     keyring::{
         AnySigningKeyPair, KeyRing, NamadaKeyPair, Secp256k1KeyPair, SigningKeyPair,
@@ -253,6 +253,23 @@ pub fn add_key(
             namada_key.into()
         }
         ChainConfig::Penumbra(_) => unimplemented!("no key storage support for penumbra"),
+        ChainConfig::Cardano(config) => {
+            let mut keyring = KeyRing::new(
+                config.key_store_type,
+                "cardano", // account_prefix not used for Cardano
+                &config.id,
+                &config.key_store_folder,
+            )?;
+
+            check_key_exists(&keyring, key_name, overwrite);
+
+            let key_contents =
+                fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
+            let key_pair = CardanoSigningKeyPair::from_seed_file(&key_contents, hd_path)?;
+
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
     };
 
     Ok(key_pair)
@@ -295,6 +312,26 @@ pub fn restore_key(
             ));
         }
         ChainConfig::Penumbra(_) => return Err(eyre!("no key storage support for penumbra")),
+        ChainConfig::Cardano(config) => {
+            let mut keyring = KeyRing::new(
+                config.key_store_type,
+                "cardano", // account_prefix not used for Cardano
+                &config.id,
+                &config.key_store_folder,
+            )?;
+
+            check_key_exists(&keyring, key_name, overwrite);
+
+            let key_pair = CardanoSigningKeyPair::from_mnemonic(
+                &mnemonic_content,
+                hdpath,
+                &ibc_relayer::config::AddressType::Cosmos, // Not used for Cardano
+                "cardano",                                 // Not used for Cardano
+            )?;
+
+            keyring.add_key(key_name, key_pair.clone())?;
+            key_pair.into()
+        }
     };
 
     Ok(key_pair)

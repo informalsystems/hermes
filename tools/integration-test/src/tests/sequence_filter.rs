@@ -56,6 +56,7 @@ impl TestOverrides for FilterClearOnStartTest {
                 chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
             ChainConfig::Penumbra(_) => { /* no-op */ }
+            ChainConfig::Cardano(_) => { /* no-op */ }
         }
         config.mode.channels.enabled = true;
 
@@ -94,6 +95,7 @@ impl TestOverrides for FilterClearIntervalTest {
                 chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
             ChainConfig::Penumbra(_) => { /* no-op */ }
+            ChainConfig::Cardano(_) => { /* no-op */ }
         }
         config.mode.channels.enabled = true;
 
@@ -254,6 +256,7 @@ impl TestOverrides for StandardRelayingNoFilterTest {
                 chain_config.excluded_sequences = ExcludedSequences::new(excluded_sequences);
             }
             ChainConfig::Penumbra(_) => { /* no-op */ }
+            ChainConfig::Cardano(_) => { /* no-op */ }
         }
         config.mode.packets.clear_on_start = true;
         config.mode.packets.clear_interval = 0;

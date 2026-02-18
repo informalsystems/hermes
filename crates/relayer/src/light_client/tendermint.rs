@@ -156,10 +156,17 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let update_header = match any_header {
             AnyHeader::Tendermint(header) => Ok::<_, Error>(header),
+            AnyHeader::Mithril(_) => Err(Error::misbehaviour(format!(
+                "received Mithril header in Tendermint light client for chain {}",
+                self.chain_id
+            ))),
         }?;
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok::<_, Error>(client_state),
+            AnyClientState::Mithril(_) => Err(Error::client_state_type(
+                "received Mithril client state in Tendermint light client".to_string(),
+            )),
         }?;
 
         let next_validators = self
@@ -358,6 +365,9 @@ impl LightClient {
 
         let client_state = match client_state {
             AnyClientState::Tendermint(client_state) => Ok::<_, Error>(client_state),
+            AnyClientState::Mithril(_) => Err(Error::client_state_type(
+                "received Mithril client state in Tendermint light client".to_string(),
+            )),
         }?;
 
         Ok(TmLightClient::new(

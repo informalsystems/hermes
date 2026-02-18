@@ -118,6 +118,7 @@ impl TestOverrides for ExpirationTestOverrides {
                     chain_config.trusting_period = Some(CLIENT_EXPIRY);
                 }
                 ChainConfig::Penumbra(_) => { /* no-op */ }
+                ChainConfig::Cardano(_) => { /* no-op */ }
             }
         }
     }

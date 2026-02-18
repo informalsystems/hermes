@@ -338,6 +338,7 @@ fn assert_eventual_async_icq_success<ChainA: ChainHandle, ChainB: ChainHandle>(
     let rpc_addr = match relayer.config.chains.first().unwrap() {
         ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => c.rpc_addr.clone(),
         ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+        ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
     };
 
     let mut rpc_client = HttpClient::new(rpc_addr).unwrap();
@@ -374,6 +375,7 @@ fn assert_eventual_async_icq_error<ChainA: ChainHandle, ChainB: ChainHandle>(
     let rpc_addr = match relayer.config.chains.first().unwrap() {
         ChainConfig::CosmosSdk(c) | ChainConfig::Namada(c) => c.rpc_addr.clone(),
         ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+        ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
     };
 
     let mut rpc_client = HttpClient::new(rpc_addr).unwrap();

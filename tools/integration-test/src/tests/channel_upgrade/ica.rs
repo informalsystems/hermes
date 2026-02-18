@@ -321,6 +321,9 @@ impl TestOverrides for ChannelUpgradeICAUnordered {
                 ChainConfig::Penumbra(_) => {
                     panic!("running tests with Penumbra chain not supported")
                 }
+                ChainConfig::Cardano(_) => {
+                    panic!("running tests with Cardano chain not supported")
+                }
             }
         }
     }

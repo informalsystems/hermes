@@ -81,6 +81,7 @@ fn get_balance(chain: impl ChainHandle, key_name: Option<String>, denom: Option<
                         chain_config.key_name
                     }
                     ChainConfig::Penumbra(_) => unimplemented!("not yet supported for penumbra"),
+                    ChainConfig::Cardano(chain_config) => chain_config.key_name,
                 }
             });
 
@@ -106,6 +107,7 @@ fn get_balances(chain: impl ChainHandle, key_name: Option<String>) {
                         chain_config.key_name
                     }
                     ChainConfig::Penumbra(_) => unimplemented!("not yet supported for penumbra"),
+                    ChainConfig::Cardano(chain_config) => chain_config.key_name,
                 }
             });
 

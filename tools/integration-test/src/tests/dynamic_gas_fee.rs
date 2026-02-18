@@ -54,6 +54,7 @@ impl TestOverrides for DynamicGasTest {
             }
             ChainConfig::Namada(_) => {}
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         }
 
         match &mut config.chains[1] {
@@ -65,6 +66,7 @@ impl TestOverrides for DynamicGasTest {
             }
             ChainConfig::Namada(_) => {}
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         }
     }
 
@@ -104,6 +106,7 @@ impl BinaryChannelTest for DynamicGasTest {
                 chain_config.gas_price.denom.clone()
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         };
 
         let gas_denom_str_b: String = match relayer
@@ -116,6 +119,7 @@ impl BinaryChannelTest for DynamicGasTest {
                 chain_config.gas_price.denom.clone()
             }
             ChainConfig::Penumbra(_) => panic!("running tests with Penumbra chain not supported"),
+            ChainConfig::Cardano(_) => panic!("running tests with Cardano chain not supported"),
         };
 
         let gas_denom_a: MonoTagged<ChainA, Denom> =

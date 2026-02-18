@@ -479,6 +479,17 @@ pub trait ChainEndpoint: Sized {
             _ => {}
         }
 
+        // Proof height semantics are chain-specific.
+        //
+        // Hermes historically uses `query_height + 1` as `proof_height` for Tendermint/Cosmos SDK
+        // chains. For Cardano (Mithril snapshot heights), the consensus state at height H commits to
+        // the IBC root at height H directly, so the proof height must be exactly `query_height`.
+        let proof_height = if matches!(self.config(), ChainConfig::Cardano(_)) {
+            height
+        } else {
+            height.increment()
+        };
+
         Ok((
             client_state,
             Proofs::new(
@@ -487,7 +498,7 @@ pub trait ChainEndpoint: Sized {
                 consensus_proof,
                 None, // TODO: Retrieve host consensus proof when available
                 None,
-                height.increment(),
+                proof_height,
             )
             .map_err(Error::malformed_proof)?,
         ))
@@ -517,15 +528,14 @@ pub trait ChainEndpoint: Sized {
         let channel_proof_bytes =
             CommitmentProofBytes::try_from(channel_proof).map_err(Error::malformed_proof)?;
 
-        Proofs::new(
-            channel_proof_bytes,
-            None,
-            None,
-            None,
-            None,
-            height.increment(),
-        )
-        .map_err(Error::malformed_proof)
+        let proof_height = if matches!(self.config(), ChainConfig::Cardano(_)) {
+            height
+        } else {
+            height.increment()
+        };
+
+        Proofs::new(channel_proof_bytes, None, None, None, None, proof_height)
+            .map_err(Error::malformed_proof)
     }
 
     /// Builds the proof for packet messages.
@@ -659,13 +669,19 @@ pub trait ChainEndpoint: Sized {
             return Err(Error::queried_proof_not_found());
         };
 
+        let proof_height = if matches!(self.config(), ChainConfig::Cardano(_)) {
+            height
+        } else {
+            height.increment()
+        };
+
         let proofs = Proofs::new(
             CommitmentProofBytes::try_from(packet_proof).map_err(Error::malformed_proof)?,
             None,
             None,
             None,
             channel_proof,
-            height.increment(),
+            proof_height,
         )
         .map_err(Error::malformed_proof)?;
 

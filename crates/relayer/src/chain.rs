@@ -1,3 +1,4 @@
+pub mod cardano;
 pub mod client;
 pub mod client_settings;
 pub mod cosmos;

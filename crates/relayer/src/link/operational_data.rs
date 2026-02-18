@@ -14,6 +14,7 @@ use crate::chain::requests::QueryClientStateRequest;
 use crate::chain::requests::QueryHeight;
 use crate::chain::tracking::TrackedMsgs;
 use crate::chain::tracking::TrackingId;
+use crate::config::ChainConfig;
 use crate::event::IbcEventWithHeight;
 use crate::link::error::LinkError;
 use crate::link::RelayPath;
@@ -159,7 +160,39 @@ impl OperationalData {
     ) -> Result<TrackedMsgs, LinkError> {
         // For zero delay we prepend the client update msgs.
         let client_update_msgs = if !self.conn_delay_needed() {
-            let update_height = self.proofs_height.increment();
+            // Hermes normally updates the on-chain light client to `proof_height + 1` before
+            // sending proof-bearing messages (connection/channel/packet).
+            //
+            // For Cardano↔Cosmos (Mithril) in our system, proofs are verified against the
+            // consensus state stored at the exact `proof_height` returned by the Gateway.
+            // If we update to `proof_height + 1` first, the Mithril client will not have a
+            // consensus state stored at `proof_height`, and verification fails with:
+            // "consensus state not found".
+            //
+            // Therefore, when we are updating a Cardano-tracking client (i.e. the counterparty
+            // chain in this relay path is Cardano), we update to `proof_height` directly.
+            let src_chain_is_cardano = matches!(
+                relay_path
+                    .src_chain()
+                    .config()
+                    .map_err(LinkError::relayer)?,
+                ChainConfig::Cardano(_)
+            );
+            let dst_chain_is_cardano = matches!(
+                relay_path
+                    .dst_chain()
+                    .config()
+                    .map_err(LinkError::relayer)?,
+                ChainConfig::Cardano(_)
+            );
+            let update_height = if (matches!(self.target, OperationalDataTarget::Destination)
+                && src_chain_is_cardano)
+                || (matches!(self.target, OperationalDataTarget::Source) && dst_chain_is_cardano)
+            {
+                self.proofs_height
+            } else {
+                self.proofs_height.increment()
+            };
 
             debug!(
                 "prepending {} client update at height {}",

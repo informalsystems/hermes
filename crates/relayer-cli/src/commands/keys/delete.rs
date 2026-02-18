@@ -3,6 +3,7 @@ use abscissa_core::{Command, Runnable};
 
 use eyre::eyre;
 use ibc_relayer::{
+    chain::cardano::signing_key_pair::CardanoSigningKeyPair,
     config::{ChainConfig, Config},
     keyring::{KeyRing, Store},
 };
@@ -129,6 +130,15 @@ pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
             keyring.remove_key(key_name)?;
         }
         ChainConfig::Penumbra(_) => unimplemented!("no key support for penumbra"),
+        ChainConfig::Cardano(config) => {
+            let mut keyring: KeyRing<CardanoSigningKeyPair> = KeyRing::new(
+                config.key_store_type,
+                "cardano",
+                &config.id,
+                &config.key_store_folder,
+            )?;
+            keyring.remove_key(key_name)?;
+        }
     }
     Ok(())
 }
@@ -156,6 +166,18 @@ pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
             }
         }
         ChainConfig::Penumbra(_) => unimplemented!("no key support for penumbra"),
+        ChainConfig::Cardano(config) => {
+            let mut keyring: KeyRing<CardanoSigningKeyPair> = KeyRing::new(
+                config.key_store_type,
+                "cardano",
+                &config.id,
+                &config.key_store_folder,
+            )?;
+            let keys = keyring.keys()?;
+            for (key_name, _) in keys {
+                keyring.remove_key(&key_name)?;
+            }
+        }
     }
     Ok(())
 }

@@ -346,6 +346,7 @@ impl TestOverrides for ClearPacketOverrideTest {
                     chain_config.clear_interval = Some(10)
                 }
                 ChainConfig::Penumbra(_) => { /* no-op */ }
+                ChainConfig::Cardano(_) => { /* no-op */ }
             }
         }
     }

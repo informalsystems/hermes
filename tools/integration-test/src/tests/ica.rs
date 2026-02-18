@@ -77,6 +77,9 @@ impl TestOverrides for IcaFilterTestAllow {
                 ChainConfig::Penumbra(_) => {
                     panic!("running tests with Penumbra chain not supported")
                 }
+                ChainConfig::Cardano(_) => {
+                    panic!("running tests with Cardano chain not supported")
+                }
             }
         }
     }
@@ -200,6 +203,9 @@ impl TestOverrides for IcaFilterTestDeny {
                 }
                 ChainConfig::Penumbra(_) => {
                     panic!("running tests with Penumbra chain not supported")
+                }
+                ChainConfig::Cardano(_) => {
+                    panic!("running tests with Cardano chain not supported")
                 }
             }
         }

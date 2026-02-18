@@ -1,13 +1,16 @@
 use serde::Serialize;
 
 use super::{Ed25519KeyPair, KeyType, NamadaKeyPair, Secp256k1KeyPair, SigningKeyPair};
+use crate::chain::cardano::CardanoSigningKeyPair;
 
 #[derive(Clone, Debug, Serialize)]
 #[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
 pub enum AnySigningKeyPair {
     Secp256k1(Secp256k1KeyPair),
     Ed25519(Ed25519KeyPair),
     Namada(NamadaKeyPair),
+    Cardano(CardanoSigningKeyPair),
 }
 
 impl AnySigningKeyPair {
@@ -16,6 +19,7 @@ impl AnySigningKeyPair {
             Self::Secp256k1(key_pair) => key_pair.account(),
             Self::Ed25519(key_pair) => key_pair.account(),
             Self::Namada(key_pair) => key_pair.account(),
+            Self::Cardano(key_pair) => key_pair.account(),
         }
     }
 
@@ -24,6 +28,7 @@ impl AnySigningKeyPair {
             Self::Secp256k1(_) => Secp256k1KeyPair::KEY_TYPE,
             Self::Ed25519(_) => Ed25519KeyPair::KEY_TYPE,
             Self::Namada(_) => NamadaKeyPair::KEY_TYPE,
+            Self::Cardano(_) => CardanoSigningKeyPair::KEY_TYPE,
         }
     }
 
@@ -32,6 +37,7 @@ impl AnySigningKeyPair {
             Self::Secp256k1(key_pair) => key_pair.as_any(),
             Self::Ed25519(key_pair) => key_pair.as_any(),
             Self::Namada(key_pair) => key_pair.as_any(),
+            Self::Cardano(key_pair) => key_pair.as_any(),
         }
         .downcast_ref::<T>()
         .cloned()
@@ -53,5 +59,11 @@ impl From<Ed25519KeyPair> for AnySigningKeyPair {
 impl From<NamadaKeyPair> for AnySigningKeyPair {
     fn from(key_pair: NamadaKeyPair) -> Self {
         Self::Namada(key_pair)
+    }
+}
+
+impl From<CardanoSigningKeyPair> for AnySigningKeyPair {
+    fn from(key_pair: CardanoSigningKeyPair) -> Self {
+        Self::Cardano(key_pair)
     }
 }

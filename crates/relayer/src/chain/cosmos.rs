@@ -30,7 +30,6 @@ use ibc_relayer_types::clients::ics07_tendermint::client_state::{
 };
 use ibc_relayer_types::clients::ics07_tendermint::consensus_state::ConsensusState as TmConsensusState;
 use ibc_relayer_types::clients::ics07_tendermint::header::Header as TmHeader;
-use ibc_relayer_types::core::ics02_client::client_type::ClientType;
 use ibc_relayer_types::core::ics02_client::error::Error as ClientError;
 use ibc_relayer_types::core::ics02_client::events::UpdateClient;
 use ibc_relayer_types::core::ics03_connection::connection::{
@@ -1387,12 +1386,10 @@ impl ChainEndpoint for CosmosSdkChain {
 
         let consensus_state = AnyConsensusState::decode_vec(&res.value).map_err(Error::decode)?;
 
-        if !matches!(consensus_state, AnyConsensusState::Tendermint(_)) {
-            return Err(Error::consensus_state_type_mismatch(
-                ClientType::Tendermint,
-                consensus_state.client_type(),
-            ));
-        }
+        // Note: Upstream Hermes assumed Cosmos chains only ever store Tendermint consensus states.
+        // In this repo we also support non-Tendermint clients on Cosmos chains (e.g. the Mithril
+        // client used to track Cardano). Therefore we must accept whatever consensus state type is
+        // actually stored under the requested client ID and height.
 
         match include_proof {
             IncludeProof::Yes => {
