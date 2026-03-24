@@ -7,15 +7,18 @@ use super::error::Error;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum ClientType {
     Tendermint = 1,
+    Stellar = 3,
 }
 
 impl ClientType {
     const TENDERMINT_STR: &'static str = "07-tendermint";
+    const STELLAR_STR: &'static str = "10-stellar";
 
     /// Yields the identifier of this client type as a string
     pub fn as_str(&self) -> &'static str {
         match self {
             Self::Tendermint => Self::TENDERMINT_STR,
+            Self::Stellar => Self::STELLAR_STR,
         }
     }
 }
@@ -32,6 +35,7 @@ impl core::str::FromStr for ClientType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             Self::TENDERMINT_STR => Ok(Self::Tendermint),
+            Self::STELLAR_STR => Ok(Self::Stellar),
 
             _ => Err(Error::unknown_client_type(s.to_string())),
         }
@@ -52,6 +56,16 @@ mod tests {
 
         match client_type {
             Ok(ClientType::Tendermint) => (),
+            _ => panic!("parse failed"),
+        }
+    }
+
+    #[test]
+    fn parse_stellar_client_type() {
+        let client_type = ClientType::from_str("10-stellar");
+
+        match client_type {
+            Ok(ClientType::Stellar) => (),
             _ => panic!("parse failed"),
         }
     }

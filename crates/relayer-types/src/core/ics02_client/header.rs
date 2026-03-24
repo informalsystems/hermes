@@ -1,5 +1,6 @@
 use core::fmt::Debug;
 
+use prost::Message;
 use serde::{Deserialize, Serialize};
 
 use ibc_proto::google::protobuf::Any;
@@ -8,6 +9,8 @@ use ibc_proto::Protobuf;
 use crate::clients::ics07_tendermint::header::{
     decode_header as tm_decode_header, Header as TendermintHeader, TENDERMINT_HEADER_TYPE_URL,
 };
+use crate::clients::ics10_stellar::header::Header as StellarHeader;
+use crate::clients::ics10_stellar::raw::STELLAR_HEADER_TYPE_URL;
 use crate::core::ics02_client::client_type::ClientType;
 use crate::core::ics02_client::error::Error;
 use crate::timestamp::Timestamp;
@@ -28,37 +31,37 @@ pub trait Header: Debug + Send + Sync // Any: From<Self>,
 
 /// Decodes an encoded header into a known `Header` type,
 pub fn decode_header(header_bytes: &[u8]) -> Result<AnyHeader, Error> {
-    // For now, we only have tendermint; however when there is more than one, we
-    // can try decoding into all the known types, and return an error only if
-    // none work
-    let header: TendermintHeader =
-        Protobuf::<Any>::decode(header_bytes).map_err(Error::invalid_raw_header)?;
+    let raw_any: Any = Any::decode(header_bytes).map_err(Error::decode)?;
 
-    Ok(AnyHeader::Tendermint(header))
+    AnyHeader::try_from(raw_any)
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Deserialize, Serialize)]
 #[allow(clippy::large_enum_variant)]
 pub enum AnyHeader {
     Tendermint(TendermintHeader),
+    Stellar(StellarHeader),
 }
 
 impl Header for AnyHeader {
     fn client_type(&self) -> ClientType {
         match self {
             Self::Tendermint(header) => header.client_type(),
+            Self::Stellar(header) => header.client_type(),
         }
     }
 
     fn height(&self) -> Height {
         match self {
             Self::Tendermint(header) => header.height(),
+            Self::Stellar(header) => header.height(),
         }
     }
 
     fn timestamp(&self) -> Timestamp {
         match self {
             Self::Tendermint(header) => header.timestamp(),
+            Self::Stellar(header) => header.timestamp(),
         }
     }
 }
@@ -74,7 +77,10 @@ impl TryFrom<Any> for AnyHeader {
                 let val = tm_decode_header(raw.value.as_slice())?;
                 Ok(AnyHeader::Tendermint(val))
             }
-
+            STELLAR_HEADER_TYPE_URL => {
+                let val = StellarHeader::try_from(raw)?;
+                Ok(AnyHeader::Stellar(val))
+            }
             _ => Err(Error::unknown_header_type(raw.type_url)),
         }
     }
@@ -82,13 +88,14 @@ impl TryFrom<Any> for AnyHeader {
 
 impl From<AnyHeader> for Any {
     fn from(value: AnyHeader) -> Self {
-        use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawHeader;
+        use ibc_proto::ibc::lightclients::tendermint::v1::Header as RawTmHeader;
 
         match value {
             AnyHeader::Tendermint(header) => Any {
                 type_url: TENDERMINT_HEADER_TYPE_URL.to_string(),
-                value: Protobuf::<RawHeader>::encode_vec(header),
+                value: Protobuf::<RawTmHeader>::encode_vec(header),
             },
+            AnyHeader::Stellar(header) => header.into(),
         }
     }
 }
@@ -96,5 +103,11 @@ impl From<AnyHeader> for Any {
 impl From<TendermintHeader> for AnyHeader {
     fn from(header: TendermintHeader) -> Self {
         Self::Tendermint(header)
+    }
+}
+
+impl From<StellarHeader> for AnyHeader {
+    fn from(header: StellarHeader) -> Self {
+        Self::Stellar(header)
     }
 }
