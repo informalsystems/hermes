@@ -8,5 +8,6 @@ pub mod namada;
 pub mod penumbra;
 pub mod requests;
 pub mod runtime;
+pub mod stellar;
 pub mod tracking;
 pub mod version;
