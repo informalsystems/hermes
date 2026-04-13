@@ -112,6 +112,8 @@ subtle-encoding          = "0.5.1"
 test-log                 = "0.2.18"
 thiserror                = "1.0.69"
 time                     = "0.3"
+stellar-strkey           = "0.0.8"
+stellar-xdr              = { version = "26.0.0", default-features = false, features = ["base64", "serde"] }
 tiny-bip39               = "1.0.0"
 tiny-keccak              = { version = "2.0.2", default-features = false }
 tokio                    = "1.39.2"

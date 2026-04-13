@@ -156,6 +156,10 @@ impl super::LightClient<CosmosSdkChain> for LightClient {
 
         let update_header = match any_header {
             AnyHeader::Tendermint(header) => Ok::<_, Error>(header),
+            AnyHeader::Stellar(_) => Err(Error::client_type_mismatch(
+                ibc_relayer_types::core::ics02_client::client_type::ClientType::Tendermint,
+                ibc_relayer_types::core::ics02_client::client_type::ClientType::Stellar,
+            )),
         }?;
 
         let client_state = match client_state {

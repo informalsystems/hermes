@@ -53,6 +53,7 @@ impl TestOverrides for Test {
                     chain_config.key_store_type = Store::Test;
                 }
                 ChainConfig::Penumbra(_) => { /* no-op */ }
+                ChainConfig::Stellar(_) => { /* no-op */ }
             }
         }
     }

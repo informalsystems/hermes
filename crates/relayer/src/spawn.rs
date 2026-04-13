@@ -87,6 +87,13 @@ pub fn spawn_chain_runtime_with_config<Handle: ChainHandle>(
         ChainConfig::CosmosSdk(_) => ChainRuntime::<CosmosSdkChain>::spawn(config, rt),
         ChainConfig::Namada(_) => ChainRuntime::<NamadaChain>::spawn(config, rt),
         ChainConfig::Penumbra(_) => ChainRuntime::<PenumbraChain>::spawn(config, rt),
+        // Stellar ChainEndpoint not yet implemented (PR 6). Parsing the config works;
+        // spawning a runtime will return an error until the full implementation lands.
+        ChainConfig::Stellar(_) => {
+            return Err(SpawnError::relayer(RelayerError::config(
+                crate::config::error::Error::stellar_not_implemented(),
+            )))
+        }
     }
     .map_err(SpawnError::relayer)?;
 

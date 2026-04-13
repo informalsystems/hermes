@@ -82,6 +82,8 @@ tendermint-light-client-verifier = { workspace = true }
 tendermint-proto                 = { workspace = true }
 tendermint-rpc                   = { workspace = true, features = ["http-client", "websocket-client"] }
 thiserror                        = { workspace = true }
+stellar-strkey                   = { workspace = true }
+stellar-xdr                      = { workspace = true }
 tiny-bip39                       = { workspace = true }
 tiny-keccak                      = { workspace = true, features = ["keccak"] }
 tokio                            = { workspace = true, features = ["rt-multi-thread", "time", "sync"] }

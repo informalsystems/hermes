@@ -59,5 +59,9 @@ define_error! {
         |e| {
             format!("invalid cosmos config: {}", e.reason)
         },
+
+        StellarNotImplemented
+            |_| { "Stellar ChainEndpoint is not yet implemented. Config parsing works; chain \
+                   runtime spawn requires completing PRs 3–7 on the feat/stellar-integration branch." },
     }
 }

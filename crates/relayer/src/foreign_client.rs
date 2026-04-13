@@ -910,6 +910,8 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 config.client_refresh_rate
             }
             ChainConfig::Penumbra(config) => config.client_refresh_rate,
+            // Stellar IBC client refresh not yet implemented; use the standard 1/3 trusting period default.
+            ChainConfig::Stellar(_) => crate::config::RefreshRate::new(1, 3),
         };
 
         let refresh_period = client_state
@@ -1765,6 +1767,7 @@ impl<DstChain: ChainHandle, SrcChain: ChainHandle> ForeignClient<DstChain, SrcCh
                 config.ccv_consumer_chain
             }
             ChainConfig::Penumbra(_) => false,
+            ChainConfig::Stellar(_) => false,
         };
 
         let mut msgs = vec![];
