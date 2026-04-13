@@ -253,6 +253,9 @@ pub fn add_key(
             namada_key.into()
         }
         ChainConfig::Penumbra(_) => unimplemented!("no key storage support for penumbra"),
+        ChainConfig::Stellar(_) => {
+            return Err(eyre!("Stellar key management not yet implemented (PR 3 pending on feat/stellar-integration branch)"))
+        }
     };
 
     Ok(key_pair)
@@ -295,6 +298,9 @@ pub fn restore_key(
             ));
         }
         ChainConfig::Penumbra(_) => return Err(eyre!("no key storage support for penumbra")),
+        ChainConfig::Stellar(_) => {
+            return Err(eyre!("Stellar key management not yet implemented (PR 3 pending on feat/stellar-integration branch)"))
+        }
     };
 
     Ok(key_pair)

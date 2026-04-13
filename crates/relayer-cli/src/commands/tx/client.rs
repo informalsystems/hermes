@@ -212,6 +212,7 @@ impl Runnable for TxUpdateClientCmd {
                     ChainConfig::Penumbra(chain_config) => {
                         chain_config.genesis_restart = Some(restart_params)
                     }
+                    ChainConfig::Stellar(_) => { /* genesis_restart not applicable to Stellar */ }
                 },
                 None => {
                     Output::error(format!(

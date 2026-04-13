@@ -129,6 +129,9 @@ pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
             keyring.remove_key(key_name)?;
         }
         ChainConfig::Penumbra(_) => unimplemented!("no key support for penumbra"),
+        ChainConfig::Stellar(_) => {
+            return Err(eyre::eyre!("Stellar key management not yet implemented (PR 3 pending)"))
+        }
     }
     Ok(())
 }
@@ -156,6 +159,9 @@ pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
             }
         }
         ChainConfig::Penumbra(_) => unimplemented!("no key support for penumbra"),
+        ChainConfig::Stellar(_) => {
+            return Err(eyre::eyre!("Stellar key management not yet implemented (PR 3 pending)"))
+        }
     }
     Ok(())
 }

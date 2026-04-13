@@ -208,6 +208,9 @@ fn subscribe(
             let subscription = monitor_tx.subscribe()?;
             Ok(subscription)
         }
+        ChainConfig::Stellar(_) => Err(eyre::eyre!(
+            "hermes listen is not yet supported for Stellar (event source in PR 5)"
+        )),
     }
 }
 
@@ -218,6 +221,11 @@ fn detect_compatibility_mode(
     let rpc_addr = match config {
         ChainConfig::CosmosSdk(config) | ChainConfig::Namada(config) => config.rpc_addr.clone(),
         ChainConfig::Penumbra(config) => config.rpc_addr.clone(),
+        ChainConfig::Stellar(_) => {
+            return Err(eyre::eyre!(
+                "detect_compatibility_mode not supported for Stellar"
+            ))
+        }
     };
 
     let client = HttpClient::builder(rpc_addr.try_into()?)
@@ -232,6 +240,7 @@ fn detect_compatibility_mode(
             let status = rt.block_on(client.status())?;
             penumbra::util::compat_mode_from_version(&config.compat_mode, status.node_info.version)?
         }
+        ChainConfig::Stellar(_) => unreachable!("handled above"),
     };
 
     Ok(compat_mode)
