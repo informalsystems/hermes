@@ -628,6 +628,10 @@ define_error! {
             { reason: String}
             |e| { format!("other error: {}", e.reason) },
 
+        ExtensionSigner
+            { chain_id: ChainId, reason: String }
+            |e| { format!("extension signer failed for chain '{}': {}", e.chain_id, e.reason) },
+
         TempPenumbraError
             { detail: String }
             |e| { format!("penumbra error: {}", e.detail) },

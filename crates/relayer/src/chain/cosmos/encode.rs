@@ -9,6 +9,7 @@ use ibc_relayer_types::signer::Signer;
 use prost::Message;
 use tendermint::account::Id as AccountId;
 
+use crate::chain::cosmos::extension_signer::{apply_extension_signer, ExtensionSignRequest};
 use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequence};
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::tx::SignedTx;
@@ -90,6 +91,23 @@ pub fn sign_tx(
         tx_body_and_bytes(messages, tx_memo, config.extension_options.clone())?;
 
     let (auth_info, auth_info_bytes) = auth_info_and_bytes(signer, fee.clone())?;
+
+    // Chains that require an additional signature get it here, over the body
+    // without it and the final AuthInfo, before the classical signature.
+    let (body, body_bytes) = apply_extension_signer(
+        config.extension_signer.as_deref(),
+        ExtensionSignRequest {
+            chain_id: &config.chain_id,
+            body_bytes: &body_bytes,
+            auth_info_bytes: &auth_info_bytes,
+            account_number: account.number.to_u64(),
+            sequence: account.sequence.to_u64(),
+        },
+        body,
+        body_bytes.clone(),
+        messages,
+        tx_memo,
+    )?;
 
     let signed_doc = encode_sign_doc(
         &config.chain_id,
@@ -203,7 +221,7 @@ fn auth_info_and_bytes(signer_info: SignerInfo, fee: Fee) -> Result<(AuthInfo, V
     Ok((auth_info, auth_buf))
 }
 
-fn tx_body_and_bytes(
+pub(crate) fn tx_body_and_bytes(
     proto_msgs: &[Any],
     memo: &Memo,
     extension_options: Vec<Any>,

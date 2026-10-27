@@ -81,5 +81,6 @@ pub fn new_tx_config_for_test(
         max_msg_num,
         max_tx_size,
         extension_options,
+        extension_signer: None,
     })
 }

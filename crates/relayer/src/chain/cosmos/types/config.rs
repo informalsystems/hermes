@@ -3,9 +3,11 @@ use core::time::Duration;
 use http::Uri;
 use ibc_proto::google::protobuf::Any;
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
+use std::sync::Arc;
 use tendermint_rpc::Url;
 
 use crate::chain::cosmos::config::CosmosSdkConfig;
+use crate::chain::cosmos::extension_signer::ExtensionSigner;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::{MaxMsgNum, MaxTxSize};
 use crate::config::AddressType;
@@ -22,6 +24,9 @@ pub struct TxConfig {
     pub max_msg_num: MaxMsgNum,
     pub max_tx_size: MaxTxSize,
     pub extension_options: Vec<Any>,
+    /// Adds extension options (an additional signature) to every transaction
+    /// before it is signed; `None` for chains with standard signing.
+    pub extension_signer: Option<Arc<dyn ExtensionSigner>>,
 }
 
 impl<'a> TryFrom<&'a CosmosSdkConfig> for TxConfig {
@@ -49,6 +54,7 @@ impl<'a> TryFrom<&'a CosmosSdkConfig> for TxConfig {
             max_msg_num: config.max_msg_num,
             max_tx_size: config.max_tx_size,
             extension_options,
+            extension_signer: None,
         })
     }
 }

@@ -128,6 +128,7 @@ pub mod config;
 pub mod eip_base_fee;
 pub mod encode;
 pub mod estimate;
+pub mod extension_signer;
 pub mod fee;
 pub mod gas;
 pub mod query;
