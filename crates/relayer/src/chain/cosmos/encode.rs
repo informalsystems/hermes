@@ -13,13 +13,12 @@ use crate::chain::cosmos::types::account::{Account, AccountNumber, AccountSequen
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::tx::SignedTx;
 use crate::config::types::Memo;
-use crate::config::AddressType;
 use crate::error::Error;
-use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
+use crate::keyring::CosmosSigner;
 
 pub fn sign_and_encode_tx(
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -46,7 +45,7 @@ pub struct EncodedTxMetrics {
 
 pub fn encoded_tx_metrics(
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -76,15 +75,18 @@ pub fn encoded_tx_metrics(
 
 pub fn sign_tx(
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
     fee: &Fee,
 ) -> Result<SignedTx, Error> {
-    let key_bytes = encode_key_bytes(key_pair)?;
-
-    let signer = encode_signer_info(&config.address_type, account.sequence, key_bytes)?;
+    let (type_url, public_key) = key_pair.public_key(&config.address_type);
+    let mut key_bytes = Vec::new();
+    public_key
+        .encode(&mut key_bytes)
+        .map_err(|e| Error::protobuf_encode("PublicKey".into(), e))?;
+    let signer = encode_signer_info(type_url, account.sequence, key_bytes)?;
 
     let (body, body_bytes) =
         tx_body_and_bytes(messages, tx_memo, config.extension_options.clone())?;
@@ -108,18 +110,9 @@ pub fn sign_tx(
     })
 }
 
-fn encode_key_bytes(key_pair: &Secp256k1KeyPair) -> Result<Vec<u8>, Error> {
-    let mut pk_buf = Vec::new();
-
-    Message::encode(&key_pair.public_key.serialize().to_vec(), &mut pk_buf)
-        .map_err(|e| Error::protobuf_encode("PublicKey".into(), e))?;
-
-    Ok(pk_buf)
-}
-
 fn encode_sign_doc(
     chain_id: &ChainId,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account_number: AccountNumber,
     auth_info_bytes: Vec<u8>,
     body_bytes: Vec<u8>,
@@ -135,23 +128,20 @@ fn encode_sign_doc(
     let mut signdoc_buf = Vec::new();
     Message::encode(&sign_doc, &mut signdoc_buf).unwrap();
 
-    let signed = key_pair.sign(&signdoc_buf).map_err(Error::key_base)?;
+    let signed = key_pair
+        .sign_tx_bytes(&signdoc_buf)
+        .map_err(Error::key_base)?;
 
     Ok(signed)
 }
 
 fn encode_signer_info(
-    address_type: &AddressType,
+    type_url: String,
     sequence: AccountSequence,
     key_bytes: Vec<u8>,
 ) -> Result<SignerInfo, Error> {
-    let pk_type = match address_type {
-        AddressType::Cosmos => "/cosmos.crypto.secp256k1.PubKey".to_string(),
-        AddressType::Ethermint { pk_type } => pk_type.clone(),
-    };
-    // Create a MsgSend proto Any message
     let pk_any = Any {
-        type_url: pk_type,
+        type_url,
         value: key_bytes,
     };
 
@@ -226,9 +216,9 @@ fn tx_body_and_bytes(
     Ok((body, body_buf))
 }
 
-pub fn key_pair_to_signer(key_pair: &Secp256k1KeyPair) -> Result<Signer, Error> {
+pub fn key_pair_to_signer(key_pair: &impl CosmosSigner) -> Result<Signer, Error> {
     let signer = key_pair
-        .account()
+        .signer_address()
         .parse()
         .map_err(|e| Error::ics02(ClientError::signer(e)))?;
 

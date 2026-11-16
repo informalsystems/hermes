@@ -14,7 +14,7 @@ use crate::chain::cosmos::types::account::Account;
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
-use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
+use crate::keyring::CosmosSigner;
 use crate::sdk_error::sdk_error_from_tx_sync_error_code;
 use crate::{telemetry, time};
 
@@ -48,7 +48,7 @@ const INCORRECT_ACCOUNT_SEQUENCE_ERR: u32 = 32;
 pub async fn send_tx_with_account_sequence_retry(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -77,7 +77,7 @@ pub async fn send_tx_with_account_sequence_retry(
 async fn do_send_tx_with_account_sequence_retry(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -194,12 +194,12 @@ async fn do_send_tx_with_account_sequence_retry(
 async fn refresh_account_and_retry_send_tx_with_account_sequence(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: &[Any],
 ) -> Result<Response, Error> {
-    let key_account = key_pair.account();
+    let key_account = key_pair.signer_address();
     // Re-fetch the account sequence number
     refresh_account(&config.grpc_address, &key_account, account).await?;
 

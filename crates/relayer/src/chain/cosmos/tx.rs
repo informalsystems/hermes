@@ -14,7 +14,7 @@ use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
+use crate::keyring::CosmosSigner;
 
 use super::batch::send_batched_messages_and_wait_commit;
 use super::estimate::EstimatedGas;
@@ -22,7 +22,7 @@ use super::estimate::EstimatedGas;
 pub async fn estimate_fee_and_send_tx(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -41,7 +41,7 @@ pub async fn estimate_fee_and_send_tx(
 async fn send_tx_with_fee(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],
@@ -71,7 +71,7 @@ pub async fn broadcast_tx_sync(
 /**
  A simplified version of send_tx that does not depend on `ChainHandle`.
 
- This allows different wallet ([`Secp256k1KeyPair`]) to be used for
+ This allows different wallet ([`CosmosSigner`]) to be used for
  submitting transactions. The simple behavior as follows:
 
  - Query the account information on the fly. This may introduce more
@@ -83,10 +83,10 @@ pub async fn broadcast_tx_sync(
 pub async fn simple_send_tx(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let key_account = key_pair.account();
+    let key_account = key_pair.signer_address();
     let account = query_account(&config.grpc_address, &key_account)
         .await?
         .into();
@@ -121,10 +121,10 @@ pub async fn simple_send_tx(
 pub async fn batched_send_tx(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
-    let key_account = key_pair.account();
+    let key_account = key_pair.signer_address();
     let mut account = query_account(&config.grpc_address, &key_account)
         .await?
         .into();

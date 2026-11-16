@@ -4,7 +4,7 @@ use abscissa_core::{Command, Runnable};
 use eyre::eyre;
 use ibc_relayer::{
     config::{ChainConfig, Config},
-    keyring::{KeyRing, Store},
+    keyring::{CosmosKeyPair, KeyRing, Store},
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 
@@ -115,7 +115,7 @@ impl Runnable for KeysDeleteCmd {
 pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
     match config {
         ChainConfig::CosmosSdk(config) => {
-            let mut keyring = KeyRing::new_secp256k1(
+            let mut keyring = KeyRing::<CosmosKeyPair>::new(
                 Store::Test,
                 &config.account_prefix,
                 &config.id,
@@ -136,7 +136,7 @@ pub fn delete_key(config: &ChainConfig, key_name: &str) -> eyre::Result<()> {
 pub fn delete_all_keys(config: &ChainConfig) -> eyre::Result<()> {
     match config {
         ChainConfig::CosmosSdk(config) => {
-            let mut keyring = KeyRing::new_secp256k1(
+            let mut keyring = KeyRing::<CosmosKeyPair>::new(
                 Store::Test,
                 &config.account_prefix,
                 &config.id,

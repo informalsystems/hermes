@@ -27,10 +27,10 @@ impl EncodedPubKey {
 #[derive(Debug, Deserialize)]
 pub struct ProtoAny {
     #[serde(alias = "@type")]
-    tpe: String,
+    pub(super) tpe: String,
 
     #[serde(deserialize_with = "deserialize_key")]
-    key: Vec<u8>,
+    pub(super) key: Vec<u8>,
 }
 
 /// This method is the workhorse for deserializing

@@ -47,7 +47,7 @@ use crate::consensus_state::AnyConsensusState;
 use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::{AnySigningKeyPair, KeyRing, SigningKeyPairSized};
+use crate::keyring::{AnySigningKeyPair, KeyRing, StoredKeyPair};
 use crate::misbehaviour::MisbehaviourEvidence;
 
 /// The result of a health check.
@@ -82,7 +82,7 @@ pub trait ChainEndpoint: Sized {
     type Time;
 
     /// Type of the key pair used for signatures of messages on chain
-    type SigningKeyPair: SigningKeyPairSized + Into<AnySigningKeyPair>;
+    type SigningKeyPair: StoredKeyPair + Into<AnySigningKeyPair>;
 
     /// Returns the chain's identifier
     fn id(&self) -> &ChainId;

@@ -17,7 +17,7 @@ use crate::config::{
     self, AddressType, EventSourceMode, ExtensionOption, GasPrice, GenesisRestart, PacketFilter,
 };
 use crate::config::{default, RefreshRate};
-use crate::keyring::Store;
+use crate::keyring::{CosmosAccountKeyType, Store};
 use crate::util::excluded_sequences::ExcludedSequences;
 
 pub mod error;
@@ -47,6 +47,8 @@ pub struct CosmosSdkConfig {
 
     pub account_prefix: String,
     pub key_name: String,
+    #[serde(default)]
+    pub account_key_type: CosmosAccountKeyType,
     #[serde(default)]
     pub key_store_type: Store,
     pub key_store_folder: Option<PathBuf>,

@@ -244,6 +244,11 @@ account_prefix = 'cosmos'
 #   https://hermes.informal.systems/documentation/commands/keys/index.html#adding-keys
 key_name = 'testkey'
 
+# Select the signer for this Cosmos chain. secp256k1 is the default.
+# For a chain that supports ML-DSA-65 transaction signatures, set "ml_dsa_65"
+# and import that account with `hermes keys add`. Use a distinct key name.
+# account_key_type = 'secp256k1'
+
 # Specify the folder used to store the keys. Optional
 # If this is not specified then the hermes home folder is used.
 # key_store_folder = '$HOME/.hermes/keys'
