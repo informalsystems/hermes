@@ -1,0 +1,75 @@
+diff --git a/src/prost/v0_34/tendermint.crypto.rs b/src/prost/v0_34/tendermint.crypto.rs
+index b62f777..d7596a6 100644
+--- a/src/prost/v0_34/tendermint.crypto.rs
++++ b/src/prost/v0_34/tendermint.crypto.rs
+@@ -62,7 +62,7 @@ pub struct ProofOps {
+ #[allow(clippy::derive_partial_eq_without_eq)]
+ #[derive(Clone, PartialEq, ::prost::Message)]
+ pub struct PublicKey {
+-    #[prost(oneof = "public_key::Sum", tags = "1, 2")]
++    #[prost(oneof = "public_key::Sum", tags = "1, 2, 4")]
+     pub sum: ::core::option::Option<public_key::Sum>,
+ }
+ /// Nested message and enum types in `PublicKey`.
+@@ -84,5 +84,11 @@ pub mod public_key {
+             with = "crate::serializers::bytes::base64string"
+         )]
+         Secp256k1(::prost::alloc::vec::Vec<u8>),
++        #[prost(bytes, tag = "4")]
++        #[serde(
++            rename = "cometbft/PubKeyMlDsa65",
++            with = "crate::serializers::bytes::base64string"
++        )]
++        Mldsa65(::prost::alloc::vec::Vec<u8>),
+     }
+ }
+diff --git a/src/prost/v0_37/tendermint.crypto.rs b/src/prost/v0_37/tendermint.crypto.rs
+index b62f777..d7596a6 100644
+--- a/src/prost/v0_37/tendermint.crypto.rs
++++ b/src/prost/v0_37/tendermint.crypto.rs
+@@ -62,7 +62,7 @@ pub struct ProofOps {
+ #[allow(clippy::derive_partial_eq_without_eq)]
+ #[derive(Clone, PartialEq, ::prost::Message)]
+ pub struct PublicKey {
+-    #[prost(oneof = "public_key::Sum", tags = "1, 2")]
++    #[prost(oneof = "public_key::Sum", tags = "1, 2, 4")]
+     pub sum: ::core::option::Option<public_key::Sum>,
+ }
+ /// Nested message and enum types in `PublicKey`.
+@@ -84,5 +84,11 @@ pub mod public_key {
+             with = "crate::serializers::bytes::base64string"
+         )]
+         Secp256k1(::prost::alloc::vec::Vec<u8>),
++        #[prost(bytes, tag = "4")]
++        #[serde(
++            rename = "cometbft/PubKeyMlDsa65",
++            with = "crate::serializers::bytes::base64string"
++        )]
++        Mldsa65(::prost::alloc::vec::Vec<u8>),
+     }
+ }
+diff --git a/src/prost/v0_38/tendermint.crypto.rs b/src/prost/v0_38/tendermint.crypto.rs
+index b62f777..d7596a6 100644
+--- a/src/prost/v0_38/tendermint.crypto.rs
++++ b/src/prost/v0_38/tendermint.crypto.rs
+@@ -62,7 +62,7 @@ pub struct ProofOps {
+ #[allow(clippy::derive_partial_eq_without_eq)]
+ #[derive(Clone, PartialEq, ::prost::Message)]
+ pub struct PublicKey {
+-    #[prost(oneof = "public_key::Sum", tags = "1, 2")]
++    #[prost(oneof = "public_key::Sum", tags = "1, 2, 4")]
+     pub sum: ::core::option::Option<public_key::Sum>,
+ }
+ /// Nested message and enum types in `PublicKey`.
+@@ -84,5 +84,11 @@ pub mod public_key {
+             with = "crate::serializers::bytes::base64string"
+         )]
+         Secp256k1(::prost::alloc::vec::Vec<u8>),
++        #[prost(bytes, tag = "4")]
++        #[serde(
++            rename = "cometbft/PubKeyMlDsa65",
++            with = "crate::serializers::bytes::base64string"
++        )]
++        Mldsa65(::prost::alloc::vec::Vec<u8>),
+     }
+ }

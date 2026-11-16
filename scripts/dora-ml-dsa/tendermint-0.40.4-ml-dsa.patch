@@ -1,0 +1,327 @@
+diff --git a/Cargo.toml b/Cargo.toml
+index ee2b6c4..e7472f0 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -62,7 +62,7 @@ default = [
+     "std",
+     "rust-crypto",
+ ]
+-rust-crypto = ["dep:ed25519-consensus"]
++rust-crypto = ["dep:ed25519-consensus", "dep:fips204"]
+ secp256k1 = [
+     "rust-crypto",
+     "dep:k256",
+@@ -100,6 +100,12 @@ version = "2"
+ optional = true
+ default-features = false
+ 
++[dependencies.fips204]
++version = "=0.4.6"
++optional = true
++default-features = false
++features = ["ml-dsa-65"]
++
+ [dependencies.flex-error]
+ version = "0.4.4"
+ default-features = false
+diff --git a/src/account.rs b/src/account.rs
+index 8bbab52..6453104 100644
+--- a/src/account.rs
++++ b/src/account.rs
+@@ -117,6 +117,11 @@ tendermint_pb_modules! {
+             let sum = &value
+                 .sum
+                 .ok_or_else(|| Error::invalid_key("empty sum".to_string()))?;
++            if let Sum::Mldsa65(b) = sum {
++                let key = crate::public_key::Mldsa65::from_bytes(b)?;
++                let digest = Sha256::digest(key.as_bytes());
++                return Ok(Id(digest[..LENGTH].try_into().unwrap()));
++            }
+             if let Sum::Ed25519(b) = sum {
+                 let digest = Sha256::digest(b);
+                 return Ok(Id(digest[..LENGTH].try_into().unwrap()))
+@@ -171,6 +176,10 @@ mod key_conversions {
+         fn from(pub_key: PublicKey) -> Id {
+             match pub_key {
+                 PublicKey::Ed25519(pk) => Id::from(pk),
++                PublicKey::Mldsa65(pk) => {
++                    let digest = Sha256::digest(pk.as_bytes());
++                    Id(digest[..LENGTH].try_into().unwrap())
++                },
+                 #[cfg(feature = "secp256k1")]
+                 PublicKey::Secp256k1(pk) => Id::from(pk),
+             }
+diff --git a/src/consensus/params.rs b/src/consensus/params.rs
+index 8719b64..5e25413 100644
+--- a/src/consensus/params.rs
++++ b/src/consensus/params.rs
+@@ -66,6 +66,9 @@ pub struct AbciParams {
+ 
+ // Todo: How are these key types created?
+ fn key_type(s: &str) -> public_key::Algorithm {
++    if s == "ml_dsa_65" {
++        return public_key::Algorithm::Mldsa65;
++    }
+     if s == "Ed25519" || s == "ed25519" {
+         return public_key::Algorithm::Ed25519;
+     }
+@@ -181,6 +184,7 @@ mod v0_34 {
+                     .map(|k| match k {
+                         public_key::Algorithm::Ed25519 => "ed25519".to_string(),
+                         public_key::Algorithm::Secp256k1 => "secp256k1".to_string(),
++                        public_key::Algorithm::Mldsa65 => "ml_dsa_65".to_string(),
+                     })
+                     .collect(),
+             }
+@@ -275,6 +279,7 @@ mod v0_37 {
+                     .map(|k| match k {
+                         public_key::Algorithm::Ed25519 => "ed25519".to_string(),
+                         public_key::Algorithm::Secp256k1 => "secp256k1".to_string(),
++                        public_key::Algorithm::Mldsa65 => "ml_dsa_65".to_string(),
+                     })
+                     .collect(),
+             }
+@@ -370,6 +375,7 @@ mod v0_38 {
+                     .map(|k| match k {
+                         public_key::Algorithm::Ed25519 => "ed25519".to_string(),
+                         public_key::Algorithm::Secp256k1 => "secp256k1".to_string(),
++                        public_key::Algorithm::Mldsa65 => "ml_dsa_65".to_string(),
+                     })
+                     .collect(),
+             }
+diff --git a/src/crypto/default/signature.rs b/src/crypto/default/signature.rs
+index 1eee3bb..d1b0f18 100644
+--- a/src/crypto/default/signature.rs
++++ b/src/crypto/default/signature.rs
+@@ -10,6 +10,18 @@ impl crate::crypto::signature::Verifier for Verifier {
+     fn verify(pubkey: PublicKey, msg: &[u8], signature: &Signature) -> Result<(), Error> {
+         #[allow(unreachable_patterns)]
+         match pubkey {
++            PublicKey::Mldsa65(pk) => {
++                use fips204::traits::{SerDes, Verifier as _};
++                let key = fips204::ml_dsa_65::PublicKey::try_from_bytes(*pk.as_bytes())
++                    .map_err(|_| Error::MalformedPublicKey)?;
++                let sig = signature.as_bytes().try_into().map_err(|_| Error::MalformedSignature)?;
++                // CometBFT 0.40 signs the canonical vote bytes with an empty context.
++                if key.verify(msg, sig, &[]) {
++                    Ok(())
++                } else {
++                    Err(Error::VerificationFailed)
++                }
++            },
+             PublicKey::Ed25519(pk) => {
+                 let pubkey = ed25519_consensus::VerificationKey::try_from(pk)
+                     .map_err(|_| Error::MalformedPublicKey)?;
+diff --git a/src/public_key.rs b/src/public_key.rs
+index 8b35ede..eb99c39 100644
+--- a/src/public_key.rs
++++ b/src/public_key.rs
+@@ -40,6 +40,14 @@ pub enum PublicKey {
+     )]
+     Ed25519(Ed25519),
+ 
++    /// CometBFT 0.40 packed ML-DSA-65 validator key.
++    #[serde(
++        rename = "cometbft/PubKeyMlDsa65",
++        serialize_with = "serialize_mldsa65_base64",
++        deserialize_with = "deserialize_mldsa65_base64"
++    )]
++    Mldsa65(Mldsa65),
++
+     /// Secp256k1 keys
+     #[cfg(feature = "secp256k1")]
+     #[cfg_attr(docsrs, doc(cfg(feature = "secp256k1")))]
+@@ -51,6 +59,35 @@ pub enum PublicKey {
+     Secp256k1(Secp256k1),
+ }
+ 
++/// Verified-length packed FIPS 204 public key.
++#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd)]
++pub struct Mldsa65([u8; 1952]);
++
++impl Mldsa65 {
++    /// Parse the fixed-size CometBFT wire representation.
++    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Error> {
++        bytes.try_into().map(Self).map_err(|_| {
++            Error::invalid_key("expected 1952 bytes for ML-DSA-65 public key".to_string())
++        })
++    }
++
++    /// Access the packed bytes for hashing or verification.
++    pub fn as_bytes(&self) -> &[u8; 1952] {
++        &self.0
++    }
++}
++
++fn serialize_mldsa65_base64<S: ser::Serializer>(key: &Mldsa65, s: S) -> Result<S::Ok, S::Error> {
++    let encoded = base64::encode(key.as_bytes());
++    s.serialize_str(core::str::from_utf8(&encoded).map_err(ser::Error::custom)?)
++}
++
++fn deserialize_mldsa65_base64<'de, D: Deserializer<'de>>(d: D) -> Result<Mldsa65, D::Error> {
++    let encoded = String::deserialize(d)?;
++    let bytes = base64::decode(encoded.as_bytes()).map_err(de::Error::custom)?;
++    Mldsa65::from_bytes(&bytes).map_err(de::Error::custom)
++}
++
+ // Internal thunk type to facilitate deserialization from the raw Protobuf data
+ // structure's JSON representation.
+ #[derive(Serialize, Deserialize)]
+@@ -63,6 +100,7 @@ impl From<ProtobufPublicKeyWrapper> for PublicKey {
+     fn from(wrapper: ProtobufPublicKeyWrapper) -> Self {
+         match wrapper.sum {
+             ProtobufPublicKey::Ed25519 { ed25519 } => PublicKey::Ed25519(ed25519),
++            ProtobufPublicKey::Mldsa65 { mldsa65 } => PublicKey::Mldsa65(mldsa65),
+             #[cfg(feature = "secp256k1")]
+             ProtobufPublicKey::Secp256k1 { secp256k1 } => PublicKey::Secp256k1(secp256k1),
+         }
+@@ -72,6 +110,11 @@ impl From<ProtobufPublicKeyWrapper> for PublicKey {
+ #[derive(Serialize, Deserialize)]
+ #[serde(tag = "type", content = "value")] // JSON custom serialization for priv_validator_key.json
+ enum ProtobufPublicKey {
++    #[serde(rename = "tendermint.crypto.PublicKey_Mldsa65")]
++    Mldsa65 {
++        #[serde(serialize_with = "serialize_mldsa65_base64", deserialize_with = "deserialize_mldsa65_base64")]
++        mldsa65: Mldsa65,
++    },
+     #[serde(rename = "tendermint.crypto.PublicKey_Ed25519")]
+     Ed25519 {
+         #[serde(
+@@ -115,7 +158,7 @@ where
+ }
+ 
+ tendermint_pb_modules! {
+-    use super::{PublicKey, Ed25519};
++    use super::{PublicKey, Ed25519, Mldsa65};
+     use pb::crypto::{PublicKey as RawPublicKey, public_key::Sum};
+     use crate::{prelude::*, Error};
+ 
+@@ -128,6 +171,9 @@ tendermint_pb_modules! {
+             let sum = &value
+                 .sum
+                 .ok_or_else(|| Error::invalid_key("empty sum".to_string()))?;
++            if let Sum::Mldsa65(b) = sum {
++                return Mldsa65::from_bytes(b).map(PublicKey::Mldsa65);
++            }
+             if let Sum::Ed25519(b) = sum {
+                 let key = Ed25519::try_from(&b[..])?;
+                 return Ok(PublicKey::Ed25519(key));
+@@ -144,6 +190,9 @@ tendermint_pb_modules! {
+     impl From<PublicKey> for RawPublicKey {
+         fn from(value: PublicKey) -> Self {
+             match value {
++                PublicKey::Mldsa65(pk) => RawPublicKey {
++                    sum: Some(Sum::Mldsa65(pk.as_bytes().to_vec())),
++                },
+                 PublicKey::Ed25519(ref pk) => RawPublicKey {
+                     sum: Some(Sum::Ed25519(
+                         pk.as_bytes().to_vec(),
+@@ -204,6 +253,7 @@ impl PublicKey {
+     pub fn to_bytes(self) -> Vec<u8> {
+         match self {
+             PublicKey::Ed25519(pk) => pk.as_bytes().to_vec(),
++            PublicKey::Mldsa65(pk) => pk.as_bytes().to_vec(),
+             #[cfg(feature = "secp256k1")]
+             PublicKey::Secp256k1(pk) => pk.to_sec1_bytes().into(),
+         }
+@@ -212,6 +262,8 @@ impl PublicKey {
+     /// Serialize this key as Bech32 with the given human readable prefix
+     pub fn to_bech32(self, hrp: &str) -> String {
+         let backward_compatible_amino_prefixed_pubkey = match self {
++            // This consensus key has no SDK legacy account Bech32 encoding.
++            PublicKey::Mldsa65(pk) => pk.as_bytes().to_vec(),
+             PublicKey::Ed25519(ref pk) => {
+                 let mut key_bytes = vec![0x16, 0x24, 0xDE, 0x64, 0x20];
+                 key_bytes.extend(pk.as_bytes());
+@@ -262,13 +314,19 @@ impl PartialOrd for PublicKey {
+ impl Ord for PublicKey {
+     fn cmp(&self, other: &Self) -> Ordering {
+         match self {
++            PublicKey::Mldsa65(a) => match other {
++                PublicKey::Mldsa65(b) => a.cmp(b),
++                _ => Ordering::Greater,
++            },
+             PublicKey::Ed25519(a) => match other {
++                PublicKey::Mldsa65(_) => Ordering::Less,
+                 PublicKey::Ed25519(b) => a.as_bytes().cmp(b.as_bytes()),
+                 #[cfg(feature = "secp256k1")]
+                 PublicKey::Secp256k1(_) => Ordering::Less,
+             },
+             #[cfg(feature = "secp256k1")]
+             PublicKey::Secp256k1(a) => match other {
++                PublicKey::Mldsa65(_) => Ordering::Less,
+                 PublicKey::Ed25519(_) => Ordering::Greater,
+                 #[cfg(feature = "secp256k1")]
+                 PublicKey::Secp256k1(b) => a.cmp(b),
+@@ -291,6 +349,7 @@ impl TendermintKey {
+     /// Create a new account key from a [`PublicKey`]
+     pub fn new_account_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
+         match public_key {
++            PublicKey::Mldsa65(_) => Err(Error::invalid_key("ML-DSA-65 relayer account keys are unsupported".to_string())),
+             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
+             #[cfg(feature = "secp256k1")]
+             PublicKey::Secp256k1(_) => Ok(TendermintKey::AccountKey(public_key)),
+@@ -301,6 +360,7 @@ impl TendermintKey {
+     pub fn new_consensus_key(public_key: PublicKey) -> Result<TendermintKey, Error> {
+         #[allow(unreachable_patterns)]
+         match public_key {
++            PublicKey::Mldsa65(_) => Ok(TendermintKey::ConsensusKey(public_key)),
+             PublicKey::Ed25519(_) => Ok(TendermintKey::AccountKey(public_key)),
+             #[cfg(feature = "secp256k1")]
+             PublicKey::Secp256k1(_) => Ok(TendermintKey::AccountKey(public_key)),
+@@ -328,6 +388,9 @@ pub enum Algorithm {
+ 
+     /// secp256k1
+     Secp256k1,
++
++    /// ML-DSA-65 consensus key
++    Mldsa65,
+ }
+ 
+ impl Algorithm {
+@@ -336,6 +399,7 @@ impl Algorithm {
+         match self {
+             Algorithm::Ed25519 => "ed25519",
+             Algorithm::Secp256k1 => "secp256k1",
++            Algorithm::Mldsa65 => "ml_dsa_65",
+         }
+     }
+ }
+@@ -353,6 +417,7 @@ impl FromStr for Algorithm {
+         match s {
+             "ed25519" => Ok(Algorithm::Ed25519),
+             "secp256k1" => Ok(Algorithm::Secp256k1),
++            "ml_dsa_65" => Ok(Algorithm::Mldsa65),
+             _ => Err(Error::parse(format!("invalid algorithm: {s}"))),
+         }
+     }
+diff --git a/src/signature.rs b/src/signature.rs
+index 6c70afa..e0e8636 100644
+--- a/src/signature.rs
++++ b/src/signature.rs
+@@ -10,8 +10,10 @@ use tendermint_proto::Protobuf;
+ 
+ use crate::{error::Error, prelude::*};
+ 
+-/// The expected length of all currently supported signatures, in bytes.
++/// Expected length of the supported classical signatures, in bytes.
+ pub const SIGNATURE_LENGTH: usize = 64;
++/// Exact length of a packed FIPS 204 ML-DSA-65 signature.
++pub const ML_DSA_65_SIGNATURE_LENGTH: usize = 3309;
+ 
+ /// Signatures
+ #[derive(Clone, Debug, PartialEq, Eq)]
+@@ -64,10 +66,10 @@ impl Signature {
+         if bytes.is_empty() {
+             return Ok(None);
+         }
+-        if bytes.len() != SIGNATURE_LENGTH {
++        if !matches!(bytes.len(), SIGNATURE_LENGTH | ML_DSA_65_SIGNATURE_LENGTH) {
+             return Err(Error::signature_invalid(format!(
+-                "expected signature to be {} bytes long, but was {} bytes",
+-                SIGNATURE_LENGTH,
++                "expected a signature of {} or {} bytes, got {}",
++                SIGNATURE_LENGTH, ML_DSA_65_SIGNATURE_LENGTH,
+                 bytes.len()
+             )));
+         }
