@@ -10,7 +10,7 @@ use tendermint_rpc::HttpClient;
 
 use crate::chain::cosmos::query::account::refresh_account;
 use crate::chain::cosmos::tx::estimate_fee_and_send_tx;
-use crate::chain::cosmos::types::account::Account;
+use crate::chain::cosmos::types::account::{Account, AccountSequence};
 use crate::chain::cosmos::types::config::TxConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
@@ -67,7 +67,8 @@ pub async fn send_tx_with_account_sequence_retry(
     )
     .await;
 
-    if response.is_ok() {
+    if let Ok(ref response) = response {
+        advance_sequence_on_broadcast_success(&mut account.sequence, response);
         telemetry!(messages_submitted, &config.chain_id, _message_count);
     }
 
@@ -132,22 +133,7 @@ async fn do_send_tx_with_account_sequence_retry(
             // NOTE: The error code could potentially overlap between Cosmos SDK and Ibc-go channel
             // error codes.
             match response.code {
-                Code::Ok => {
-                    let old_account_sequence = account.sequence;
-
-                    // Increase account s.n.
-                    account.sequence.increment_mut();
-
-                    debug!(
-                        ?response,
-                        account.sequence.old = %old_account_sequence,
-                        account.sequence.new = %account.sequence,
-                        "tx was successfully broadcasted, \
-                        increasing account sequence number"
-                    );
-
-                    Ok(response)
-                }
+                Code::Ok => Ok(response),
 
                 Code::Err(code) if response.log.contains("packet messages are redundant") => {
                     info!(
@@ -212,6 +198,22 @@ async fn refresh_account_and_retry_send_tx_with_account_sequence(
     Ok(estimate_result)
 }
 
+// Both the first attempt and the refreshed retry use CheckTx to decide whether
+// the next transaction should use a new sequence.
+fn advance_sequence_on_broadcast_success(sequence: &mut AccountSequence, response: &Response) {
+    if response.code == Code::Ok {
+        let old_sequence = *sequence;
+        sequence.increment_mut();
+
+        debug!(
+            ?response,
+            account.sequence.old = %old_sequence,
+            account.sequence.new = %sequence,
+            "tx was successfully broadcasted, increasing account sequence number"
+        );
+    }
+}
+
 /// Determine whether the given error yielded by `tx_simulate`
 /// indicates that the current account sequence number cached in Hermes
 /// is smaller than the full node's version of the sequence number and therefore
@@ -222,5 +224,41 @@ fn mismatch_account_sequence_number_error_requires_refresh(e: &Error) -> bool {
     match e.detail() {
         GrpcStatus(detail) => detail.is_account_sequence_mismatch_that_requires_refresh(),
         _ => false,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn check_tx_response(code: Code) -> Response {
+        Response {
+            code,
+            codespace: String::new(),
+            data: Default::default(),
+            log: String::new(),
+            hash: tendermint::Hash::None,
+        }
+    }
+
+    #[test]
+    fn accepted_retry_advances_refreshed_sequence() {
+        let mut sequence = AccountSequence::new(18);
+
+        advance_sequence_on_broadcast_success(&mut sequence, &check_tx_response(Code::Ok));
+
+        assert_eq!(sequence.to_u64(), 19);
+    }
+
+    #[test]
+    fn rejected_retry_keeps_refreshed_sequence() {
+        let mut sequence = AccountSequence::new(18);
+
+        advance_sequence_on_broadcast_success(
+            &mut sequence,
+            &check_tx_response(Code::from(INCORRECT_ACCOUNT_SEQUENCE_ERR)),
+        );
+
+        assert_eq!(sequence.to_u64(), 18);
     }
 }
