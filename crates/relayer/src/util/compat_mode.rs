@@ -34,6 +34,11 @@ pub fn compat_mode_from_version_specs(
     version: Option<ConsensusVersion>,
 ) -> Result<CompatMode, Error> {
     let queried_mode = match version {
+        // CometBFT 0.40 uses the 0.38 RPC layout for the classical-key
+        // chains tested with Hermes, including FinalizeBlock events.
+        Some(ConsensusVersion::Comet(v)) if (v.major, v.minor) == (0, 40) => {
+            Some(CompatMode::V0_38)
+        }
         Some(ConsensusVersion::Tendermint(v) | ConsensusVersion::Comet(v)) => {
             compat_mode_from_semver(v)
         }
@@ -69,6 +74,24 @@ pub fn compat_mode_from_version_specs(
 
             Ok(CompatMode::V0_37)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn comet_040_uses_038_rpc_dialect_with_override_preserved() {
+        let comet = Some(ConsensusVersion::Comet(semver::Version::new(0, 40, 0)));
+        assert_eq!(
+            compat_mode_from_version_specs(&None, comet.clone()).unwrap(),
+            CompatMode::V0_38
+        );
+        assert_eq!(
+            compat_mode_from_version_specs(&Some(CompatMode::V0_37), comet).unwrap(),
+            CompatMode::V0_37
+        );
     }
 }
 
