@@ -14,7 +14,7 @@ use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::CosmosSigner;
+use crate::keyring::{CosmosSigner, Secp256k1KeyPair};
 
 use super::batch::send_batched_messages_and_wait_commit;
 use super::estimate::EstimatedGas;
@@ -71,7 +71,7 @@ pub async fn broadcast_tx_sync(
 /**
  A simplified version of send_tx that does not depend on `ChainHandle`.
 
- This allows different wallet ([`CosmosSigner`]) to be used for
+ This allows different wallet ([`Secp256k1KeyPair`]) to be used for
  submitting transactions. The simple behavior as follows:
 
  - Query the account information on the fly. This may introduce more
@@ -83,7 +83,7 @@ pub async fn broadcast_tx_sync(
 pub async fn simple_send_tx(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &impl CosmosSigner,
+    key_pair: &Secp256k1KeyPair,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
     let key_account = key_pair.signer_address();
@@ -121,7 +121,7 @@ pub async fn simple_send_tx(
 pub async fn batched_send_tx(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &impl CosmosSigner,
+    key_pair: &Secp256k1KeyPair,
     messages: Vec<Any>,
 ) -> Result<Vec<IbcEventWithHeight>, Error> {
     let key_account = key_pair.signer_address();
