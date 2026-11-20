@@ -1,7 +1,7 @@
 use flex_error::{define_error, DisplayOnly, TraceError};
 use std::io::Error as IoError;
 
-use super::KeyType;
+use super::{CosmosAccountKeyType, KeyType};
 use crate::config::AddressType;
 
 define_error! {
@@ -148,6 +148,22 @@ define_error! {
             |e| {
                 format!("Unsupported address type {} for key type {}", e.address_type, e.key_type)
             },
+
+        AccountKeyTypeMismatch
+            { key_name: String, expected: CosmosAccountKeyType, found: CosmosAccountKeyType }
+            |e| { format!("key {} is {:?}, but account_key_type selects {:?}", e.key_name, e.found, e.expected) },
+
+        UnexpectedAccountKeyType
+            { actual: String }
+            |e| { format!("expected an ML-DSA-65 account public key, got {}", e.actual) },
+
+        AccountAddressMismatch
+            { expected: String, derived: String }
+            |e| { format!("key file address {} does not match derived address {}", e.expected, e.derived) },
+
+        Mldsa65SigningFailed
+            { reason: String }
+            |e| { format!("ML-DSA-65 signing failed: {}", e.reason) },
 
         InvalidPublicKeyLength
             {

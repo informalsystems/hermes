@@ -1,16 +1,20 @@
 pub mod errors;
 pub use any_signing_key_pair::AnySigningKeyPair;
+pub use cosmos_key_pair::{CosmosAccountKeyType, CosmosKeyPair, CosmosSigner};
 pub use ed25519_key_pair::Ed25519KeyPair;
 pub use key_type::KeyType;
+pub use mldsa65_key_pair::MlDsa65KeyPair;
 pub use secp256k1_key_pair::Secp256k1KeyPair;
 pub use signing_key_pair::{SigningKeyPair, SigningKeyPairSized};
 
 pub use crate::chain::namada::key::NamadaKeyPair;
 
 mod any_signing_key_pair;
+mod cosmos_key_pair;
 mod ed25519_key_pair;
 mod key_type;
 mod key_utils;
+mod mldsa65_key_pair;
 mod pub_key;
 mod secp256k1_key_pair;
 mod signing_key_pair;
@@ -18,6 +22,8 @@ mod signing_key_pair;
 use alloc::collections::btree_map::BTreeMap as HashMap;
 use std::ffi::OsStr;
 use std::fs::{self, File};
+#[cfg(unix)]
+use std::os::unix::fs::OpenOptionsExt;
 use std::path::PathBuf;
 
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
@@ -61,7 +67,7 @@ impl<S> Memory<S> {
     }
 }
 
-impl<S: SigningKeyPairSized> KeyStore<S> for Memory<S> {
+impl<S: StoredKeyPair> KeyStore<S> for Memory<S> {
     fn get_key(&self, key_name: &str) -> Result<S, Error> {
         self.keys
             .get(key_name)
@@ -112,7 +118,7 @@ impl Test {
     }
 }
 
-impl<S: SigningKeyPairSized> KeyStore<S> for Test {
+impl<S: StoredKeyPair> KeyStore<S> for Test {
     fn get_key(&self, key_name: &str) -> Result<S, Error> {
         let mut key_file = self.store.join(key_name);
         key_file.set_extension(KEYSTORE_FILE_EXTENSION);
@@ -140,7 +146,11 @@ impl<S: SigningKeyPairSized> KeyStore<S> for Test {
         filename.set_extension(KEYSTORE_FILE_EXTENSION);
         let file_path = filename.display().to_string();
 
-        let file = File::create(filename).map_err(|e| {
+        let mut options = File::options();
+        options.write(true).create(true).truncate(true);
+        #[cfg(unix)]
+        options.mode(0o600);
+        let file = options.open(filename).map_err(|e| {
             Error::key_file_io(file_path.clone(), "failed to create file".to_string(), e)
         })?;
 
@@ -200,7 +210,7 @@ pub enum KeyRing<S> {
     Test(Test),
 }
 
-impl<S: SigningKeyPairSized> KeyRing<S> {
+impl<S: StoredKeyPair> KeyRing<S> {
     pub fn new(
         store: Store,
         account_prefix: &str,
@@ -265,6 +275,10 @@ impl<S: SigningKeyPairSized> KeyRing<S> {
         }
     }
 }
+
+pub trait StoredKeyPair: Clone + serde::de::DeserializeOwned + Serialize {}
+
+impl<T: Clone + serde::de::DeserializeOwned + Serialize> StoredKeyPair for T {}
 
 impl KeyRing<Secp256k1KeyPair> {
     pub fn new_secp256k1(

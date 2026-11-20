@@ -136,6 +136,7 @@ where
         genesis_restart: None,
         account_prefix: chain_data.bech32_prefix,
         key_name: String::new(),
+        account_key_type: Default::default(),
         key_store_type: Store::default(),
         key_store_folder: None,
         store_prefix: "ibc".to_string(),

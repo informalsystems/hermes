@@ -13,7 +13,7 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::types::gas::GasConfig;
 use crate::config::types::Memo;
 use crate::error::Error;
-use crate::keyring::Secp256k1KeyPair;
+use crate::keyring::CosmosSigner;
 use crate::telemetry;
 use crate::util::pretty::PrettyFee;
 
@@ -32,7 +32,7 @@ impl EstimatedGas {
 
 pub async fn estimate_tx_fees(
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &Account,
     tx_memo: &Memo,
     messages: &[Any],

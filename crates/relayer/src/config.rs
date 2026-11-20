@@ -34,7 +34,7 @@ use crate::config::types::ics20_field_size_limit::Ics20FieldSizeLimit;
 use crate::config::types::TrustThreshold;
 use crate::error::Error as RelayerError;
 use crate::extension_options::ExtensionOptionDynamicFeeTx;
-use crate::keyring::{AnySigningKeyPair, KeyRing, Store};
+use crate::keyring::{AnySigningKeyPair, CosmosKeyPair, KeyRing, Store};
 
 use crate::keyring;
 
@@ -710,7 +710,7 @@ impl ChainConfig {
     pub fn list_keys(&self) -> Result<Vec<(String, AnySigningKeyPair)>, keyring::errors::Error> {
         let keys = match self {
             ChainConfig::CosmosSdk(config) => {
-                let keyring = KeyRing::new_secp256k1(
+                let keyring = KeyRing::<CosmosKeyPair>::new(
                     Store::Test,
                     &config.account_prefix,
                     &config.id,

@@ -11,13 +11,13 @@ use crate::chain::cosmos::types::config::TxConfig;
 use crate::chain::cosmos::wait::wait_tx_succeed;
 use crate::config::types::Memo;
 use crate::error::Error;
-use crate::keyring::{Secp256k1KeyPair, SigningKeyPair};
+use crate::keyring::CosmosSigner;
 
 // FIXME: monster function, refactor
 pub async fn maybe_register_counterparty_payee(
     rpc_client: &HttpClient,
     tx_config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     m_account: &mut Option<Account>,
     tx_memo: &Memo,
     channel_id: &ChannelId,
@@ -25,7 +25,7 @@ pub async fn maybe_register_counterparty_payee(
     address: &Signer,
     counterparty_payee: &Signer,
 ) -> Result<(), Error> {
-    let key_account = key_pair.account();
+    let key_account = key_pair.signer_address();
     let account = get_or_fetch_account(&tx_config.grpc_address, &key_account, m_account).await?;
 
     let current_counterparty_payee =

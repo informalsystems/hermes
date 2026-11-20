@@ -6,4 +6,6 @@ pub enum KeyType {
     Secp256k1,
     #[strum(serialize = "ed25519")]
     Ed25519,
+    #[strum(serialize = "ml_dsa_65")]
+    MlDsa65,
 }

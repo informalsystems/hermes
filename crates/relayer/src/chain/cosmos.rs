@@ -107,7 +107,7 @@ use crate::denom::DenomTrace;
 use crate::error::Error;
 use crate::event::source::{EventSource, TxEventSourceCmd};
 use crate::event::IbcEventWithHeight;
-use crate::keyring::{KeyRing, Secp256k1KeyPair, SigningKeyPair};
+use crate::keyring::{CosmosAccountKeyType, CosmosKeyPair, CosmosSigner, KeyRing};
 use crate::light_client::tendermint::LightClient as TmLightClient;
 use crate::light_client::{LightClient, Verified};
 use crate::misbehaviour::MisbehaviourEvidence;
@@ -162,7 +162,7 @@ pub struct CosmosSdkChain {
     grpc_addr: Uri,
     light_client: TmLightClient,
     rt: Arc<TokioRuntime>,
-    keybase: KeyRing<Secp256k1KeyPair>,
+    keybase: KeyRing<CosmosKeyPair>,
 
     /// A cached copy of the account information
     account: Option<Account>,
@@ -181,10 +181,8 @@ impl CosmosSdkChain {
         self.config.max_tx_size.into()
     }
 
-    fn key(&self) -> Result<Secp256k1KeyPair, Error> {
-        self.keybase()
-            .get_key(&self.config.key_name)
-            .map_err(Error::key_base)
+    fn key(&self) -> Result<CosmosKeyPair, Error> {
+        self.get_key()
     }
 
     /// Fetches the trusting period as a `Duration` from the chain config.
@@ -701,7 +699,7 @@ impl CosmosSdkChain {
         let proto_msgs = tracked_msgs.msgs;
 
         let key_pair = self.key()?;
-        let key_account = key_pair.account();
+        let key_account = key_pair.signer_address();
 
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
@@ -758,7 +756,7 @@ impl CosmosSdkChain {
         let proto_msgs = tracked_msgs.msgs;
 
         let key_pair = self.key()?;
-        let key_account = key_pair.account();
+        let key_account = key_pair.signer_address();
 
         let account =
             get_or_fetch_account(&self.grpc_addr, &key_account, &mut self.account).await?;
@@ -903,7 +901,7 @@ impl ChainEndpoint for CosmosSdkChain {
     type ConsensusState = TmConsensusState;
     type ClientState = TmClientState;
     type Time = TmTime;
-    type SigningKeyPair = Secp256k1KeyPair;
+    type SigningKeyPair = CosmosKeyPair;
 
     fn id(&self) -> &ChainId {
         &self.config.id
@@ -915,6 +913,17 @@ impl ChainEndpoint for CosmosSdkChain {
         else {
             return Err(Error::config(ConfigError::wrong_type()));
         };
+
+        if config.account_key_type == CosmosAccountKeyType::MlDsa65
+            && config.address_type != crate::config::AddressType::Cosmos
+        {
+            return Err(Error::key_base(
+                crate::keyring::errors::Error::unsupported_address_type(
+                    config.address_type.clone(),
+                    crate::keyring::KeyType::MlDsa65,
+                ),
+            ));
+        }
 
         let mut rpc_client = HttpClient::builder(config.rpc_addr.clone().try_into().unwrap())
             .user_agent(format!("hermes/{}", HERMES_VERSION))
@@ -928,7 +937,7 @@ impl ChainEndpoint for CosmosSdkChain {
         let light_client = TmLightClient::from_cosmos_sdk_config(&config, node_info.id)?;
 
         // Initialize key store and load key
-        let keybase = KeyRing::new_secp256k1(
+        let keybase = KeyRing::new(
             config.key_store_type,
             &config.account_prefix,
             &config.id,
@@ -981,6 +990,16 @@ impl ChainEndpoint for CosmosSdkChain {
             .keybase()
             .get_key(&self.config.key_name)
             .map_err(|e| Error::key_not_found(self.config().key_name.clone(), e))?;
+
+        if key_pair.key_type() != self.config.account_key_type {
+            return Err(Error::key_base(
+                crate::keyring::errors::Error::account_key_type_mismatch(
+                    self.config.key_name.clone(),
+                    self.config.account_key_type,
+                    key_pair.key_type(),
+                ),
+            ));
+        }
 
         Ok(key_pair)
     }
@@ -1135,7 +1154,7 @@ impl ChainEndpoint for CosmosSdkChain {
             Some(key_name) => self.keybase().get_key(key_name).map_err(Error::key_base)?,
             None => self.key()?,
         };
-        let account = key.account();
+        let account = key.signer_address();
 
         let denom = denom.unwrap_or(&self.config.gas_price.denom);
         let balance = self.block_on(query_balance(&self.grpc_addr, &account, denom))?;
@@ -1156,7 +1175,7 @@ impl ChainEndpoint for CosmosSdkChain {
             Some(key_name) => self.keybase().get_key(key_name).map_err(Error::key_base)?,
             None => self.key()?,
         };
-        let account = key.account();
+        let account = key.signer_address();
 
         let balance = self.block_on(query_all_balances(&self.grpc_addr, &account))?;
 

@@ -12,10 +12,7 @@ use hdpath::StandardHDPath;
 use ibc_relayer::{
     chain::namada::wallet::CliWalletUtils,
     config::{ChainConfig, Config},
-    keyring::{
-        AnySigningKeyPair, KeyRing, NamadaKeyPair, Secp256k1KeyPair, SigningKeyPair,
-        SigningKeyPairSized, Store,
-    },
+    keyring::{AnySigningKeyPair, CosmosKeyPair, KeyRing, NamadaKeyPair, Store, StoredKeyPair},
 };
 use ibc_relayer_types::core::ics24_host::identifier::ChainId;
 use tracing::warn;
@@ -206,18 +203,24 @@ pub fn add_key(
 ) -> eyre::Result<AnySigningKeyPair> {
     let key_pair = match config {
         ChainConfig::CosmosSdk(config) => {
-            let mut keyring = KeyRing::new_secp256k1(
+            let mut keyring = KeyRing::<CosmosKeyPair>::new(
                 Store::Test,
                 &config.account_prefix,
                 &config.id,
                 &config.key_store_folder,
             )?;
 
+            if config.account_key_type == ibc_relayer::keyring::CosmosAccountKeyType::MlDsa65
+                && config.address_type != ibc_relayer::config::AddressType::Cosmos
+            {
+                return Err(eyre!("ML-DSA-65 requires the Cosmos account address type"));
+            }
             check_key_exists(&keyring, key_name, overwrite);
 
             let key_contents =
                 fs::read_to_string(file).map_err(|_| eyre!("error reading the key file"))?;
-            let key_pair = Secp256k1KeyPair::from_seed_file(&key_contents, hd_path)?;
+            let key_pair =
+                CosmosKeyPair::from_seed_file(config.account_key_type, &key_contents, hd_path)?;
 
             keyring.add_key(key_name, key_pair.clone())?;
             key_pair.into()
@@ -270,7 +273,7 @@ pub fn restore_key(
 
     let key_pair = match config {
         ChainConfig::CosmosSdk(config) => {
-            let mut keyring = KeyRing::new_secp256k1(
+            let mut keyring = KeyRing::<CosmosKeyPair>::new(
                 Store::Test,
                 &config.account_prefix,
                 &config.id,
@@ -279,7 +282,8 @@ pub fn restore_key(
 
             check_key_exists(&keyring, key_name, overwrite);
 
-            let key_pair = Secp256k1KeyPair::from_mnemonic(
+            let key_pair = CosmosKeyPair::from_mnemonic(
+                config.account_key_type,
                 &mnemonic_content,
                 hdpath,
                 &config.address_type,
@@ -303,7 +307,7 @@ pub fn restore_key(
 /// Check if the key with the given key name already exists.
 /// If it already exists and overwrite is false, abort the command with an error.
 /// If overwrite is true, output a warning message informing the key will be overwritten.
-fn check_key_exists<S: SigningKeyPairSized>(keyring: &KeyRing<S>, key_name: &str, overwrite: bool) {
+fn check_key_exists<S: StoredKeyPair>(keyring: &KeyRing<S>, key_name: &str, overwrite: bool) {
     if keyring.get_key(key_name).is_ok() {
         if overwrite {
             warn!("key {} will be overwritten", key_name);

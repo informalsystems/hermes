@@ -19,7 +19,7 @@ use crate::chain::cosmos::wait::wait_for_block_commits;
 use crate::config::types::Memo;
 use crate::error::Error;
 use crate::event::IbcEventWithHeight;
-use crate::keyring::Secp256k1KeyPair;
+use crate::keyring::CosmosSigner;
 
 /**
    Broadcast messages as multiple batched transactions to the chain all at once,
@@ -31,7 +31,7 @@ use crate::keyring::Secp256k1KeyPair;
 pub async fn send_batched_messages_and_wait_commit(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -68,7 +68,7 @@ pub async fn send_batched_messages_and_wait_commit(
 pub async fn sequential_send_batched_messages_and_wait_commit(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -93,7 +93,7 @@ pub async fn sequential_send_batched_messages_and_wait_commit(
 pub async fn send_batched_messages_and_wait_check_tx(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -121,7 +121,7 @@ pub async fn send_batched_messages_and_wait_check_tx(
 async fn send_messages_as_batches(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -162,7 +162,7 @@ async fn send_messages_as_batches(
 async fn sequential_send_messages_as_batches(
     rpc_client: &HttpClient,
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &mut Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
@@ -240,7 +240,7 @@ pub fn response_to_tx_sync_result(
 
 async fn batch_messages(
     config: &TxConfig,
-    key_pair: &Secp256k1KeyPair,
+    key_pair: &impl CosmosSigner,
     account: &Account,
     tx_memo: &Memo,
     messages: Vec<Any>,
