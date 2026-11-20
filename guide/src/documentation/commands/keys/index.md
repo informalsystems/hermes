@@ -126,6 +126,37 @@ Success: Restore key testkey (<ADDRESS>) on <CHAIN_ID> chain
 > {{#template ../../../templates/commands/hermes/keys/add_4.md CHAIN_ID=<CHAIN_ID> MNEMONIC_FILE=<MNEMONIC_FILE> OPTIONS= --key-name <KEY_NAME>}}
 > ```
 
+#### Import an ML-DSA-65 relayer account
+
+Set `account_key_type = 'ml_dsa_65'` in the target Cosmos SDK chain's
+`[[chains]]` configuration before importing a key. The chain must accept
+ML-DSA-65 transaction signatures and use Cosmos account addresses. The setting
+is per chain and defaults to `secp256k1`.
+
+To restore the account from a mnemonic file:
+
+```shell
+hermes keys add --chain <CHAIN_ID> --mnemonic-file <MNEMONIC_FILE>
+```
+
+Use the derivation path of the original Cosmos SDK account. Pass `--hd-path`
+when it differs from the Hermes default, `m/44'/118'/0'/0/0`.
+
+To import an account from a Cosmos SDK JSON key file:
+
+```shell
+hermes keys add --chain <CHAIN_ID> --key-file <KEY_FILE>
+```
+
+Use the same `name`, `type`, `mnemonic`, `address`, and `pubkey` fields as
+the key file above. For ML-DSA-65, `pubkey` is a JSON-encoded string containing
+`@type` set to `/cosmos.crypto.mldsa65.PubKey` and a base64-encoded `key`.
+Hermes checks that the derived address and public key match the file. Both
+input files contain secret key material and should be kept private.
+
+Run `hermes --json keys list --chain <CHAIN_ID>` to confirm the account
+address and key type before using the key for relaying.
+
 ### Delete keys
 
 In order to delete the private keys added to chains use the `keys delete` command
